@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- DEBUG-вариант entitlements. Идентичен Runner.entitlements, КРОМЕ
+	     aps-environment=development: debug-сборки из Xcode регистрируют APNs-токен
+	     в sandbox-окружении. При aps-environment=production FCM/APNs шлёт пуши в
+	     production-гейтвей, который sandbox-токен не принимает → уведомления молча
+	     теряются. Для TestFlight/App Store (Release/Profile) остаётся production. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+
+	<key>aps-environment</key>
+	<string>development</string>
+
+	<!-- Общая группа с виджет-расширением (home_widget пишет сюда данные виджетов). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.togetherly.love</string>
+	</array>
+
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:togetherly-d4856.web.app</string>
+	</array>
+</dict>
+</plist>

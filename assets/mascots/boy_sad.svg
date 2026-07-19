@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+  <!-- Body -->
+  <rect x="26" y="78" width="48" height="42" rx="14" fill="#4F86C6"/>
+  <!-- Head -->
+  <circle cx="50" cy="50" r="30" fill="#FFD5A8"/>
+  <!-- Ears -->
+  <circle cx="21" cy="52" r="7" fill="#FFD5A8"/>
+  <circle cx="79" cy="52" r="7" fill="#FFD5A8"/>
+  <circle cx="21" cy="52" r="4" fill="#FFBF8A"/>
+  <circle cx="79" cy="52" r="4" fill="#FFBF8A"/>
+  <!-- Hair -->
+  <ellipse cx="50" cy="24" rx="26" ry="13" fill="#3E2314"/>
+  <ellipse cx="26" cy="36" rx="7" ry="11" fill="#3E2314"/>
+  <ellipse cx="74" cy="36" rx="7" ry="11" fill="#3E2314"/>
+  <ellipse cx="50" cy="14" rx="8" ry="5" fill="#3E2314"/>
+  <ellipse cx="38" cy="16" rx="6" ry="4" fill="#3E2314"/>
+  <ellipse cx="62" cy="16" rx="6" ry="4" fill="#3E2314"/>
+  <!-- Eyes white -->
+  <ellipse cx="39" cy="49" rx="7" ry="7.5" fill="white"/>
+  <ellipse cx="61" cy="49" rx="7" ry="7.5" fill="white"/>
+  <!-- Eyes iris -->
+  <circle cx="39" cy="51" r="4.5" fill="#4A2F1A"/>
+  <circle cx="61" cy="51" r="4.5" fill="#4A2F1A"/>
+  <circle cx="41" cy="49" r="1.8" fill="white"/>
+  <circle cx="63" cy="49" r="1.8" fill="white"/>
+  <!-- Eyebrows sad -->
+  <path d="M 32 40 Q 39 43 46 40" stroke="#3E2314" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 54 40 Q 61 43 68 40" stroke="#3E2314" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Nose -->
+  <ellipse cx="50" cy="57" rx="3" ry="2" fill="#FFBF8A"/>
+  <!-- Sad mouth -->
+  <path d="M 38 68 Q 50 60 62 68" stroke="#CC4444" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Single tear -->
+  <path d="M 39 57 Q 37 62 39 65 Q 41 62 39 57" fill="#88CCEE"/>
+</svg>

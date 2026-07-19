@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Togetherly — Все баннеры</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f5f5f5;
+    font-family: 'Inter', sans-serif;
+    padding: 30px 20px 60px;
+  }
+  h1 { text-align: center; font-size: 24px; font-weight:  400; color: #222; margin-bottom: 8px; }
+  .section-label {
+    text-align: center; font-size: 15px; font-weight: 500; color: #888;
+    letter-spacing: 0.15em; text-transform: uppercase; margin: 30px 0 18px;
+    display: flex; align-items: center; gap: 14px; justify-content: center;
+  }
+  .section-label::before, .section-label::after { content: ''; width: 40px; height: 1px; background: #ccc; }
+
+  .upload-bar {
+    display: flex; justify-content: center; gap: 16px; margin-bottom: 30px; flex-wrap: wrap;
+  }
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; background: #222; color: #fff; border: none;
+    border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .upload-btn:hover { background: #444; }
+  .upload-btn svg { width: 16px; height: 16px; fill: #fff; }
+  .upload-status { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; }
+  .upload-status.ok { color: #2e7d32; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .grid { grid-template-columns: 1fr; max-width: 320px; } }
+
+  .card {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .card-label {
+    font-size: 12px; font-weight: 500; color: #999; letter-spacing: 0.08em;
+  }
+  .card-label span {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    vertical-align: middle; margin-right: 4px;
+  }
+
+  .banner-wrap {
+    width: 216px; height: 384px; overflow: hidden; border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12); cursor: pointer; position: relative;
+  }
+  .banner-wrap:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.18); }
+
+  .banner {
+    position: relative; width: 540px; height: 960px; overflow: hidden;
+    transform-origin: top left; transform: scale(0.4); pointer-events: none;
+  }
+
+  .pattern { position: absolute; inset: 0; z-index: 1; opacity: 0.08; pointer-events: none; }
+  .pattern svg { width: 100%; height: 100%; }
+  .pattern-dots {
+    position: absolute; inset: 0; z-index: 1; opacity: 0.045; pointer-events: none;
+    background-image: radial-gradient(circle, var(--dot-color, #E8956A) 1.2px, transparent 1.2px);
+    background-size: 28px 28px;
+  }
+  .glow-top {
+    position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 400px;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.25) 0%, transparent 70%);
+    z-index: 2; pointer-events: none;
+  }
+  .glow-bottom {
+    position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 500px;
+    background: radial-gradient(ellipse, var(--glow-color, rgba(251,220,202,0.6)) 0%, transparent 65%);
+    z-index: 2; pointer-events: none;
+  }
+  .phone-halo {
+    position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 65%);
+    z-index: 4; border-radius: 50%; pointer-events: none;
+  }
+
+  .text-area {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; padding-top: 80px;
+  }
+  .stay {
+    font-family: 'Inter', sans-serif;
+    font-size: 42px;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  /* Для длинных слов — ещё меньше */
+  .stay.long { font-size: 36px; letter-spacing: 0.22em; }
+  .in-love {
+    font-family: 'Playfair Display', serif; font-size: 72px; font-weight: 500;
+    font-style: italic; letter-spacing: 0.02em; line-height: 1;
+  }
+  .in-love::after {
+    content: ''; display: block; width: 50px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--line-color, rgba(255,255,255,0.6)), transparent);
+    margin: 14px auto 0; border-radius: 2px;
+  }
+
+  .divider-heart {
+    position: absolute; top: 262px; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; align-items: center; gap: 14px; opacity: 0.25;
+  }
+  .divider-heart .line { width: 70px; height: 1px; }
+  .divider-heart svg { width: 14px; height: 14px; }
+  .subtitle {
+    position: absolute; top: 282px; left: 50%; transform: translateX(-50%);
+    z-index: 10; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap; opacity: 0.55;
+  }
+
+  .phone-wrapper {
+    position: absolute; bottom: -200px; left: 50%; transform: translateX(-50%); z-index: 5;
+  }
+  .phone-body {
+    position: relative; width: 400px; height: 830px;
+    background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 40%, #111 100%);
+    border-radius: 52px; padding: 14px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.35), 0 15px 30px rgba(0,0,0,0.2),
+      inset 1px 1px 0 rgba(255,255,255,0.12), inset -1px -1px 0 rgba(0,0,0,0.3),
+      0 0 100px var(--phone-glow, rgba(254,126,139,0.12));
+  }
+  .phone-body::before {
+    content: ''; position: absolute; right: -3px; top: 200px;
+    width: 4px; height: 60px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 0 4px 4px 0;
+  }
+  .phone-body::after {
+    content: ''; position: absolute; left: -3px; top: 175px;
+    width: 4px; height: 42px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 4px 0 0 4px;
+  }
+  .btn-vol2 {
+    position: absolute; left: -3px; top: 230px; width: 4px; height: 42px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 4px 0 0 4px; z-index: 2;
+  }
+  .phone-screen {
+    position: relative; width: 100%; height: 100%; border-radius: 40px;
+    overflow: hidden; background: #000;
+  }
+  .phone-screen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .dynamic-island {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000; border-radius: 22px; z-index: 20;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .dynamic-island::after {
+    content: ''; position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+    width: 13px; height: 13px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #1a1a3a, #0a0a15);
+    box-shadow: inset 0 0 3px rgba(255,255,255,0.1), 0 0 4px rgba(0,0,0,0.5);
+  }
+  .home-bar {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 5px; background: rgba(255,255,255,0.25); border-radius: 5px; z-index: 20;
+  }
+  .screen-glare {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 35%, transparent 65%, rgba(255,255,255,0.02) 100%);
+    z-index: 15; pointer-events: none; border-radius: 40px;
+  }
+  .phone-bezel {
+    position: absolute; inset: 0; border-radius: 52px;
+    border: 1px solid rgba(255,255,255,0.08); pointer-events: none; z-index: 6;
+  }
+
+  .img-error {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: rgba(0,0,0,0.85); color: #fff; font-size: 10px; text-align: center;
+    padding: 10px; z-index: 25; border-radius: 40px; line-height: 1.3;
+  }
+  .img-error.hidden { display: none; }
+  .img-error svg { width: 20px; height: 20px; margin-bottom: 2px; }
+
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border: none; border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; color: #fff;
+  }
+  .dl-btn:hover { filter: brightness(0.85); }
+  .dl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .dl-btn svg { width: 14px; height: 14px; fill: #fff; }
+  .dl-btn.error-state { background: #e53935 !important; animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .hidden-clone {
+    position: fixed; left: -9999px; top: 0; z-index: -1;
+    width: 540px; height: 960px; overflow: hidden; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>Togetherly — Баннеры</h1>
+
+<div class="upload-bar">
+  <button class="upload-btn" onclick="document.getElementById('globalFile').click()">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Загрузить изображение во все баннеры
+  </button>
+  <input type="file" id="globalFile" accept="image/*" style="display:none" onchange="globalUpload(this)">
+  <div class="upload-status" id="uploadStatus"></div>
+</div>
+
+<div class="section-label">Русские</div>
+<div class="grid" id="gridRU"></div>
+
+<div class="section-label">English</div>
+<div class="grid" id="gridEN"></div>
+
+<script>
+const banners = [
+  // ——— РУССКИЕ ———
+  {
+    id: 'ru-pink', lang: 'ru', long: false,
+    bg: '#FBDCCA', textColor: '#FE7E8B', dotColor: '#E8956A',
+    glowColor: 'rgba(251,220,202,0.6)', phoneGlow: 'rgba(254,126,139,0.12)',
+    lineColor: 'rgba(254,126,139,0.6)',
+    line1: 'Будь', line2: 'В Любви',
+    sub: 'Считайте каждый момент вместе',
+    label: 'Розовый', filename: 'bud-v-lyubvi.png'
+  },
+  {
+    id: 'ru-purple', lang: 'ru', long: false,
+    bg: '#9B86BE', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(100,70,150,0.3)', phoneGlow: 'rgba(100,70,160,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Виджеты', line2: 'Любви',
+    sub: 'Поделитесь историей на экране',
+    label: 'Фиолетовый', filename: 'vidzhety-lyubvi.png'
+  },
+  {
+    id: 'ru-blue', lang: 'ru', long: false,
+    bg: '#84A2C6', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(80,110,150,0.3)', phoneGlow: 'rgba(90,120,160,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Будьте', line2: 'На Связи',
+    sub: 'Смотрите и управляйте группами',
+    label: 'Голубой', filename: 'budte-na-svyazi.png'
+  },
+  {
+    id: 'ru-brown', lang: 'ru', long: false,
+    bg: '#CF7F5E', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(140,80,50,0.3)', phoneGlow: 'rgba(160,100,70,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Ваш', line2: 'Профиль',
+    sub: 'Безграничные настройки и редактирование',
+    label: 'Коричневый', filename: 'vash-profil.png'
+  },
+  {
+    id: 'ru-green', lang: 'ru', long: true,
+    bg: '#7dab76', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(70,110,60,0.3)', phoneGlow: 'rgba(90,140,80,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Настроение', line2: 'Календарь',
+    sub: 'Календарный вид и статистика настроений',
+    label: 'Зелёный', filename: 'nastroenie-kalendar.png'
+  },
+  {
+    id: 'ru-red', lang: 'ru', long: false,
+    bg: '#ee4444', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(160,40,40,0.35)', phoneGlow: 'rgba(200,50,50,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Рисуйте', line2: 'Вместе',
+    sub: 'Совместное рисование и управление',
+    label: 'Красный', filename: 'risuyte-vmeste.png'
+  },
+  // ——— АНГЛИЙСКИЕ ———
+  {
+    id: 'en-pink', lang: 'en', long: false,
+    bg: '#FBDCCA', textColor: '#FE7E8B', dotColor: '#E8956A',
+    glowColor: 'rgba(251,220,202,0.6)', phoneGlow: 'rgba(254,126,139,0.12)',
+    lineColor: 'rgba(254,126,139,0.6)',
+    line1: 'Stay', line2: 'IN Love',
+    sub: 'Count every moment together',
+    label: 'Pink', filename: 'stay-in-love.png'
+  },
+  {
+    id: 'en-purple', lang: 'en', long: false,
+    bg: '#9B86BE', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(100,70,150,0.3)', phoneGlow: 'rgba(100,70,160,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Love', line2: 'Widgets',
+    sub: 'Share your story on home screen',
+    label: 'Purple', filename: 'love-widgets.png'
+  },
+  {
+    id: 'en-blue', lang: 'en', long: false,
+    bg: '#84A2C6', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(80,110,150,0.3)', phoneGlow: 'rgba(90,120,160,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Stay', line2: 'Connected',
+    sub: 'View and manage your groups',
+    label: 'Blue', filename: 'stay-connected.png'
+  },
+  {
+    id: 'en-brown', lang: 'en', long: false,
+    bg: '#CF7F5E', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(140,80,50,0.3)', phoneGlow: 'rgba(160,100,70,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Your', line2: 'Profile',
+    sub: 'Endless settings & editing options',
+    label: 'Brown', filename: 'your-profile.png'
+  },
+  {
+    id: 'en-green', lang: 'en', long: false,
+    bg: '#7dab76', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(70,110,60,0.3)', phoneGlow: 'rgba(90,140,80,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Mood', line2: 'Calendar',
+    sub: 'Calendar view & mood statistics',
+    label: 'Green', filename: 'mood-calendar.png'
+  },
+  {
+    id: 'en-red', lang: 'en', long: false,
+    bg: '#ee4444', textColor: '#fff', dotColor: '#fff',
+    glowColor: 'rgba(160,40,40,0.35)', phoneGlow: 'rgba(200,50,50,0.15)',
+    lineColor: 'rgba(255,255,255,0.6)',
+    line1: 'Draw', line2: 'Together',
+    sub: 'Shared drawing & manage your artwork',
+    label: 'Red', filename: 'draw-together.png'
+  }
+];
+
+const gridRU = document.getElementById('gridRU');
+const gridEN = document.getElementById('gridEN');
+
+banners.forEach(b => {
+  const longClass = b.long ? ' stay long' : '';
+
+  const html = `
+    <div class="banner" id="${b.id}" style="background:${b.bg};--dot-color:${b.dotColor};--glow-color:${b.glowColor};--phone-glow:${b.phoneGlow};--line-color:${b.lineColor}">
+      <div class="pattern">
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+          <defs>
+            <pattern id="h-${b.id}" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+              <path d="M40 58 C40 58,22 42,22 32 C22 24,28 20,34 20 C37 20,40 22,40 26 C40 22,43 20,46 20 C52 20,58 24,58 32 C58 42,40 58,40 58Z" fill="${b.textColor}"/>
+            </pattern>
+            <pattern id="c-${b.id}" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+              <circle cx="60" cy="60" r="25" fill="none" stroke="${b.textColor}" stroke-width="0.8"/>
+              <circle cx="0" cy="0" r="15" fill="none" stroke="${b.textColor}" stroke-width="0.5"/>
+              <circle cx="120" cy="120" r="15" fill="none" stroke="${b.textColor}" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#c-${b.id})"/>
+          <rect width="100%" height="100%" fill="url(#h-${b.id})"/>
+        </svg>
+      </div>
+      <div class="pattern-dots"></div>
+      <div class="glow-top"></div>
+      <div class="glow-bottom"></div>
+      <div class="phone-halo"></div>
+      <div class="text-area">
+        <div class="stay${longClass}" style="color:${b.textColor}">${b.line1}</div>
+        <div class="in-love" style="color:${b.textColor}">${b.line2}</div>
+      </div>
+      <div class="divider-heart">
+        <div class="line" style="background:${b.textColor}"></div>
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${b.textColor}"/></svg>
+        <div class="line" style="background:${b.textColor}"></div>
+      </div>
+      <div class="subtitle" style="color:${b.textColor}">${b.sub}</div>
+      <div class="phone-wrapper">
+        <div class="phone-body">
+          <div class="btn-vol2"></div>
+          <div class="phone-bezel"></div>
+          <div class="phone-screen">
+            <img class="phone-img" data-banner="${b.id}" alt="">
+            <div class="img-error" data-error="${b.id}">
+              <svg viewBox="0 0 24 24" fill="${b.textColor}" style="opacity:0.7"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              <span>Перетащите<br>скриншот</span>
+            </div>
+            <div class="dynamic-island"></div>
+            <div class="screen-glare"></div>
+            <div class="home-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="banner-wrap" data-drop="${b.id}">
+      ${html}
+    </div>
+    <div class="card-label"><span style="background:${b.bg}"></span>${b.lang === 'ru' ? 'РУС' : 'ENG'} · ${b.label}</div>
+    <button class="dl-btn" id="btn-${b.id}" style="background:${b.bg}" onclick="downloadBanner('${b.id}','${b.filename}','${b.bg}')">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      1080×1920 PNG
+    </button>
+  `;
+
+  if (b.lang === 'ru') gridRU.appendChild(card);
+  else gridEN.appendChild(card);
+});
+
+let globalImageData = null;
+
+function globalUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    globalImageData = e.target.result;
+    document.querySelectorAll('.phone-img').forEach(img => { img.src = globalImageData; });
+    document.querySelectorAll('.img-error').forEach(el => { el.classList.add('hidden'); });
+    document.getElementById('uploadStatus').innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#2e7d32"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Загружено';
+    document.getElementById('uploadStatus').className = 'upload-status ok';
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.querySelectorAll('.banner-wrap').forEach(wrap => {
+  wrap.addEventListener('dragover', e => e.preventDefault());
+  wrap.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const id = wrap.dataset.drop;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.querySelector(`.phone-img[data-banner="${id}"]`).src = ev.target.result;
+      document.querySelector(`.img-error[data-error="${id}"]`).classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+function downloadBanner(id, filename, bgColor) {
+  const btn = document.getElementById('btn-' + id);
+  const img = document.querySelector(`.phone-img[data-banner="${id}"]`);
+  const err = document.querySelector(`.img-error[data-error="${id}"]`);
+
+  if (!img.src || err && !err.classList.contains('hidden')) {
+    btn.textContent = 'Сначала добавьте фото';
+    btn.classList.add('error-state');
+    setTimeout(() => {
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 1080×1920 PNG';
+      btn.classList.remove('error-state');
+    }, 1500);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '...';
+
+  const clone = document.getElementById(id).cloneNode(true);
+  clone.id = 'clone-' + id;
+  clone.className = '';
+  clone.style.cssText = `position:fixed;left:-9999px;top:0;z-index:-1;width:540px;height:960px;background:${bgColor};overflow:hidden;`;
+  const cloneErr = clone.querySelector('.img-error');
+  if (cloneErr) cloneErr.remove();
+  document.body.appendChild(clone);
+
+  html2canvas(clone, {
+    scale: 2, useCORS: true, allowTaint: true, backgroundColor: bgColor, width: 540, height: 960
+  }).then(canvas => {
+    clone.remove();
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    btn.innerHTML = '✓ Готово';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 1080×1920 PNG';
+    }, 1200);
+  }).catch(() => {
+    clone.remove();
+    btn.innerHTML = 'Ошибка';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 1080×1920 PNG';
+    }, 1500);
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Togetherly — Все баннеры</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f5f5f5;
+    font-family: 'Inter', sans-serif;
+    padding: 30px 20px 60px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 400;
+    color: #222;
+    margin-bottom: 8px;
+  }
+  .section-label {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 500;
+    color: #888;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 30px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: #ccc;
+  }
+
+  .upload-bar {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+  }
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: #222;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .upload-btn:hover { background: #444; }
+  .upload-btn svg { width: 16px; height: 16px; fill: #fff; }
+  .upload-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+  }
+  .upload-status.ok { color: #2e7d32; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .grid { grid-template-columns: 1fr; max-width: 320px; } }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #999;
+    letter-spacing: 0.08em;
+  }
+  .card-label span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  .banner-wrap {
+    width: 216px;
+    height: 384px;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    cursor: pointer;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+  .banner-wrap:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.18); }
+  .banner-wrap.drag-over { box-shadow: 0 0 0 3px #555, 0 6px 28px rgba(0,0,0,0.2); }
+
+  /* Превью-баннер (540×960 масштабирован до 216×384 = scale 0.4) */
+  .banner {
+    position: relative;
+    width: 540px;
+    height: 960px;
+    overflow: hidden;
+    transform-origin: top left;
+    transform: scale(0.4);
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ======= CANVAS-БАННЕР (для экспорта, рендерится в offscreen canvas) ======= */
+  /* Используем отдельный подход — рисуем напрямую на canvas */
+
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border: none; border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; color: #fff;
+    min-width: 140px; justify-content: center;
+  }
+  .dl-btn:hover { filter: brightness(0.85); }
+  .dl-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+  .dl-btn svg { width: 14px; height: 14px; fill: #fff; flex-shrink: 0; }
+
+  /* Tooltip при наведении на баннер без фото */
+  .drop-hint {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    background: rgba(0,0,0,0.55); color: #fff; font-size: 11px;
+    text-align: center; line-height: 1.4; border-radius: 8px;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .banner-wrap:hover .drop-hint { opacity: 1; }
+  .drop-hint.has-image { display: none; }
+
+  .status-pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.07);
+    color: #555;
+    margin-top: -4px;
+  }
+  .status-pill.ok { background: #e8f5e9; color: #2e7d32; }
+  .status-pill.err { background: #ffebee; color: #c62828; }
+
+  /* ——— Структура баннера ——— */
+  .b-bg {
+    position: absolute; inset: 0;
+  }
+  .b-pattern {
+    position: absolute; inset: 0; z-index: 1; opacity: 0.08; pointer-events: none;
+  }
+  .b-pattern svg { width: 100%; height: 100%; }
+  .b-dots {
+    position: absolute; inset: 0; z-index: 1; opacity: 0.045; pointer-events: none;
+    background-size: 28px 28px;
+  }
+  .b-glow-top {
+    position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 400px;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.25) 0%, transparent 70%);
+    z-index: 2; pointer-events: none;
+  }
+  .b-glow-bottom {
+    position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 500px;
+    z-index: 2; pointer-events: none;
+  }
+  .b-phone-halo {
+    position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 65%);
+    z-index: 4; border-radius: 50%; pointer-events: none;
+  }
+  .b-text {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; padding-top: 80px;
+  }
+  .b-line1 {
+    font-family: 'Inter', sans-serif; font-size: 48px; font-weight: 300;
+    letter-spacing: 0.35em; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .b-line2 {
+    font-family: 'Playfair Display', serif; font-size: 72px; font-weight: 500;
+    font-style: italic; letter-spacing: 0.02em; line-height: 1;
+  }
+  .b-line2::after {
+    content: ''; display: block; width: 50px; height: 2px;
+    margin: 14px auto 0; border-radius: 2px;
+  }
+  .b-divider {
+    position: absolute; top: 262px; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; align-items: center; gap: 14px; opacity: 0.25;
+  }
+  .b-divider .dline { width: 70px; height: 1px; }
+  .b-divider svg { width: 14px; height: 14px; }
+  .b-sub {
+    position: absolute; top: 282px; left: 50%; transform: translateX(-50%);
+    z-index: 10; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap; opacity: 0.55;
+  }
+
+  /* Телефон */
+  .b-phone {
+    position: absolute; bottom: -200px; left: 50%; transform: translateX(-50%); z-index: 5;
+  }
+  .b-body {
+    position: relative; width: 400px; height: 830px;
+    background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 40%, #111 100%);
+    border-radius: 52px; padding: 14px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.35), 0 15px 30px rgba(0,0,0,0.2),
+      inset 1px 1px 0 rgba(255,255,255,0.12), inset -1px -1px 0 rgba(0,0,0,0.3);
+  }
+  .b-body::before {
+    content: ''; position: absolute; right: -3px; top: 200px;
+    width: 4px; height: 60px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 0 4px 4px 0;
+  }
+  .b-body::after {
+    content: ''; position: absolute; left: -3px; top: 175px;
+    width: 4px; height: 42px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 4px 0 0 4px;
+  }
+  .b-vol2 {
+    position: absolute; left: -3px; top: 230px; width: 4px; height: 42px;
+    background: linear-gradient(180deg, #3a3a3a, #222, #3a3a3a); border-radius: 4px 0 0 4px; z-index: 2;
+  }
+  .b-screen {
+    position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: #111;
+  }
+  .b-screen img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .b-island {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000; border-radius: 22px; z-index: 20;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .b-island::after {
+    content: ''; position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+    width: 13px; height: 13px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #1a1a3a, #0a0a15);
+    box-shadow: inset 0 0 3px rgba(255,255,255,0.1);
+  }
+  .b-homebar {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 5px; background: rgba(255,255,255,0.25); border-radius: 5px; z-index: 20;
+  }
+  .b-glare {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 35%, transparent 65%, rgba(255,255,255,0.02) 100%);
+    z-index: 15; pointer-events: none; border-radius: 40px;
+  }
+  .b-bezel {
+    position: absolute; inset: 0; border-radius: 52px;
+    border: 1px solid rgba(255,255,255,0.08); pointer-events: none; z-index: 6;
+  }
+</style>
+</head>
+<body>
+
+<h1>Togetherly — Баннеры</h1>
+
+<div class="upload-bar">
+  <button class="upload-btn" onclick="document.getElementById('globalFile').click()">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Загрузить изображение во все баннеры
+  </button>
+  <input type="file" id="globalFile" accept="image/*" style="display:none" onchange="globalUpload(this)">
+  <div class="upload-status" id="uploadStatus"></div>
+</div>
+
+<div class="section-label">Русские</div>
+<div class="grid" id="gridRU"></div>
+
+<div class="section-label">English</div>
+<div class="grid" id="gridEN"></div>
+
+<script>
+// ==========================================
+//  КОНФИГУРАЦИЯ
+// ==========================================
+const banners = [
+  // ——— РУССКИЕ ———
+  { id:'ru-pink',   lang:'ru', bg:'#FBDCCA', textColor:'#FE7E8B', dotColor:'#E8956A',
+    glowColor:'rgba(251,220,202,0.6)', phoneGlow:'rgba(254,126,139,0.12)', lineColor:'rgba(254,126,139,0.6)',
+    line1:'Будь', line2:'В Любви', sub:'Считайте каждый момент вместе', label:'Розовый', filename:'bud-v-lyubvi.png' },
+  { id:'ru-purple', lang:'ru', bg:'#9B86BE', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(100,70,150,0.3)', phoneGlow:'rgba(100,70,160,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Виджеты', line2:'Любви', sub:'Поделитесь историей на экране', label:'Фиолетовый', filename:'vidzhety-lyubvi.png' },
+  { id:'ru-blue',   lang:'ru', bg:'#84A2C6', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(80,110,150,0.3)', phoneGlow:'rgba(90,120,160,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Будьте', line2:'На Связи', sub:'Смотрите и управляйте группами', label:'Голубой', filename:'budte-na-svyazi.png' },
+  { id:'ru-brown',  lang:'ru', bg:'#CF7F5E', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(140,80,50,0.3)', phoneGlow:'rgba(160,100,70,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Ваш', line2:'Профиль', sub:'Безграничные настройки и редактирование', label:'Коричневый', filename:'vash-profil.png' },
+  { id:'ru-green',  lang:'ru', bg:'#7dab76', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(70,110,60,0.3)', phoneGlow:'rgba(90,140,80,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Настроение', line2:'Календарь', sub:'Календарный вид и статистика настроений', label:'Зелёный', filename:'nastroenie-kalendar.png' },
+  { id:'ru-red',    lang:'ru', bg:'#ee4444', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(160,40,40,0.35)', phoneGlow:'rgba(200,50,50,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Рисуйте', line2:'Вместе', sub:'Совместное рисование и управление', label:'Красный', filename:'risuyte-vmeste.png' },
+  // ——— АНГЛИЙСКИЕ ———
+  { id:'en-pink',   lang:'en', bg:'#FBDCCA', textColor:'#FE7E8B', dotColor:'#E8956A',
+    glowColor:'rgba(251,220,202,0.6)', phoneGlow:'rgba(254,126,139,0.12)', lineColor:'rgba(254,126,139,0.6)',
+    line1:'Stay', line2:'IN Love', sub:'Count every moment together', label:'Pink', filename:'stay-in-love.png' },
+  { id:'en-purple', lang:'en', bg:'#9B86BE', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(100,70,150,0.3)', phoneGlow:'rgba(100,70,160,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Love', line2:'Widgets', sub:'Share your story on home screen', label:'Purple', filename:'love-widgets.png' },
+  { id:'en-blue',   lang:'en', bg:'#84A2C6', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(80,110,150,0.3)', phoneGlow:'rgba(90,120,160,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Stay', line2:'Connected', sub:'View and manage your groups', label:'Blue', filename:'stay-connected.png' },
+  { id:'en-brown',  lang:'en', bg:'#CF7F5E', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(140,80,50,0.3)', phoneGlow:'rgba(160,100,70,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Your', line2:'Profile', sub:'Endless settings & editing options', label:'Brown', filename:'your-profile.png' },
+  { id:'en-green',  lang:'en', bg:'#7dab76', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(70,110,60,0.3)', phoneGlow:'rgba(90,140,80,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Mood', line2:'Calendar', sub:'Calendar view & mood statistics', label:'Green', filename:'mood-calendar.png' },
+  { id:'en-red',    lang:'en', bg:'#ee4444', textColor:'#fff', dotColor:'#fff',
+    glowColor:'rgba(160,40,40,0.35)', phoneGlow:'rgba(200,50,50,0.15)', lineColor:'rgba(255,255,255,0.6)',
+    line1:'Draw', line2:'Together', sub:'Shared drawing & manage your artwork', label:'Red', filename:'draw-together.png' }
+];
+
+// ==========================================
+//  ХРАНИЛИЩЕ ИЗОБРАЖЕНИЙ (dataURL по id)
+// ==========================================
+const imageStore = {};
+
+// ==========================================
+//  ПОСТРОЕНИЕ HTML-ПРЕВЬЮ
+// ==========================================
+function buildBannerHTML(b) {
+  const sid = b.id.replace(/-/g, '_');
+  return `
+    <div class="banner" id="prev-${b.id}" style="background:${b.bg}">
+      <div class="b-pattern">
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+          <defs>
+            <pattern id="ph-${sid}" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+              <path d="M40 58 C40 58,22 42,22 32 C22 24,28 20,34 20 C37 20,40 22,40 26 C40 22,43 20,46 20 C52 20,58 24,58 32 C58 42,40 58,40 58Z" fill="${b.textColor}"/>
+            </pattern>
+            <pattern id="pc-${sid}" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+              <circle cx="60" cy="60" r="25" fill="none" stroke="${b.textColor}" stroke-width="0.8"/>
+              <circle cx="0" cy="0" r="15" fill="none" stroke="${b.textColor}" stroke-width="0.5"/>
+              <circle cx="120" cy="120" r="15" fill="none" stroke="${b.textColor}" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#pc-${sid})"/>
+          <rect width="100%" height="100%" fill="url(#ph-${sid})"/>
+        </svg>
+      </div>
+      <div class="b-dots" style="background-image:radial-gradient(circle,${b.dotColor} 1.2px,transparent 1.2px)"></div>
+      <div class="b-glow-top"></div>
+      <div class="b-glow-bottom" style="background:radial-gradient(ellipse,${b.glowColor} 0%,transparent 65%)"></div>
+      <div class="b-phone-halo"></div>
+      <div class="b-text">
+        <div class="b-line1" style="color:${b.textColor}">${b.line1}</div>
+        <div class="b-line2" style="color:${b.textColor};--lc:${b.lineColor}">${b.line2}</div>
+      </div>
+      <div class="b-divider">
+        <div class="dline" style="background:${b.textColor}"></div>
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${b.textColor}"/></svg>
+        <div class="dline" style="background:${b.textColor}"></div>
+      </div>
+      <div class="b-sub" style="color:${b.textColor}">${b.sub}</div>
+      <div class="b-phone">
+        <div class="b-body" style="box-shadow:0 40px 80px rgba(0,0,0,0.35),0 15px 30px rgba(0,0,0,0.2),inset 1px 1px 0 rgba(255,255,255,0.12),inset -1px -1px 0 rgba(0,0,0,0.3),0 0 100px ${b.phoneGlow}">
+          <div class="b-vol2"></div>
+          <div class="b-bezel"></div>
+          <div class="b-screen">
+            <img class="phone-img" id="img-${b.id}" alt="">
+            <div class="b-island"></div>
+            <div class="b-glare"></div>
+            <div class="b-homebar"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+const gridRU = document.getElementById('gridRU');
+const gridEN = document.getElementById('gridEN');
+
+banners.forEach(b => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="banner-wrap" id="wrap-${b.id}">
+      ${buildBannerHTML(b)}
+      <div class="drop-hint" id="hint-${b.id}">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" style="opacity:0.8"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Перетащите скриншот<br>или кликните для выбора
+      </div>
+    </div>
+    <div class="card-label">
+      <span style="background:${b.bg}"></span>
+      ${b.lang==='ru' ? 'РУС' : 'ENG'} · ${b.label}
+    </div>
+    <span class="status-pill" id="status-${b.id}">Нет фото</span>
+    <button class="dl-btn" id="btn-${b.id}" style="background:${b.bg}" onclick="downloadBanner('${b.id}')">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      1080×1920 PNG
+    </button>`;
+
+  if (b.lang === 'ru') gridRU.appendChild(card);
+  else gridEN.appendChild(card);
+
+  // Клик — открыть file picker для этого баннера
+  const wrap = document.getElementById('wrap-' + b.id);
+  wrap.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = e => applyImage(b.id, e.target.files[0]);
+    inp.click();
+  });
+  // Drag & Drop
+  wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.classList.add('drag-over'); });
+  wrap.addEventListener('dragleave', () => wrap.classList.remove('drag-over'));
+  wrap.addEventListener('drop', e => {
+    e.preventDefault();
+    wrap.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) applyImage(b.id, file);
+  });
+});
+
+// ==========================================
+//  ПРИМЕНЕНИЕ ФОТО К БАННЕРУ
+// ==========================================
+function applyImage(id, file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageStore[id] = e.target.result;
+    document.getElementById('img-' + id).src = e.target.result;
+    document.getElementById('hint-' + id).classList.add('has-image');
+    const s = document.getElementById('status-' + id);
+    s.textContent = '✓ Фото загружено';
+    s.className = 'status-pill ok';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================
+//  ГЛОБАЛЬНАЯ ЗАГРУЗКА ВО ВСЕ
+// ==========================================
+function globalUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    banners.forEach(b => {
+      imageStore[b.id] = data;
+      document.getElementById('img-' + b.id).src = data;
+      document.getElementById('hint-' + b.id).classList.add('has-image');
+      const s = document.getElementById('status-' + b.id);
+      s.textContent = '✓ Фото загружено';
+      s.className = 'status-pill ok';
+    });
+    const st = document.getElementById('uploadStatus');
+    st.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#2e7d32"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Загружено во все баннеры';
+    st.className = 'upload-status ok';
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================
+//  СКАЧИВАНИЕ — рисуем Canvas вручную
+// ==========================================
+async function downloadBanner(id) {
+  const b = banners.find(x => x.id === id);
+  if (!b) return;
+
+  if (!imageStore[id]) {
+    const s = document.getElementById('status-' + id);
+    s.textContent = '⚠ Сначала добавьте фото';
+    s.className = 'status-pill err';
+    setTimeout(() => { s.textContent = 'Нет фото'; s.className = 'status-pill'; }, 2000);
+    return;
+  }
+
+  const btn = document.getElementById('btn-' + id);
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff;animation:spin 0.8s linear infinite"><path d="M12 2a10 10 0 1 0 10 10"/></svg> Рендер...';
+
+  // Ждём загрузку шрифтов (на случай первого вызова)
+  await document.fonts.ready;
+
+  try {
+    const canvas = await renderBanner(b);
+    const link = document.createElement('a');
+    link.download = b.filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    btn.innerHTML = '✓ Сохранено';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 1080×1920 PNG';
+    }, 1500);
+  } catch(err) {
+    console.error(err);
+    btn.innerHTML = '✗ Ошибка';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 1080×1920 PNG';
+    }, 1500);
+  }
+}
+
+// ==========================================
+//  РЕНДЕР БАННЕРА НА CANVAS (1080×1920)
+// ==========================================
+async function renderBanner(b) {
+  const W = 1080, H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 1. Фон
+  ctx.fillStyle = b.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Паттерн точек
+  drawDots(ctx, b.dotColor, W, H);
+
+  // 3. Паттерн сердечек + кружков (полупрозрачный)
+  drawPattern(ctx, b.textColor, W, H);
+
+  // 4. Верхний glow
+  drawGlow(ctx, W, H, b.glowColor);
+
+  // 5. Текст
+  drawText(ctx, b, W);
+
+  // 6. Разделитель (линия-сердце-линия)
+  drawDivider(ctx, b.textColor, W, H);
+
+  // 7. Субтайтл
+  drawSubtitle(ctx, b, W);
+
+  // 8. Телефон с фото
+  await drawPhone(ctx, b, W, H);
+
+  // 9. Нижний glow поверх телефона
+  drawBottomGlow(ctx, b.glowColor, W, H);
+
+  return canvas;
+}
+
+// ——— Вспомогательные функции рисования ———
+
+function drawDots(ctx, color, W, H) {
+  ctx.save();
+  ctx.globalAlpha = 0.045;
+  const step = 56, r = 2.4;
+  ctx.fillStyle = color;
+  for (let x = 0; x < W + step; x += step)
+    for (let y = 0; y < H + step; y += step) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  ctx.restore();
+}
+
+function drawPattern(ctx, color, W, H) {
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+
+  // Сетка кружков
+  const cStep = 240, cR = 50;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  for (let x = cStep/2; x < W + cStep; x += cStep)
+    for (let y = cStep/2; y < H + cStep; y += cStep) {
+      ctx.beginPath(); ctx.arc(x, y, cR, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, cR*0.5, 0, Math.PI*2); ctx.stroke();
+    }
+
+  // Сердечки
+  ctx.fillStyle = color;
+  const hStep = 160;
+  for (let x = hStep/2; x < W + hStep; x += hStep)
+    for (let y = hStep/2; y < H + hStep; y += hStep)
+      drawHeart(ctx, x, y, 22);
+
+  ctx.restore();
+}
+
+function drawHeart(ctx, cx, cy, size) {
+  const s = size / 40;
+  ctx.save();
+  ctx.translate(cx - 40*s, cy - 39*s);
+  ctx.scale(s, s);
+  ctx.beginPath();
+  ctx.moveTo(40, 58);
+  ctx.bezierCurveTo(40, 58, 22, 42, 22, 32);
+  ctx.bezierCurveTo(22, 24, 28, 20, 34, 20);
+  ctx.bezierCurveTo(37, 20, 40, 22, 40, 26);
+  ctx.bezierCurveTo(40, 22, 43, 20, 46, 20);
+  ctx.bezierCurveTo(52, 20, 58, 24, 58, 32);
+  ctx.bezierCurveTo(58, 42, 40, 58, 40, 58);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGlow(ctx, W, H, glowColor) {
+  ctx.save();
+  ctx.globalAlpha = 1;
+  const grad = ctx.createRadialGradient(W/2, -100, 10, W/2, -100, 600);
+  grad.addColorStop(0, 'rgba(255,255,255,0.22)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H/2);
+  ctx.restore();
+}
+
+function drawBottomGlow(ctx, glowColor, W, H) {
+  ctx.save();
+  const grad = ctx.createRadialGradient(W/2, H+60, 20, W/2, H+60, 900);
+  // Парсим цвет из строки rgba(...)
+  grad.addColorStop(0, glowColor);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H*0.4, W, H*0.6);
+  ctx.restore();
+}
+
+function drawText(ctx, b, W) {
+  const scale = 2; // 1080/540
+
+  // line1 — Inter Light 300, 96px (48*2)
+  ctx.save();
+  ctx.fillStyle = b.textColor;
+  ctx.font = '300 96px "Inter", sans-serif';
+  ctx.letterSpacing = '70px';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(b.line1.toUpperCase(), W / 2, 160);
+  ctx.restore();
+
+  // line2 — Playfair Display Italic 500, 144px (72*2)
+  ctx.save();
+  ctx.fillStyle = b.textColor;
+  ctx.font = 'italic 500 144px "Playfair Display", serif';
+  ctx.letterSpacing = '4px';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(b.line2, W / 2, 268);
+  ctx.restore();
+
+  // Декоративная линия под line2
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  const lw = 100;
+  const lx = W/2 - lw/2;
+  const ly = 440;
+  const grad = ctx.createLinearGradient(lx, ly, lx + lw, ly);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.5, b.lineColor);
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(lx, ly); ctx.lineTo(lx + lw, ly);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDivider(ctx, color, W, H) {
+  const y = 524;
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  // левая линия
+  ctx.beginPath(); ctx.moveTo(W/2 - 160, y); ctx.lineTo(W/2 - 44, y); ctx.stroke();
+  // правая линия
+  ctx.beginPath(); ctx.moveTo(W/2 + 44, y); ctx.lineTo(W/2 + 160, y); ctx.stroke();
+  // сердечко по центру
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.25;
+  drawHeart(ctx, W/2, y - 14, 28);
+  ctx.restore();
+}
+
+function drawSubtitle(ctx, b, W) {
+  ctx.save();
+  ctx.fillStyle = b.textColor;
+  ctx.globalAlpha = 0.55;
+  ctx.font = '400 24px "Inter", sans-serif';
+  ctx.letterSpacing = '4px';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(b.sub.toUpperCase(), W / 2, 564);
+  ctx.restore();
+}
+
+async function drawPhone(ctx, b, W, H) {
+  // Координаты телефона (масштаб x2 от превью)
+  const phoneW = 800, phoneH = 1660;
+  const phoneX = W/2 - phoneW/2;
+  const phoneY = H - phoneH + 400;
+
+  // Тень телефона
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 120;
+  ctx.shadowOffsetY = 60;
+
+  // Корпус
+  const r = 104; // border-radius 52*2
+  roundRect(ctx, phoneX, phoneY, phoneW, phoneH, r);
+  const bodyGrad = ctx.createLinearGradient(phoneX, phoneY, phoneX + phoneW, phoneY + phoneH);
+  bodyGrad.addColorStop(0,   '#2a2a2a');
+  bodyGrad.addColorStop(0.4, '#1a1a1a');
+  bodyGrad.addColorStop(1,   '#111');
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Кнопки сбоку
+  ctx.save();
+  ctx.fillStyle = '#2e2e2e';
+  // правая кнопка
+  roundRect(ctx, phoneX + phoneW + 2, phoneY + 400, 8, 120, 4);
+  ctx.fill();
+  // левые кнопки
+  roundRect(ctx, phoneX - 10, phoneY + 350, 8, 84, 4);
+  ctx.fill();
+  roundRect(ctx, phoneX - 10, phoneY + 460, 8, 84, 4);
+  ctx.fill();
+  ctx.restore();
+
+  // Экран (с закруглёнными углами)
+  const pad = 28;
+  const scrX = phoneX + pad, scrY = phoneY + pad;
+  const scrW = phoneW - pad*2, scrH = phoneH - pad*2;
+  const scrR = 80;
+
+  ctx.save();
+  roundRect(ctx, scrX, scrY, scrW, scrH, scrR);
+  ctx.clip();
+  ctx.fillStyle = '#111';
+  ctx.fill();
+
+  // Скриншот
+  if (imageStore[b.id]) {
+    const img = await loadImage(imageStore[b.id]);
+    // Объект-fit: cover
+    const { sx, sy, sw, sh } = coverFit(img.width, img.height, scrW, scrH);
+    ctx.drawImage(img, sx, sy, sw, sh, scrX, scrY, scrW, scrH);
+  }
+
+  // Блик экрана
+  const glareGrad = ctx.createLinearGradient(scrX, scrY, scrX + scrW, scrY + scrH);
+  glareGrad.addColorStop(0, 'rgba(255,255,255,0.055)');
+  glareGrad.addColorStop(0.35, 'rgba(255,255,255,0)');
+  glareGrad.addColorStop(0.65, 'rgba(255,255,255,0)');
+  glareGrad.addColorStop(1, 'rgba(255,255,255,0.018)');
+  ctx.fillStyle = glareGrad;
+  ctx.fill();
+
+  ctx.restore(); // конец clip экрана
+
+  // Dynamic Island
+  ctx.save();
+  ctx.fillStyle = '#000';
+  roundRect(ctx, W/2 - 120, scrY + 28, 240, 68, 44);
+  ctx.fill();
+  // Камера
+  ctx.beginPath();
+  ctx.arc(W/2 + 62, scrY + 62, 13, 0, Math.PI * 2);
+  const camGrad = ctx.createRadialGradient(W/2 + 57, scrY + 56, 1, W/2 + 62, scrY + 62, 13);
+  camGrad.addColorStop(0, '#1a1a3a');
+  camGrad.addColorStop(1, '#0a0a15');
+  ctx.fillStyle = camGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Home bar
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  roundRect(ctx, W/2 - 130, scrY + scrH - 40, 260, 10, 5);
+  ctx.fill();
+  ctx.restore();
+
+  // Рамка корпуса
+  ctx.save();
+  roundRect(ctx, phoneX, phoneY, phoneW, phoneH, r);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  // Свечение телефона снизу
+  ctx.save();
+  const haloGrad = ctx.createRadialGradient(W/2, phoneY + phoneH - 200, 10, W/2, phoneY + phoneH - 200, 700);
+  haloGrad.addColorStop(0, b.phoneGlow.replace('0.12', '0.18').replace('0.15', '0.18'));
+  haloGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = haloGrad;
+  ctx.globalAlpha = 0.8;
+  ctx.fillRect(0, phoneY + phoneH/2, W, H - (phoneY + phoneH/2) + 200);
+  ctx.restore();
+}
+
+// ——— Утилиты ———
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function coverFit(imgW, imgH, boxW, boxH) {
+  const scale = Math.max(boxW / imgW, boxH / imgH);
+  const sw = imgW, sh = imgH;
+  const dw = boxW / scale, dh = boxH / scale;
+  const sx = (sw - dw) / 2, sy = (sh - dh) / 2;
+  return { sx, sy, sw: dw, sh: dh };
+}
+
+const imgCache = {};
+function loadImage(src) {
+  if (imgCache[src]) return Promise.resolve(imgCache[src]);
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { imgCache[src] = img; res(img); };
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+</script>
+
+<style>
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Линия под line2 через CSS для превью */
+.b-line2::after {
+  content: ''; display: block; width: 50px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--lc, rgba(255,255,255,0.6)), transparent);
+  margin: 14px auto 0; border-radius: 2px;
+}
+</style>
+</body>
+</html>

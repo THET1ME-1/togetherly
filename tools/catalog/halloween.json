@@ -1,0 +1,10 @@
+{
+  "id": "halloween",
+  "kind": "mascot",
+  "nameRu": "Хэллоуин",
+  "nameEn": "Halloween",
+  "sort": 20,
+  "minApp": null,
+  "removeBg": true,
+  "image": "halloween.png"
+}

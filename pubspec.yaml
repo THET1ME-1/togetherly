@@ -1,0 +1,113 @@
+name: love_app
+description: "Togetherly — a private space for couples with shared memories, mood tracking, timers, drawings, and widgets."
+publish_to: "none"
+
+version: 1.16.3+108
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  characters: ^1.4.0 # графемы для безопасной работы с эмодзи (utils/safe_text)
+  google_fonts: ^6.2.1
+  shared_preferences: ^2.3.4
+  crypto: ^3.0.7 # SHA-256 для PIN секретных воспоминаний (secret_pin_service)
+  google_sign_in: ^6.2.2
+  sentry_flutter: ^9.0.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.1.4
+  share_plus: ^10.1.3
+  app_links: ^6.3.3
+  image_picker: ^1.1.2
+  image_picker_android: ^0.8.12
+  image_picker_platform_interface: ^2.10.0
+  image_cropper: ^12.2.1
+  flutter_local_notifications: ^21.0.0
+  file_picker: ^8.0.7
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+  path_provider: ^2.1.5
+  just_audio: ^0.9.42
+  url_launcher: ^6.3.1
+  http: ^1.2.0
+  intl: ^0.19.0
+  flutter_svg: ^2.0.9
+  home_widget: ^0.9.0
+  cached_network_image: ^3.4.1
+  # Транзитивно тянется cached_network_image; объявляем явно — нужен прямой доступ
+  # к CacheManager для долгоживущего (невытесняемого) кэша офлайн-просмотра медиа.
+  flutter_cache_manager: ^3.3.0
+  fl_chart: ^1.2.0
+  archive: ^4.0.9
+  flutter_image_compress: ^2.3.0
+  video_compress: ^3.1.2
+  flutter_animate: ^4.5.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  exif: ^3.3.0
+  youtube_player_flutter: ^9.1.1
+  # Транзитивно тянется youtube_player_flutter; объявляем явно, т.к. напрямую
+  # зовём InAppWebViewController.getCurrentWebViewPackage() (версия WebView в
+  # телеметрию отказов co-watch плеера).
+  flutter_inappwebview: ^6.1.5
+  timezone: ^0.11.0
+  package_info_plus: ^8.0.0
+  device_info_plus: ^11.1.0
+  gal: ^2.3.0
+  video_player: ^2.9.2
+  in_app_update: ^4.2.3
+  google_mobile_ads: ^5.2.0
+  yandex_mobileads: ^7.6.0
+  # app_tracking_transparency убран: приложение не отслеживает пользователей,
+  # реклама неперсональная (App Privacy → Tracking = None). См. main.dart.
+  in_app_purchase: ^3.2.0
+  connectivity_plus: ^7.1.1
+  flutter_rustore_billing: ^9.0.0
+  pocketbase: ^0.24.0
+  # Realtime через Centrifugo (замена встроенного SSE PB): один WS на приложение,
+  # приватные каналы pair/user/loc с JWT от PB. См. services/centrifugo_service.dart.
+  centrifuge: ^0.20.0
+  flutter_foreground_task: ^9.2.2
+  # Живучий фолбэк обновления виджетов: периодическая фоновая задача (мин. 15 мин),
+  # переживает убийство процесса и Doze на агрессивных OEM (Xiaomi/Samsung), где
+  # foreground-сервис с realtime-сокетом усыпляют. См.
+  # services/widget_background_refresh_service.dart.
+  workmanager: ^0.9.0+3
+  # Офлайн-кэш (offline-first): чистый Dart NoSQL-стор документов — кладём
+  # JSON-записи PB как есть, без нативного кода (сборки iOS/RuStore не трогаем).
+  sembast: ^3.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo/logo.jpg"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/new emodji/
+    - assets/images/mood_packs/pink/
+    - assets/images/widget/
+    - assets/images/mascots/
+    - assets/images/gif/
+    - assets/images/icons/
+    - assets/images/logo/
+    - assets/icons/
+    - assets/mascots/
+    # Статические инстансы Rubik (веса 300–900 + Italic) — google_fonts берёт их
+    # из ассетов вместо загрузки с fonts.gstatic.com (офлайн, мгновенно, без
+    # сетевых ошибок). Имена файлов соответствуют конвенции пакета (Rubik-<Вес>).
+    - google_fonts/

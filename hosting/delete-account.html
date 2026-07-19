@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Togetherly – Delete Account</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff7e8b 0%, #ff4f6b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #1a1a1a;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #ff7e8b, #ff4f6b);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .logo-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ff4f6b;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 28px 0 12px;
+      color: #333;
+    }
+
+    ol, ul {
+      padding-left: 20px;
+      color: #444;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .warn-box {
+      background: #fff4f5;
+      border: 1px solid #ffd6db;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #c0392b;
+      line-height: 1.6;
+    }
+
+    .warn-box strong { display: block; margin-bottom: 4px; font-size: 15px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    th {
+      background: #f8f8f8;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 1px solid #eee;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #444;
+      vertical-align: top;
+    }
+
+    .badge-del  { color: #c0392b; font-weight: 600; }
+    .badge-keep { color: #888;    font-weight: 600; }
+
+    .btn {
+      display: inline-block;
+      margin-top: 32px;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #ff7e8b, #ff4f6b);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(255,79,107,0.35);
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .88; }
+
+    .contact {
+      margin-top: 28px;
+      font-size: 14px;
+      color: #888;
+    }
+    .contact a { color: #ff4f6b; text-decoration: none; }
+    .contact a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 20px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo">
+    <div class="logo-icon">💑</div>
+    <span class="logo-name">Togetherly</span>
+  </div>
+
+  <h1>Delete Account &amp; Data</h1>
+  <p class="subtitle">
+    You can permanently delete your Togetherly account and all associated data
+    at any time — directly in the app or by contacting us.
+  </p>
+
+  <!-- ── How to delete inside the app ── -->
+  <h2>Option 1 — Delete from the app (recommended)</h2>
+  <ol>
+    <li>Open <strong>Togetherly</strong> and sign in.</li>
+    <li>Tap your <strong>profile avatar</strong> in the top‑right corner.</li>
+    <li>Scroll down and tap <strong>"Delete Account"</strong>.</li>
+    <li>Confirm the action in the dialog that appears.</li>
+    <li>Your account and data will be permanently deleted within <strong>30 days</strong>.</li>
+  </ol>
+
+  <!-- ── How to delete via email ── -->
+  <h2>Option 2 — Request by e‑mail</h2>
+  <ol>
+    <li>Send an e‑mail to <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a>
+        with subject line: <em>"Account Deletion Request"</em>.</li>
+    <li>Include the e‑mail address or Google account you used to sign in.</li>
+    <li>We will process your request within <strong>7 business days</strong> and send
+        a confirmation once the deletion is complete.</li>
+  </ol>
+
+  <!-- ── Warning ── -->
+  <div class="warn-box">
+    <strong>⚠️ This action is irreversible.</strong>
+    Once deleted, your account cannot be restored. All shared memories,
+    timers, drawings, and messages will be permanently removed.
+  </div>
+
+  <!-- ── What is deleted / retained ── -->
+  <h2>Data deleted vs. retained</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Data type</th>
+        <th>What happens</th>
+        <th>Retention</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Profile (name, email, avatar, gender)</td>
+        <td class="badge-del">Deleted</td>
+        <td>Within 30 days</td>
+      </tr>
+      <tr>
+        <td>Shared memories (photos, videos, audio, location, drawings)</td>
+        <td class="badge-del">Deleted</td>
+        <td>Within 30 days</td>
+      </tr>
+      <tr>
+        <td>Relationship timers &amp; mood entries</td>
+        <td class="badge-del">Deleted</td>
+        <td>Within 30 days</td>
+      </tr>
+      <tr>
+        <td>FCM push notification token</td>
+        <td class="badge-del">Deleted</td>
+        <td>Immediately</td>
+      </tr>
+      <tr>
+        <td>Files in Firebase Storage (photos, audio)</td>
+        <td class="badge-del">Deleted</td>
+        <td>Within 30 days</td>
+      </tr>
+      <tr>
+        <td>Aggregated / anonymised analytics</td>
+        <td class="badge-keep">Retained</td>
+        <td>Indefinitely (no personal identifiers)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <a class="btn" href="mailto:stgroup.dev@gmail.com?subject=Account%20Deletion%20Request">
+    ✉️ &nbsp;Request Account Deletion
+  </a>
+
+  <!-- ── Partial data deletion ── -->
+  <div style="margin-top:40px;padding-top:32px;border-top:1px solid #f0f0f0;">
+    <h1 style="font-size:22px;">Delete Specific Data (without deleting account)</h1>
+    <p class="subtitle" style="margin-top:10px;">
+      You can delete individual data entries directly in the app at any time,
+      without deleting your account.
+    </p>
+
+    <h2>What you can delete inside the app</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data type</th>
+          <th>How to delete</th>
+          <th>Deleted</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Memories (photos, videos, audio, location, drawings)</td>
+          <td>Memory feed → swipe or tap menu → <strong>Delete</strong></td>
+          <td>Immediately</td>
+        </tr>
+        <tr>
+          <td>Comments on memories</td>
+          <td>Long‑press a comment → <strong>Delete</strong></td>
+          <td>Immediately</td>
+        </tr>
+        <tr>
+          <td>Mood entries</td>
+          <td>Mood Calendar screen → tap entry → <strong>Delete</strong></td>
+          <td>Immediately</td>
+        </tr>
+        <tr>
+          <td>Relationship timers</td>
+          <td>Timer card → settings → <strong>Delete Timer</strong></td>
+          <td>Immediately</td>
+        </tr>
+        <tr>
+          <td>Drawings (canvas)</td>
+          <td>Drawing Gallery → long‑press canvas → <strong>Delete</strong></td>
+          <td>Immediately</td>
+        </tr>
+        <tr>
+          <td>Relationship status</td>
+          <td>Profile → Relationship Status → <strong>Delete</strong></td>
+          <td>Immediately</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:28px;">Request partial deletion by e‑mail</h2>
+    <p style="font-size:15px;color:#444;line-height:1.7;">
+      If you'd like us to delete a specific category of your data
+      (e.g. all mood entries or all uploaded photos) without deleting your account,
+      send a request to
+      <a href="mailto:stgroup.dev@gmail.com?subject=Data%20Deletion%20Request" style="color:#ff4f6b;">stgroup.dev@gmail.com</a>
+      with subject line <em>"Data Deletion Request"</em>. We will process it within
+      <strong>7 business days</strong>.
+    </p>
+
+    <a class="btn" style="margin-top:20px;"
+       href="mailto:stgroup.dev@gmail.com?subject=Data%20Deletion%20Request">
+      ✉️ &nbsp;Request Data Deletion
+    </a>
+  </div>
+
+  <p class="contact" style="margin-top:28px;">
+    Questions? Contact us at
+    <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a>
+  </p>
+
+</div>
+</body>
+</html>

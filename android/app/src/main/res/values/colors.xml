@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Цвет акцента для FCM-уведомлений -->
+    <color name="notification_color">#EC4899</color>
+</resources>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/streak_widget_bg"
+    android:clipToOutline="true">
+
+    <!-- Декоративный большой огонёк-водяной знак справа -->
+    <ImageView
+        android:id="@+id/streak_bg_flame"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="-18dp"
+        android:alpha="0.16"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:id="@+id/streak_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:baselineAligned="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <!-- Огонёк (рисуется в Kotlin: тёплый или потухший) -->
+        <ImageView
+            android:id="@+id/streak_flame"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginEnd="12dp"
+            android:scaleType="fitCenter" />
+
+        <!-- Тексты -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/streak_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="СЕРИЯ ВМЕСТЕ"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#E6FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:letterSpacing="0.10" />
+
+            <!-- Большое число — авто-подгон, чтобы не вылезало -->
+            <TextView
+                android:id="@+id/streak_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="0"
+                android:maxLines="1"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="20sp"
+                android:autoSizeMaxTextSize="46sp"
+                android:autoSizeStepGranularity="1sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFFFF"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.02" />
+
+            <TextView
+                android:id="@+id/streak_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="дней подряд"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#F2FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/streak_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text=""
+                android:textSize="10sp"
+                android:textColor="#B3FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:letterSpacing="0.01" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

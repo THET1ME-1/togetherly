@@ -1,0 +1,1451 @@
+{
+  "collections": [
+    {
+      "name": "groups",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "members",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "member_names",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "member_avatars",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "max_members",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "relationship_type",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "custom_relationship_label",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "custom_relationship_emoji",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "custom_relationship_types",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "anniversary_date",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "first_kiss_date",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "member_birthdays",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "member_moods",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "member_ailments",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "current_status",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "custom_statuses",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "memories_count",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "drawings_count",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "active_session",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "created_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "disbanded",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "disbanded_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "timers",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "mascots",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "xp",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "active_mascot_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mascot_position_x",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "mascot_position_y",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "mascot_scale",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "streak_days",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "streak_last_opened_date",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "streak_pending_date",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "streak_pending_uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mascot_streaks",
+          "type": "json",
+          "required": false,
+          "maxSize": 2000000
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_groups_updated` ON `groups` (`updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && members ?~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && members ?~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && members ?~ @request.auth.id"
+    },
+    {
+      "name": "memories",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "author_uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "author_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "author_avatar",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "created_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "edited_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "is_pinned",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_memories_group_id_created_at` ON `memories` (`group_id`, `created_at`)",
+        "CREATE INDEX `idx_memories_group_id_updated` ON `memories` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && author_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "mood_entries",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "mood_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "timestamp",
+          "type": "date",
+          "required": true
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_mood_entries_group_id_user_uid_timestamp` ON `mood_entries` (`group_id`, `user_uid`, `timestamp`)",
+        "CREATE INDEX `idx_mood_entries_group_id_user_uid_updated` ON `mood_entries` (`group_id`, `user_uid`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "chat_messages",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "user_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "ts",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "edited_ts",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "reactions",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "pin_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "pin_title",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "pin_thumb",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "face",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "color",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "face_x",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "face_y",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "reply_to_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "reply_to_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "reply_to_text",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_chat_messages_group_id_ts` ON `chat_messages` (`group_id`, `ts`)",
+        "CREATE INDEX `idx_chat_messages_group_id_updated` ON `chat_messages` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "canvas_strokes",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "canvas_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "order_index",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_canvas_strokes_group_id_canvas_id_order_index` ON `canvas_strokes` (`group_id`, `canvas_id`, `order_index`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "memory_comments",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "memory_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "author_uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "author_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "author_avatar",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "created_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_memory_comments_group_id_memory_id_created_at` ON `memory_comments` (`group_id`, `memory_id`, `created_at`)",
+        "CREATE INDEX `idx_memory_comments_memory_id_updated` ON `memory_comments` (`memory_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && author_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "catalog_items",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "name_ru",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "name_en",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "is_free",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "min_app",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "sort",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_catalog_items_kind` ON `catalog_items` (`kind`)"
+      ],
+      "listRule": "",
+      "viewRule": "",
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null
+    },
+    {
+      "name": "iap_purchases",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 255,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "product_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && user_uid = @request.auth.id"
+    },
+    {
+      "name": "migration_flags",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "data_version",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "media_version",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "app_config",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "min_build",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [],
+      "listRule": "",
+      "viewRule": "",
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null
+    },
+    {
+      "name": "live_sessions",
+      "type": "base",
+      "fields": [
+        {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "min": 1,
+          "max": 50,
+          "autogeneratePattern": "[a-z0-9]{15}"
+        },
+        {
+          "name": "activity",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "media_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "is_playing",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "position_ms",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "last_action_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "controller_uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "seq",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "widget_data",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "avatar_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mood_emoji",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mood_label",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "music_title",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "music_artist",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "music_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "music_cover_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "photo_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "photo_for_partner_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "photo_for_partner_urls",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "photo_grid_count",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "photo_grid_urls",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_widget_data_group_id_user_uid` ON `widget_data` (`group_id`, `user_uid`)",
+        "CREATE INDEX `idx_widget_data_group_id_updated` ON `widget_data` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "miss_you",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "last_vibe",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "last_vibe_text",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_miss_you_group_id_user_uid` ON `miss_you` (`group_id`, `user_uid`)",
+        "CREATE INDEX `idx_miss_you_group_id` ON `miss_you` (`group_id`)",
+        "CREATE INDEX `idx_miss_you_group_id_updated` ON `miss_you` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "canvas_meta",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "canvas_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "bg_color",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "clear_version",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "canvas_rotation",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_canvas_meta_group_id_canvas_id` ON `canvas_meta` (`group_id`, `canvas_id`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "canvas_catalogue",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "canvas_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "created_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_canvas_catalogue_group_id_canvas_id` ON `canvas_catalogue` (`group_id`, `canvas_id`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "mascots",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "mascot_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "default_asset",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "created_at",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "is_default",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "record_streak",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_mascots_group_id_mascot_id` ON `mascots` (`group_id`, `mascot_id`)",
+        "CREATE INDEX `idx_mascots_group_id` ON `mascots` (`group_id`)",
+        "CREATE INDEX `idx_mascots_group_id_updated` ON `mascots` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "chat_reads",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "last_read_ts",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_chat_reads_group_id_user_uid` ON `chat_reads` (`group_id`, `user_uid`)",
+        "CREATE INDEX `idx_chat_reads_group_id_updated` ON `chat_reads` (`group_id`, `updated`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "canvas_live",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "canvas_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_canvas_live_group_id_canvas_id_user_uid` ON `canvas_live` (`group_id`, `canvas_id`, `user_uid`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "chat_typing",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "typing_at",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_chat_typing_group_id_user_uid` ON `chat_typing` (`group_id`, `user_uid`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "live_location",
+      "type": "base",
+      "fields": [
+        {
+          "name": "channel",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_live_location_channel_user_uid` ON `live_location` (`channel`, `user_uid`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && channel ~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && channel ~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && channel ~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && channel ~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && channel ~ @request.auth.id"
+    },
+    {
+      "name": "live_session_presence",
+      "type": "base",
+      "fields": [
+        {
+          "name": "pair_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "seen_at",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_live_session_presence_pair_id_user_uid` ON `live_session_presence` (`pair_id`, `user_uid`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "user_presence",
+      "type": "base",
+      "fields": [
+        {
+          "name": "user_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "seen_at",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_user_presence_user_uid` ON `user_presence` (`user_uid`)"
+      ],
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && user_uid = @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && user_uid = @request.auth.id"
+    },
+    {
+      "name": "live_session_chat",
+      "type": "base",
+      "fields": [
+        {
+          "name": "pair_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "ts",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "reactions",
+          "type": "json",
+          "required": false,
+          "maxSize": 5000000
+        },
+        {
+          "name": "reply_to_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "reply_to_name",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "reply_to_text",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_live_session_chat_pair_id_ts` ON `live_session_chat` (`pair_id`, `ts`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id && uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.groups.id ?= pair_id && @collection.groups.members ?~ @request.auth.id"
+    },
+    {
+      "name": "media",
+      "type": "base",
+      "fields": [
+        {
+          "name": "file",
+          "type": "file",
+          "required": false,
+          "maxSelect": 1,
+          "maxSize": 52428800,
+          "mimeTypes": [],
+          "protected": true
+        },
+        {
+          "name": "uid",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "src",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_media_group_id` ON `media` (`group_id`)",
+        "CREATE INDEX `idx_media_src` ON `media` (`src`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && (uid = @request.auth.id || kind = \"avatars\" || kind = \"avatar\" || (@collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id))",
+      "viewRule": "@request.auth.id != \"\" && (uid = @request.auth.id || kind = \"avatars\" || kind = \"avatar\" || (@collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id))",
+      "createRule": "@request.auth.id != \"\" && (uid = @request.auth.id || (@collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id))",
+      "updateRule": "@request.auth.id != \"\" && (uid = @request.auth.id || (@collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id))",
+      "deleteRule": "@request.auth.id != \"\" && (uid = @request.auth.id || (@collection.groups.id ?= group_id && @collection.groups.members ?~ @request.auth.id))"
+    },
+    {
+      "name": "invite_codes",
+      "type": "base",
+      "fields": [
+        {
+          "name": "code",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "owner_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_invite_codes_code` ON `invite_codes` (`code`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id"
+    }
+  ],
+  "deleteMissing": false
+}

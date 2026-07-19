@@ -1,0 +1,11 @@
+{
+  "id": "lulu",
+  "kind": "mascot",
+  "nameRu": "Лулу",
+  "nameEn": "Lulu",
+  "sort": 11,
+  "minApp": "1.14.0",
+  "removeBg": true,
+  "image": "../mascot_src/lulu.jpg",
+  "unlock": { "type": "level", "level": 6 }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "autumn",
+  "kind": "mood_pack",
+  "nameRu": "Осень",
+  "nameEn": "Autumn",
+  "isFree": true,
+  "sort": 10,
+  "minApp": null,
+  "removeBg": false,
+  "tileGradient": ["#FFF3E0", "#FFE0B2"],
+  "moods": [
+    { "id": "happy", "image": "happy.png" },
+    { "id": "sad",   "image": "sad.png" },
+    { "id": "cozy",  "image": "cozy.png", "labelRu": "Уют", "labelEn": "Cozy", "color": "#E8A23D", "score": 4 }
+  ]
+}

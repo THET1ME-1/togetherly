@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#fff8f8" />
+  <title>Togetherly · Аналитика</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       MATERIAL 3 (Material You) — плоская тема без теней/свечения.
+       «Elevation» передаётся ТОЛЬКО тональными surface-container ролями (канон M3),
+       глубина — цветом, не box-shadow. Seed: любовный rose. Светлая + тёмная схемы.
+       ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Форма (corner radius) */
+      --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 20px; --r-xl: 28px; --r-full: 999px;
+      /* Motion */
+      --ease: cubic-bezier(.2,0,0,1);          /* M3 emphasized */
+      --ease-out: cubic-bezier(.05,.7,.1,1);
+      --dur-1: .12s; --dur-2: .22s; --dur-3: .38s; --dur-4: .55s;
+      /* Категориальная палитра графиков */
+      --c1: #c2185b; --c2: #7e57c2; --c3: #f4511e; --c4: #f9a825; --c5: #00897b; --c6: #1e88e5;
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --primary:#b3204e; --on-primary:#fff; --primary-container:#ffd9e1; --on-primary-container:#3f0019;
+      --secondary:#75565c; --on-secondary:#fff; --secondary-container:#ffd9e1; --on-secondary-container:#2b151a;
+      --tertiary:#7c5635; --on-tertiary:#fff; --tertiary-container:#ffdcbe; --on-tertiary-container:#2e1500;
+      --error:#ba1a1a; --on-error:#fff; --error-container:#ffdad6; --on-error-container:#410002;
+      --surface:#fff8f8; --on-surface:#22191b; --on-surface-variant:#524347;
+      --s-lowest:#ffffff; --s-low:#fff0f2; --s-cont:#fceaec; --s-high:#f6e4e7; --s-highest:#f0dee1;
+      --s-dim:#e7d6d9;
+      --outline:#847377; --outline-variant:#e0ccd0;
+      --inverse-surface:#382e30; --inverse-on-surface:#ffecee; --inverse-primary:#ffb1c4;
+      --scrim: rgba(20,10,13,.55);
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --primary:#ffb1c4; --on-primary:#650029; --primary-container:#900043; --on-primary-container:#ffd9e1;
+      --secondary:#e3bdc4; --on-secondary:#42292f; --secondary-container:#5b3f45; --on-secondary-container:#ffd9e1;
+      --tertiary:#efbd94; --on-tertiary:#48290b; --tertiary-container:#613f20; --on-tertiary-container:#ffdcbe;
+      --error:#ffb4ab; --on-error:#690005; --error-container:#93000a; --on-error-container:#ffdad6;
+      --surface:#191113; --on-surface:#f0dee1; --on-surface-variant:#d6c2c6;
+      --s-lowest:#140c0e; --s-low:#22191b; --s-cont:#261d1f; --s-high:#302829; --s-highest:#3b3234;
+      --s-dim:#191113;
+      --outline:#9e8c90; --outline-variant:#524347;
+      --inverse-surface:#f0dee1; --inverse-on-surface:#382e30; --inverse-primary:#b3204e;
+      --scrim: rgba(0,0,0,.6);
+      --c1:#ffb1c4; --c2:#cbb2ff; --c3:#ffb59d; --c4:#ffd08a; --c5:#7adbcb; --c6:#a9c7ff;
+    }
+
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body{ height:100%; margin:0; }
+    body{
+      background:var(--surface); color:var(--on-surface);
+      font-family:"Roboto","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      -webkit-font-smoothing:antialiased; overflow-x:hidden;
+      transition:background var(--dur-3) var(--ease), color var(--dur-3) var(--ease);
+    }
+    ::selection{ background:var(--primary-container); color:var(--on-primary-container); }
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-thumb{ background:var(--outline-variant); border-radius:99px; border:2px solid var(--surface); }
+    /* Type scale (M3) */
+    .display{ font-size:clamp(30px,5vw,44px); font-weight:800; letter-spacing:-.02em; line-height:1.05; }
+    .headline{ font-size:22px; font-weight:700; letter-spacing:-.01em; }
+    .title{ font-size:16px; font-weight:600; }
+    .label{ font-size:12px; font-weight:600; letter-spacing:.045em; text-transform:uppercase; color:var(--on-surface-variant); }
+    .body{ font-size:14px; color:var(--on-surface-variant); }
+    .mono{ font-variant-numeric:tabular-nums; }
+
+    /* ── State layer + ripple (общий M3-механизм для всех интерактивных) ── */
+    .state{ position:relative; overflow:hidden; isolation:isolate; }
+    .state::before{ content:""; position:absolute; inset:0; background:currentColor; opacity:0;
+      transition:opacity var(--dur-1) var(--ease); pointer-events:none; z-index:0; }
+    .state:hover::before{ opacity:.08; }
+    .state:focus-visible::before{ opacity:.10; }
+    .state:active::before{ opacity:.12; }
+    .ripple{ position:absolute; border-radius:50%; transform:scale(0); background:currentColor;
+      opacity:.20; pointer-events:none; z-index:0; animation:ripple .5s var(--ease-out) forwards; }
+    @keyframes ripple{ to{ transform:scale(2.6); opacity:0; } }
+
+    /* ── Buttons ── */
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; height:40px; padding:0 22px;
+      border:none; border-radius:var(--r-full); font:inherit; font-size:14px; font-weight:600; cursor:pointer;
+      color:var(--on-surface); background:transparent; transition:.15s var(--ease); user-select:none; }
+    .btn svg{ width:18px; height:18px; fill:currentColor; z-index:1; }
+    .btn > span{ z-index:1; }
+    .btn.filled{ background:var(--primary); color:var(--on-primary); }
+    .btn.tonal{ background:var(--secondary-container); color:var(--on-secondary-container); }
+    .btn.outlined{ border:1px solid var(--outline-variant); }
+    .btn.text{ padding:0 14px; color:var(--primary); }
+    .btn:disabled{ opacity:.4; cursor:default; }
+    .icon-btn{ width:40px; height:40px; padding:0; border:none; border-radius:var(--r-full); cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center; background:transparent; color:var(--on-surface-variant); transition:.15s; }
+    .icon-btn svg{ width:22px; height:22px; fill:currentColor; z-index:1; }
+    .icon-btn.filled-tonal{ background:var(--secondary-container); color:var(--on-secondary-container); }
+    /* Extended FAB */
+    .fab{ position:fixed; z-index:40; right:24px; bottom:24px; height:56px; padding:0 20px; gap:10px;
+      display:inline-flex; align-items:center; border:none; border-radius:var(--r-md); cursor:pointer;
+      background:var(--primary-container); color:var(--on-primary-container); font:inherit; font-weight:600; font-size:15px;
+      transition:transform var(--dur-2) var(--ease), background .15s; }
+    .fab svg{ width:22px; height:22px; fill:currentColor; z-index:1; }
+    .fab span{ z-index:1; }
+    .fab:hover{ transform:scale(1.03); }
+    @media(max-width:719px){ .fab{ bottom:96px; } }
+
+    /* ── Chips ── */
+    .chipset{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chipset.scroll{ flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .chipset.scroll::-webkit-scrollbar{ display:none; }
+    .chip{ display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px; white-space:nowrap;
+      border:1px solid var(--outline-variant); border-radius:var(--r-xs); background:transparent; color:var(--on-surface-variant);
+      font:inherit; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s var(--ease); }
+    .chip svg{ width:18px; height:18px; fill:currentColor; z-index:1; }
+    .chip.selected{ background:var(--secondary-container); color:var(--on-secondary-container); border-color:transparent; }
+    .chip.assist{ cursor:default; }
+    .chip.assist .cv{ font-weight:800; color:var(--on-surface); }
+
+    /* ── Segmented button ── */
+    .segmented{ display:inline-flex; border:1px solid var(--outline); border-radius:var(--r-full); overflow:hidden; height:38px; }
+    .segmented .seg{ display:inline-flex; align-items:center; gap:6px; padding:0 16px; border:none; background:transparent;
+      color:var(--on-surface); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:.15s; }
+    .segmented .seg + .seg{ border-left:1px solid var(--outline); }
+    .segmented .seg.active{ background:var(--secondary-container); color:var(--on-secondary-container); }
+    .segmented .seg svg{ width:16px; height:16px; fill:currentColor; }
+
+    /* ── Text field (outlined, floating label) ── */
+    .field{ position:relative; display:flex; }
+    .field input{ width:100%; height:52px; padding:0 16px; border:1px solid var(--outline); border-radius:var(--r-xs);
+      background:transparent; color:var(--on-surface); font:inherit; font-size:15px; outline:none; transition:border-color .15s, border-width .05s; }
+    .field input:focus{ border:2px solid var(--primary); padding:0 15px; }
+    .field label{ position:absolute; left:12px; top:16px; padding:0 5px; color:var(--on-surface-variant);
+      background:var(--field-bg,var(--surface)); pointer-events:none; transition:.15s var(--ease); font-size:15px; }
+    .field input:focus + label, .field input:not(:placeholder-shown) + label{
+      top:-8px; font-size:12px; color:var(--primary); }
+    .field input::placeholder{ color:transparent; }
+
+    /* ── M3 Switch ── */
+    .switch{ width:52px; height:32px; border-radius:var(--r-full); border:2px solid var(--outline);
+      background:var(--s-highest); position:relative; cursor:pointer; padding:0; transition:.2s var(--ease); flex:0 0 auto; }
+    .switch .thumb{ position:absolute; top:50%; left:6px; width:16px; height:16px; border-radius:50%;
+      background:var(--outline); transform:translateY(-50%); display:flex; align-items:center; justify-content:center;
+      transition:.25s var(--ease); }
+    .switch .thumb svg{ width:14px; height:14px; fill:var(--surface); opacity:0; transition:.2s; }
+    .switch[aria-checked="true"]{ background:var(--primary); border-color:var(--primary); }
+    .switch[aria-checked="true"] .thumb{ left:26px; width:22px; height:22px; background:var(--on-primary); }
+    .switch[aria-checked="true"] .thumb svg{ opacity:1; fill:var(--primary); }
+
+    /* ── Cards ── */
+    .card{ background:var(--s-cont); border-radius:var(--r-lg); padding:20px; transition:background var(--dur-3) var(--ease); }
+    .card.outlined{ background:var(--surface); border:1px solid var(--outline-variant); }
+    .card-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+    .card-head .title{ flex:1; }
+
+    /* ── Linear progress (indeterminate) ── */
+    .linear{ position:fixed; top:0; left:0; right:0; height:3px; z-index:60; background:var(--primary-container); overflow:hidden; display:none; }
+    .linear.on{ display:block; }
+    .linear .ind{ position:absolute; height:100%; background:var(--primary); width:40%; border-radius:99px; animation:indet 1.1s var(--ease) infinite; }
+    @keyframes indet{ 0%{ left:-40%; } 100%{ left:100%; } }
+    /* Circular progress */
+    .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--primary-container); border-top-color:var(--primary); animation:spin .8s linear infinite; }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    /* ═══════════ APP SHELL ═══════════ */
+    /* Top app bar */
+    .appbar{ position:sticky; top:0; z-index:30; height:64px; display:flex; align-items:center; gap:6px;
+      padding:0 12px 0 20px; background:var(--surface); transition:background var(--dur-3) var(--ease); }
+    .appbar.scrolled{ background:var(--s-cont); }
+    .brand{ display:flex; align-items:center; gap:10px; font-size:19px; font-weight:800; letter-spacing:-.01em; margin-right:6px; }
+    .brand .heart{ width:30px; height:30px; border-radius:var(--r-sm); background:var(--primary-container); color:var(--primary);
+      display:flex; align-items:center; justify-content:center; }
+    .brand .heart svg{ width:19px; height:19px; fill:currentColor; }
+    .brand b{ color:var(--primary); }
+    .grow{ flex:1; }
+    .live{ display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px 0 12px; border-radius:var(--r-full);
+      background:var(--s-high); font-size:13px; font-weight:700; color:var(--on-surface); }
+    .live .dot{ width:9px; height:9px; border-radius:50%; background:var(--c5); position:relative; }
+    .live .dot::after{ content:""; position:absolute; inset:-4px; border-radius:50%; border:2px solid var(--c5); opacity:.6; animation:ping 1.8s var(--ease-out) infinite; }
+    @keyframes ping{ 0%{ transform:scale(.6); opacity:.7; } 100%{ transform:scale(1.9); opacity:0; } }
+    .live b{ color:var(--c5); }
+
+    /* Navigation rail (desktop) */
+    .rail{ position:fixed; top:64px; left:0; bottom:0; width:88px; padding:14px 0; display:flex; flex-direction:column; align-items:center; gap:6px; z-index:25;
+      background:var(--surface); transition:background var(--dur-3) var(--ease); }
+    .rail .ritem{ width:100%; display:flex; flex-direction:column; align-items:center; gap:5px; padding:6px 0; border:none; background:transparent; color:var(--on-surface-variant); cursor:pointer; font:inherit; }
+    .rail .ricon{ width:56px; height:32px; border-radius:var(--r-full); display:flex; align-items:center; justify-content:center; transition:.2s var(--ease); position:relative; }
+    .rail .ricon svg{ width:24px; height:24px; fill:currentColor; z-index:1; }
+    .rail .rlabel{ font-size:12px; font-weight:600; }
+    .rail .ritem.active .ricon{ background:var(--secondary-container); color:var(--on-secondary-container); }
+    .rail .ritem.active{ color:var(--on-surface); }
+    .rail .badge{ position:absolute; top:-2px; right:8px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:var(--error); color:var(--on-error); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; z-index:2; }
+
+    /* Navigation bar (mobile bottom) */
+    .navbar{ display:none; }
+    @media(max-width:719px){
+      .rail{ display:none; }
+      .navbar{ display:flex; position:fixed; left:0; right:0; bottom:0; height:76px; z-index:35;
+        background:var(--s-cont); padding-bottom:env(safe-area-inset-bottom); }
+      .navbar .nitem{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:none; background:transparent; color:var(--on-surface-variant); font:inherit; cursor:pointer; padding-top:12px; }
+      .navbar .nicon{ width:64px; height:32px; border-radius:var(--r-full); display:flex; align-items:center; justify-content:center; transition:.2s var(--ease); }
+      .navbar .nicon svg{ width:24px; height:24px; fill:currentColor; z-index:1; }
+      .navbar .nlabel{ font-size:12px; font-weight:600; }
+      .navbar .nitem.active .nicon{ background:var(--secondary-container); color:var(--on-secondary-container); }
+      .navbar .nitem.active{ color:var(--on-surface); }
+    }
+
+    /* Main content region — контент центрируется в области справа от rail
+       (симметричные боковые отступы max(): при широком экране колонка 1200px по центру). */
+    main{ margin-left:88px; padding:8px max(24px, calc((100vw - 88px - 1200px)/2)) 60px; transition:padding var(--dur-3) var(--ease); }
+    @media(max-width:719px){ main{ margin-left:0; padding:8px 14px 110px; } }
+    .view{ display:none; animation:viewIn var(--dur-3) var(--ease); }
+    .view.active{ display:block; }
+    @keyframes viewIn{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+    .section-title{ display:flex; align-items:center; gap:10px; margin:26px 4px 14px; }
+    .section-title h2{ margin:0; font-size:15px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--on-surface-variant); }
+    .section-title .line{ flex:1; height:1px; background:var(--outline-variant); }
+
+    /* KPI grid */
+    .kpis{ display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr)); gap:14px; }
+    @media(max-width:719px){ .kpis{ grid-template-columns:1fr 1fr; gap:10px; } }
+    .kpi{ background:var(--s-cont); border-radius:var(--r-lg); padding:18px; display:flex; flex-direction:column; gap:10px;
+      opacity:0; transform:translateY(12px); animation:kpiIn var(--dur-3) var(--ease) forwards; }
+    @keyframes kpiIn{ to{ opacity:1; transform:none; } }
+    .kpi .kicon{ width:42px; height:42px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center;
+      background:var(--primary-container); color:var(--on-primary-container); }
+    .kpi .kicon svg{ width:23px; height:23px; fill:currentColor; }
+    .kpi.accent .kicon{ background:var(--tertiary-container); color:var(--on-tertiary-container); }
+    .kpi.live-kpi .kicon{ background:color-mix(in srgb, var(--c5) 22%, transparent); color:var(--c5); }
+    .kpi .kval{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1; }
+    .kpi .klabel{ font-size:12.5px; font-weight:600; color:var(--on-surface-variant); }
+    .kpi .kdelta{ font-size:12px; font-weight:700; }
+    .kpi .kdelta.up{ color:var(--c5); } .kpi .kdelta.down{ color:var(--error); }
+
+    /* Chart card */
+    .chart-grid{ display:grid; grid-template-columns:1fr; gap:14px; }
+    .chart-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+    svg.chart{ display:block; width:100%; overflow:visible; }
+    .axis-lbl{ fill:var(--on-surface-variant); font-size:11px; }
+    .grid-ln{ stroke:var(--outline-variant); stroke-width:1; }
+    .chart-tip{ position:absolute; pointer-events:none; background:var(--inverse-surface); color:var(--inverse-on-surface);
+      padding:7px 11px; border-radius:var(--r-xs); font-size:12px; font-weight:600; transform:translate(-50%,-130%); white-space:nowrap; opacity:0; transition:opacity .12s; z-index:5; }
+
+    /* Horizontal bars list */
+    .hbars{ display:flex; flex-direction:column; gap:12px; }
+    .hbar .top{ display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:6px; }
+    .hbar .top .hv{ font-weight:800; font-variant-numeric:tabular-nums; }
+    .hbar .track{ height:10px; border-radius:99px; background:var(--s-highest); overflow:hidden; }
+    .hbar .fill{ height:100%; border-radius:99px; width:0; transition:width var(--dur-4) var(--ease); }
+
+    /* Donut */
+    .donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .donut-center .dc-v{ font-size:26px; font-weight:800; }
+    .donut-center .dc-l{ font-size:12px; color:var(--on-surface-variant); }
+    .legend{ display:flex; flex-direction:column; gap:8px; }
+    .legend .li{ display:flex; align-items:center; gap:9px; font-size:13.5px; }
+    .legend .sw{ width:12px; height:12px; border-radius:4px; flex:0 0 auto; }
+    .legend .lv{ margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; color:var(--on-surface-variant); }
+
+    /* Content grid (media) */
+    .toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:6px 4px 16px; }
+    .grid{ display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); }
+    @media(max-width:719px){ .grid{ grid-template-columns:1fr 1fr; gap:10px; } }
+    .cell{ position:relative; aspect-ratio:1; background:var(--s-high); border-radius:var(--r-md); overflow:hidden;
+      cursor:pointer; transition:transform var(--dur-2) var(--ease); }
+    .cell::after{ content:""; position:absolute; inset:0; background:var(--on-surface); opacity:0; transition:opacity var(--dur-1); }
+    .cell:hover{ transform:translateY(-2px); } .cell:hover::after{ opacity:.06; }
+    .cell img,.cell video{ width:100%; height:100%; object-fit:cover; display:block; }
+    .cell .play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+    .cell .play span{ width:44px; height:44px; border-radius:50%; background:var(--primary); color:var(--on-primary); display:flex; align-items:center; justify-content:center; }
+    .cell .play svg{ width:24px; height:24px; fill:currentColor; }
+    .cell .tag{ position:absolute; left:0; right:0; bottom:0; padding:14px 8px 7px; font-size:10.5px; line-height:1.3;
+      color:#fff; background:linear-gradient(transparent, rgba(0,0,0,.72)); z-index:1;
+      display:flex; align-items:center; gap:8px; }
+    .cell .tag .tmeta{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cell .tag a{ color:var(--inverse-primary); text-decoration:none; flex:0 0 auto; }
+    /* Кнопка «копировать groupId» поверх ячейки — не открывает фото (stopPropagation).
+       На тач-устройствах видна всегда, на десктопе — по наведению. */
+    .cell .copy-badge{ position:absolute; top:6px; left:6px; z-index:2; height:28px; padding:0 10px;
+      display:inline-flex; align-items:center; gap:5px; border:none; border-radius:var(--r-full);
+      background:rgba(0,0,0,.62); color:#fff; font:inherit; font-size:11px; font-weight:700; cursor:pointer;
+      opacity:0; transition:opacity .15s, background .15s; backdrop-filter:blur(4px); max-width:calc(100% - 12px); }
+    .cell .copy-badge svg{ width:14px; height:14px; fill:currentColor; flex:0 0 auto; }
+    .cell .copy-badge .cid{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cell:hover .copy-badge{ opacity:1; }
+    .cell .copy-badge:hover{ background:var(--primary); }
+    @media(hover:none){ .cell .copy-badge{ opacity:.92; } }
+    /* Копируемый groupId в профиле */
+    .psub.copy{ cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:2px 0; }
+    .psub.copy svg{ width:14px; height:14px; fill:currentColor; opacity:.7; flex:0 0 auto; }
+    .psub.copy:hover{ color:var(--primary); }
+    .grid.profiles{ grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
+    .pcard{ display:flex; gap:14px; padding:16px; background:var(--s-cont); border-radius:var(--r-lg); }
+    .pav{ width:56px; height:56px; border-radius:var(--r-full); flex:0 0 auto; object-fit:cover; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:var(--on-primary); background:var(--primary); }
+    .pinfo{ min-width:0; flex:1; }
+    .pname{ font-weight:700; word-break:break-word; }
+    .psub{ color:var(--on-surface-variant); font-size:12px; word-break:break-all; margin-top:2px; }
+    .pline{ margin-top:6px; font-size:13.5px; word-break:break-word; display:flex; gap:7px; }
+    .pline .pk{ flex:0 0 auto; }
+
+    .empty{ text-align:center; color:var(--on-surface-variant); padding:60px 20px; }
+    .empty svg{ width:56px; height:56px; fill:var(--outline-variant); margin-bottom:12px; }
+
+    /* Dialog / lightbox (full-screen scrim) */
+    .scrim{ position:fixed; inset:0; z-index:70; background:var(--scrim); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:24px; }
+    .scrim.open{ display:flex; animation:fade var(--dur-2) var(--ease); }
+    @keyframes fade{ from{ opacity:0; } to{ opacity:1; } }
+    .scrim img,.scrim video{ max-width:100%; max-height:92vh; object-fit:contain; border-radius:var(--r-md); animation:pop var(--dur-3) var(--ease); }
+    @keyframes pop{ from{ transform:scale(.94); opacity:0; } to{ transform:scale(1); opacity:1; } }
+    .lb-close{ position:absolute; top:16px; right:16px; }
+    .lb-close .icon-btn{ background:var(--surface); }
+
+    /* Gate */
+    .gate-scrim{ position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; padding:22px;
+      background:radial-gradient(900px 500px at 20% -10%, var(--primary-container), transparent 60%), var(--surface); }
+    .gate{ width:100%; max-width:380px; background:var(--s-cont); border-radius:var(--r-xl); padding:34px 28px; display:flex; flex-direction:column; gap:18px; text-align:center; --field-bg:var(--s-cont); }
+    .gate .glogo{ width:64px; height:64px; margin:0 auto; border-radius:var(--r-lg); background:var(--primary-container); color:var(--primary); display:flex; align-items:center; justify-content:center; }
+    .gate .glogo svg{ width:34px; height:34px; fill:currentColor; }
+    .gate h1{ margin:0; font-size:22px; font-weight:800; } .gate h1 b{ color:var(--primary); }
+    .gate .err{ color:var(--error); font-size:13px; min-height:16px; margin:0; }
+
+    /* Snackbar */
+    .snackbar{ position:fixed; left:50%; bottom:24px; transform:translate(-50%,140%); z-index:90;
+      display:flex; align-items:center; gap:14px; max-width:min(92vw,560px); padding:14px 16px; border-radius:var(--r-xs);
+      background:var(--inverse-surface); color:var(--inverse-on-surface); font-size:14px; transition:transform var(--dur-3) var(--ease); }
+    .snackbar.show{ transform:translate(-50%,0); }
+    @media(max-width:719px){ .snackbar{ bottom:92px; } }
+    .snackbar .sb-act{ color:var(--inverse-primary); background:transparent; border:none; font:inherit; font-weight:700; cursor:pointer; padding:6px 8px; border-radius:var(--r-xs); }
+
+    @media(prefers-reduced-motion:reduce){ *{ animation-duration:.001s !important; transition-duration:.001s !important; } }
+  </style>
+</head>
+<body>
+  <div class="linear" id="linear"><div class="ind"></div></div>
+
+  <!-- ══ GATE ══ -->
+  <div class="gate-scrim" id="gate">
+    <div class="gate">
+      <div class="glogo"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+      <h1><b>Togetherly</b> Аналитика</h1>
+      <div class="field"><input id="secret" type="password" placeholder=" " autocomplete="off" /><label for="secret">Секрет доступа</label></div>
+      <button id="enter" class="btn filled state" style="width:100%"><span>Войти</span></button>
+      <p class="err" id="gateErr"></p>
+    </div>
+  </div>
+
+  <!-- ══ APP ══ -->
+  <div id="app" hidden>
+    <div class="appbar" id="appbar">
+      <div class="brand"><span class="heart"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span><span>Together<b>ly</b></span></div>
+      <span class="grow"></span>
+      <div class="live" id="livePill" title="Онлайн по WebSocket"><span class="dot"></span><b id="liveN">—</b>&nbsp;онлайн</div>
+      <button class="switch state" id="themeSw" role="switch" aria-checked="false" title="Тема"><span class="thumb"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg></span></button>
+      <button class="icon-btn state" id="refresh" title="Обновить"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+      <button class="icon-btn state" id="logout" title="Выйти"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+    </div>
+
+    <nav class="rail" id="rail"></nav>
+    <nav class="navbar" id="navbar"></nav>
+
+    <main>
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <div class="section-title"><h2>Аудитория</h2><span class="line"></span></div>
+        <div class="kpis" id="kpis"></div>
+
+        <div class="section-title"><h2>Рост</h2><span class="line"></span></div>
+        <div class="card outlined">
+          <div class="card-head">
+            <span class="title">Регистрации, 30 дней</span>
+            <div class="segmented" id="trendSeg">
+              <button class="seg state active" data-mode="daily"><span>По дням</span></button>
+              <button class="seg state" data-mode="cum"><span>Накопительно</span></button>
+            </div>
+          </div>
+          <div style="position:relative"><div id="chartTrend"></div><div class="chart-tip" id="trendTip"></div></div>
+        </div>
+
+        <div class="section-title"><h2>Контент и вовлечённость</h2><span class="line"></span></div>
+        <div class="chipset" id="contentChips" style="margin:0 4px 16px"></div>
+        <div class="chart-row">
+          <div class="card outlined"><div class="card-head"><span class="title">Медиа по типам</span></div><div class="hbars" id="barsMedia"></div></div>
+          <div class="card outlined"><div class="card-head"><span class="title">Настроения профилей</span></div><div class="hbars" id="barsMood"></div></div>
+          <div class="card outlined"><div class="card-head"><span class="title">Пары и соло</span></div><div class="donut-wrap"><div id="donutPairs"></div><div class="legend" id="legendPairs"></div></div></div>
+        </div>
+      </section>
+
+      <!-- CONTENT -->
+      <section class="view" id="view-content">
+        <div class="section-title"><h2>Модерация контента</h2><span class="line"></span></div>
+        <div class="toolbar">
+          <div class="field" style="width:220px; --field-bg:var(--surface)"><input id="group" placeholder=" " /><label for="group">Фильтр по groupId</label></div>
+          <button class="btn tonal state" id="apply"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 10-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg><span>Найти</span></button>
+          <span class="grow"></span>
+          <span class="body mono" id="count"></span>
+        </div>
+        <div class="chipset scroll" id="areaChips" style="margin:0 4px 16px"></div>
+        <div class="grid" id="grid"></div>
+        <div style="text-align:center; padding:20px 0 40px">
+          <button class="btn tonal state" id="more" hidden><span>Загрузить ещё</span></button>
+          <div class="body" id="gridStatus" style="margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- PROFILES -->
+      <section class="view" id="view-profiles">
+        <div class="section-title"><h2>Профили пользователей</h2><span class="line"></span></div>
+        <div class="toolbar">
+          <div class="field" style="width:220px; --field-bg:var(--surface)"><input id="pgroup" placeholder=" " /><label for="pgroup">Фильтр по groupId</label></div>
+          <button class="btn tonal state" id="papply"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 10-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg><span>Найти</span></button>
+          <span class="grow"></span>
+          <span class="body mono" id="pcount"></span>
+        </div>
+        <div class="grid profiles" id="pgrid"></div>
+        <div style="text-align:center; padding:20px 0 40px">
+          <button class="btn tonal state" id="pmore" hidden><span>Загрузить ещё</span></button>
+          <div class="body" id="pStatus" style="margin-top:10px"></div>
+        </div>
+      </section>
+    </main>
+
+    <button class="fab state" id="fab"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span>Обновить</span></button>
+  </div>
+
+  <div class="scrim" id="lightbox"><div class="lb-close"><button class="icon-btn state" id="lbClose"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div></div>
+
+  <div class="snackbar" id="snackbar"><span class="sb-txt"></span><button class="sb-act" hidden></button></div>
+
+  <script>
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const PALETTE = ["--c1","--c2","--c3","--c4","--c5","--c6"];
+    const cvar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+    // ── icons (Material Symbols paths) ──
+    const ICON = {
+      overview:"M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
+      content:"M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4l2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z",
+      profiles:"M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
+      online:"M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
+      bolt:"M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z",
+      calendar:"M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zM7 11h5v5H7z",
+      people:"M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
+      pair:"M12 5.5A3.5 3.5 0 1015.5 9 3.5 3.5 0 0012 5.5m0 9c-2.5 0-7 1.25-7 3.75V20h14v-1.75c0-2.5-4.5-3.75-7-3.75z",
+      person:"M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+      newuser:"M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+      photo:"M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z",
+      video:"M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z",
+      chat:"M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z",
+      mood:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 6c.83 0 1.5.67 1.5 1.5S16.33 11 15.5 11 14 10.33 14 9.5 14.67 8 15.5 8zm-7 0C9.33 8 10 8.67 10 9.5S9.33 11 8.5 11 7 10.33 7 9.5 7.67 8 8.5 8zm3.5 9.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z",
+      heart:"M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
+      mascot:"M12 2a9 9 0 00-9 9v7a3 3 0 003 3h1v-8H5v-2a7 7 0 0114 0v2h-2v8h1a3 3 0 003-3v-7a9 9 0 00-9-9z",
+      comment:"M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z",
+      play:"M8 5v14l11-7z",
+      copy:"M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z",
+      check:"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+    };
+    const svg = (name) => '<svg viewBox="0 0 24 24"><path d="'+ICON[name]+'"/></svg>';
+    const fmt = (n) => n==null ? "—" : Number(n).toLocaleString("ru-RU");
+
+    // ── ripple on all .state ──
+    document.addEventListener("pointerdown", (e) => {
+      const t = e.target.closest(".state"); if (!t) return;
+      const r = t.getBoundingClientRect(); const d = Math.max(r.width, r.height);
+      const rp = document.createElement("span"); rp.className = "ripple";
+      rp.style.width = rp.style.height = d + "px";
+      rp.style.left = (e.clientX - r.left - d/2) + "px"; rp.style.top = (e.clientY - r.top - d/2) + "px";
+      t.appendChild(rp); setTimeout(() => rp.remove(), 520);
+    });
+
+    // ── snackbar ──
+    let snackT;
+    function snack(msg, actLabel, actFn) {
+      const sb = $("snackbar"); sb.querySelector(".sb-txt").textContent = msg;
+      const a = sb.querySelector(".sb-act");
+      if (actLabel) { a.hidden = false; a.textContent = actLabel; a.onclick = () => { hideSnack(); actFn && actFn(); }; }
+      else a.hidden = true;
+      sb.classList.add("show"); clearTimeout(snackT); snackT = setTimeout(hideSnack, 4200);
+    }
+    function hideSnack(){ $("snackbar").classList.remove("show"); }
+
+    // ── count-up ──
+    function countUp(el, to) {
+      to = Number(to) || 0; const dur = 700, t0 = performance.now();
+      const from = 0;
+      function step(t){ const p = Math.min(1,(t-t0)/dur); const e = 1-Math.pow(1-p,3);
+        el.textContent = fmt(Math.round(from + (to-from)*e)); if (p<1) requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+    }
+
+    // ── secret / api ──
+    const secret = () => sessionStorage.getItem("modSecret") || "";
+    const hdr = () => ({ "x-mod-secret": secret() });
+    function fileUrl(id, file, thumb){
+      let u = "/modapi/file?id="+encodeURIComponent(id)+"&file="+encodeURIComponent(file)+"&s="+encodeURIComponent(secret());
+      if (thumb) u += "&thumb="+thumb; return u;
+    }
+    function busy(on){ $("linear").classList.toggle("on", on); }
+    // Копирование в буфер (clipboard API + фолбэк execCommand для старых webview).
+    async function copyText(t, ok){
+      if (!t) return;
+      try { await navigator.clipboard.writeText(t); snack(ok || ("Скопировано: "+t)); }
+      catch(_){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); snack(ok || ("Скопировано: "+t)); } catch(e){ snack("Не удалось скопировать"); }
+        ta.remove(); }
+    }
+
+    // ── nav ──
+    const TABS = [["overview","Обзор"],["content","Контент"],["profiles","Профили"]];
+    let curTab = "overview";
+    function buildNav(){
+      $("rail").innerHTML = TABS.map(([k,l]) =>
+        '<button class="ritem state'+(k===curTab?" active":"")+'" data-tab="'+k+'"><span class="ricon">'+svg(k)+'</span><span class="rlabel">'+l+'</span></button>').join("");
+      $("navbar").innerHTML = TABS.map(([k,l]) =>
+        '<button class="nitem state'+(k===curTab?" active":"")+'" data-tab="'+k+'"><span class="nicon">'+svg(k)+'</span><span class="nlabel">'+l+'</span></button>').join("");
+      document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
+    }
+    function go(tab){
+      curTab = tab;
+      document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id==="view-"+tab));
+      document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab===tab));
+      $("fab").style.display = tab==="overview" ? "" : "none";
+      if (tab==="content" && !contentLoaded){ contentLoaded = true; fetchMedia(true); }
+      if (tab==="profiles" && !profilesLoaded){ profilesLoaded = true; fetchProfiles(true); }
+      if (tab==="overview" && lastStats) requestAnimationFrame(() => renderTrend());
+    }
+
+    // ── theme ──
+    function applyTheme(t){ document.documentElement.setAttribute("data-theme", t);
+      $("themeSw").setAttribute("aria-checked", t==="dark"); localStorage.setItem("modTheme", t);
+      document.querySelector('meta[name=theme-color]').setAttribute("content", cvar("--surface"));
+      if (lastStats && curTab==="overview") requestAnimationFrame(() => { renderTrend(); renderContentCharts(lastStats); }); }
+    $("themeSw").onclick = () => applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+
+    // ═══════════ STATS ═══════════
+    let lastStats = null, trendMode = "daily";
+    async function loadStats(){
+      busy(true);
+      try {
+        const res = await fetch("/modapi/stats", { headers: hdr() });
+        if (res.status===401) return gateOut("Неверный секрет.");
+        if (!res.ok) throw new Error("HTTP "+res.status);
+        const s = await res.json(); lastStats = s;
+        $("liveN").textContent = s.online==null ? "—" : fmt(s.online);
+        renderKpis(s); renderTrend(); renderContentCharts(s);
+      } catch(e){ snack("Не удалось загрузить статистику: "+e.message); }
+      finally { busy(false); }
+    }
+
+    function renderKpis(s){
+      const cards = [
+        ["live-kpi","online", s.online, "онлайн сейчас", null],
+        ["","bolt", s.dau, "активны / 24ч", null],
+        ["","calendar", s.wau, "активны / 7д", null],
+        ["","calendar", s.mau, "активны / 30д", null],
+        ["","people", s.totalUsers, "всего пользователей", null],
+        ["","pair", s.pairedGroups, "активные пары", null],
+        ["","person", s.soloGroups, "соло-профили", null],
+        ["accent","newuser", s.newDay, "новых / 24ч", (s.newWeek!=null?("+"+fmt(s.newWeek)+" за 7д"):null)],
+      ];
+      $("kpis").innerHTML = cards.map((c,i) =>
+        '<div class="kpi '+c[0]+'" style="animation-delay:'+(i*45)+'ms">'+
+        '<div class="kicon">'+svg(c[1])+'</div>'+
+        '<div class="kval" data-v="'+(c[2]==null?"":c[2])+'">—</div>'+
+        '<div class="klabel">'+c[3]+'</div>'+
+        (c[4]?'<div class="kdelta up">'+c[4]+'</div>':'')+'</div>').join("");
+      document.querySelectorAll("#kpis .kval").forEach(el => { const v = el.dataset.v; if (v==="") el.textContent="—"; else countUp(el, v); });
+
+      // content chips
+      const c = s.content || {};
+      const chips = [
+        ["heart", c.memories, "воспоминаний"], ["chat", c.messages, "сообщений"],
+        ["photo", c.photos, "фото"], ["video", c.videos, "видео"],
+        ["mood", c.moods, "настроений"], ["online", c.missYou, "«скучаю»"],
+        ["mascot", c.mascots, "маскотов"], ["comment", c.comments, "комментариев"],
+      ];
+      $("contentChips").innerHTML = chips.map(x =>
+        '<span class="chip assist">'+svg(x[0])+'<span class="cv">'+fmt(x[1])+'</span> '+x[2]+'</span>').join("");
+    }
+
+    // ── Trend chart: столбцы (по дням, с обрезкой выбросов-миграций) ИЛИ
+    //    накопительная линия/area роста. Оба — анимированные, с hover-tooltip.
+    function renderTrend(){
+      const s = lastStats; if (!s) return;
+      const host = $("chartTrend"), tip = $("trendTip");
+      const W = host.clientWidth || 720, H = 240, padL = 40, padR = 12, padT = 14, padB = 24;
+      const iw = W-padL-padR, ih = H-padT-padB;
+      const daily = (s.daily || []).slice();
+      if (!daily.length){ host.innerHTML = '<div class="empty">'+svg("calendar")+'<div>Нет данных за период</div></div>'; return; }
+      const primary = cvar("--primary"), outClr = cvar("--tertiary");
+      const xLabels = (X) => { const step = Math.max(1, Math.floor(daily.length/6)); let x="";
+        for (let i=0;i<daily.length;i+=step) x += '<text class="axis-lbl" x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+daily[i].d.slice(5)+'</text>'; return x; };
+      const yGrid = (maxV,minV,Y) => { let g="",l=""; for (let k=0;k<=4;k++){ const val=minV+(maxV-minV)*k/4, y=Y(val);
+        g += '<line class="grid-ln" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+        l += '<text class="axis-lbl" x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+fmt(Math.round(val))+'</text>'; } return g+l; };
+      const showTip = (px,py,txt) => { const r = host.querySelector("svg").getBoundingClientRect();
+        tip.style.opacity="1"; tip.style.left=(px/W*r.width)+"px"; tip.style.top=(py/H*r.height)+"px"; tip.textContent=txt; };
+      const hideTip = () => tip.style.opacity="0";
+
+      if (trendMode==="cum"){
+        let acc = s.baselineUsers||0; const series = daily.map(d => { acc += d.c; return { d:d.d, v:acc }; });
+        const maxV = Math.max(1,...series.map(p=>p.v)), minV = Math.min(...series.map(p=>p.v));
+        const X = i => padL + (series.length<=1?iw/2:(i/(series.length-1))*iw);
+        const Y = v => padT + ih - ((v-minV)/(maxV-minV||1))*ih;
+        let line="", area="M"+padL+","+(padT+ih);
+        series.forEach((p,i) => { const x=X(i).toFixed(1), y=Y(p.v).toFixed(1); line += (i?"L":"M")+x+","+y+" "; area += "L"+x+","+y+" "; });
+        area += "L"+(padL+iw)+","+(padT+ih)+" Z";
+        const uid = "g"+(series.length)+maxV;
+        host.innerHTML = '<svg class="chart" viewBox="0 0 '+W+' '+H+'" height="'+H+'">'+
+          '<defs><linearGradient id="'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+primary+'" stop-opacity="0.22"/><stop offset="1" stop-color="'+primary+'" stop-opacity="0"/></linearGradient></defs>'+
+          yGrid(maxV,minV,Y)+xLabels(X)+
+          '<path d="'+area+'" fill="url(#'+uid+')" opacity="0"/>'+
+          '<path id="tLine" d="'+line+'" fill="none" stroke="'+primary+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
+          '<circle id="tDot" r="5" fill="'+primary+'" stroke="'+cvar("--surface")+'" stroke-width="2.5" opacity="0"/>'+
+          '<rect x="'+padL+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="tHit"/></svg>';
+        const path = host.querySelector("#tLine"), len = path.getTotalLength();
+        path.style.strokeDasharray=len; path.style.strokeDashoffset=len; path.style.transition="stroke-dashoffset .9s var(--ease)";
+        requestAnimationFrame(()=>path.style.strokeDashoffset=0);
+        host.querySelector('path[fill^="url"]').animate([{opacity:0},{opacity:1}],{duration:700,delay:250,fill:"forwards"});
+        const dot = host.querySelector("#tDot");
+        host.querySelector("#tHit").onpointermove = (ev) => { const r=host.querySelector("svg").getBoundingClientRect();
+          let i=Math.round(((ev.clientX-r.left)*(W/r.width)-padL)/(iw/(series.length-1||1))); i=Math.max(0,Math.min(series.length-1,i));
+          const px=X(i),py=Y(series[i].v); dot.setAttribute("cx",px); dot.setAttribute("cy",py); dot.setAttribute("opacity","1");
+          showTip(px,py,series[i].d.slice(5)+" · "+fmt(series[i].v)); };
+        host.querySelector("#tHit").onpointerleave = () => { dot.setAttribute("opacity","0"); hideTip(); };
+        return;
+      }
+
+      // daily bars с обрезкой выбросов (миграции)
+      const vals = daily.map(d=>d.c), sorted=[...vals].sort((a,b)=>a-b), median=sorted[Math.floor(sorted.length/2)]||1;
+      const normal = vals.filter(v=>v<=median*5); const scaleMax = Math.max(1, normal.length?Math.max(...normal):Math.max(...vals));
+      const X = i => padL + (i+0.5)*(iw/daily.length);
+      const bw = Math.max(3, (iw/daily.length)*0.6);
+      const Y = v => padT + ih - Math.min(1,v/scaleMax)*ih;
+      let bars="";
+      daily.forEach((d,i) => { const outlier=d.c>scaleMax; const x=(X(i)-bw/2).toFixed(1); const y=Y(d.c).toFixed(1); const h=(padT+ih-Y(d.c)).toFixed(1);
+        bars += '<rect class="tBar" data-i="'+i+'" x="'+x+'" y="'+y+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="3" fill="'+(outlier?outClr:primary)+'"/>'; });
+      host.innerHTML = '<svg class="chart" viewBox="0 0 '+W+' '+H+'" height="'+H+'">'+
+        yGrid(scaleMax,0,Y)+xLabels(X)+bars+'</svg>';
+      host.querySelectorAll(".tBar").forEach((r,i) => { const fy=+r.getAttribute("y"), fh=+r.getAttribute("height"); const base=padT+ih;
+        r.setAttribute("y",base); r.setAttribute("height",0);
+        r.animate([{y:base,height:0},{y:fy,height:fh}],{duration:600,delay:i*22,easing:"cubic-bezier(.2,0,0,1)",fill:"forwards"});
+        setTimeout(()=>{ r.setAttribute("y",fy); r.setAttribute("height",fh); }, 600+i*22);
+        r.style.cursor="pointer";
+        r.onpointerenter = () => { const d=daily[i], out=d.c>scaleMax; showTip(X(i),Y(d.c),d.d.slice(5)+" · "+fmt(d.c)+(out?" · миграция":"")); r.setAttribute("opacity",".8"); };
+        r.onpointerleave = () => { hideTip(); r.setAttribute("opacity","1"); };
+      });
+    }
+    $("trendSeg").querySelectorAll(".seg").forEach(b => b.onclick = () => {
+      $("trendSeg").querySelectorAll(".seg").forEach(x => x.classList.remove("active"));
+      b.classList.add("active"); trendMode = b.dataset.mode==="cum"?"cum":"daily"; renderTrend();
+    });
+
+    // ── media/mood bars + pairs donut ──
+    const KIND_LABEL = { memory:"Воспоминания", memories:"Воспоминания", widget:"Виджеты", widgets:"Виджеты",
+      canvas:"Рисунки", avatar:"Аватары", avatars:"Аватары", mascot:"Маскоты", mascots:"Маскоты" };
+    function renderContentCharts(s){
+      // media kinds → merge duplicates by label
+      const agg = {};
+      (s.mediaKinds||[]).forEach(x => { const l = KIND_LABEL[x.k] || (x.k||"прочее"); agg[l] = (agg[l]||0)+x.c; });
+      const media = Object.entries(agg).map(([k,c]) => ({k,c})).sort((a,b)=>b.c-a.c);
+      hbars($("barsMedia"), media, x=>x.k, x=>x.c);
+      hbars($("barsMood"), (s.moods||[]).map(x=>({k:x.k,c:x.c})), x=>x.k, x=>x.c);
+      // pairs donut
+      const seg = [
+        {label:"Пары", value:s.pairedGroups||0, color:cvar("--c1")},
+        {label:"Соло", value:s.soloGroups||0, color:cvar("--c2")},
+      ];
+      donut($("donutPairs"), $("legendPairs"), seg);
+    }
+    function hbars(host, items, kf, vf){
+      if (!items.length){ host.innerHTML = '<div class="body">нет данных</div>'; return; }
+      const max = Math.max(1, ...items.map(vf));
+      host.innerHTML = items.slice(0,8).map((x,i) => {
+        const col = cvar(PALETTE[i%PALETTE.length]);
+        return '<div class="hbar"><div class="top"><span>'+esc(kf(x))+'</span><span class="hv">'+fmt(vf(x))+'</span></div>'+
+          '<div class="track"><div class="fill" style="background:'+col+'" data-w="'+Math.round(vf(x)/max*100)+'"></div></div></div>';
+      }).join("");
+      requestAnimationFrame(() => host.querySelectorAll(".fill").forEach((f,i) => setTimeout(() => f.style.width = f.dataset.w+"%", 60+i*50)));
+    }
+    function donut(host, legendHost, seg){
+      const total = seg.reduce((a,b)=>a+b.value,0) || 1;
+      const R=52, C=2*Math.PI*R, SW=22; let off=0;
+      let circles = "";
+      seg.forEach(sg => { const frac = sg.value/total; const dash = frac*C;
+        circles += '<circle r="'+R+'" cx="70" cy="70" fill="none" stroke="'+sg.color+'" stroke-width="'+SW+'" '+
+          'stroke-dasharray="'+dash.toFixed(2)+' '+(C-dash).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 70 70)" style="transition:stroke-dasharray .8s var(--ease)"/>';
+        off += dash; });
+      host.innerHTML = '<svg width="140" height="140" viewBox="0 0 140 140">'+
+        '<circle r="'+R+'" cx="70" cy="70" fill="none" stroke="'+cvar("--s-highest")+'" stroke-width="'+SW+'"/>'+circles+
+        '<text x="70" y="66" text-anchor="middle" style="font-size:24px;font-weight:800;fill:'+cvar("--on-surface")+'">'+fmt(total)+'</text>'+
+        '<text x="70" y="84" text-anchor="middle" style="font-size:11px;fill:'+cvar("--on-surface-variant")+'">всего</text></svg>';
+      legendHost.innerHTML = seg.map(sg => '<div class="li"><span class="sw" style="background:'+sg.color+'"></span>'+sg.label+'<span class="lv">'+fmt(sg.value)+'</span></div>').join("");
+    }
+    const esc = (s) => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+    // ═══════════ CONTENT (media) ═══════════
+    const AREAS = [["memories","Воспоминания","heart"],["widget","Виджеты","overview"],["avatars","Аватары","person"],["mascots","Маскоты","mascot"],["all","Все медиа","photo"]];
+    let curArea = "memories", contentLoaded = false, profilesLoaded = false;
+    let mOffset = 0, mCount = 0, mLoading = false;
+    function buildAreaChips(){
+      $("areaChips").innerHTML = AREAS.map(([k,l,ic]) =>
+        '<button class="chip state'+(k===curArea?" selected":"")+'" data-area="'+k+'">'+svg(ic)+l+'</button>').join("");
+      $("areaChips").querySelectorAll("[data-area]").forEach(b => b.onclick = () => {
+        curArea = b.dataset.area; buildAreaChips(); fetchMedia(true);
+      });
+    }
+    async function fetchMedia(reset){
+      if (mLoading) return; mLoading = true; busy(true); $("more").disabled = true; $("gridStatus").textContent = "Загрузка…";
+      if (reset){ mOffset = 0; mCount = 0; $("grid").innerHTML = ""; $("grid").classList.remove("profiles"); }
+      const p = new URLSearchParams(); const g = $("group").value.trim();
+      if (g) p.set("groupId", g); p.set("area", curArea); p.set("offset", String(mOffset||0)); p.set("max","60");
+      try {
+        const res = await fetch("/modapi/pb-media?"+p, { headers: hdr() });
+        if (res.status===401) return gateOut("Неверный секрет.");
+        if (!res.ok) throw new Error("HTTP "+res.status);
+        const data = await res.json(); renderMedia(data.items||[]);
+        mOffset = data.nextOffset==null ? null : data.nextOffset; mCount += (data.items||[]).length;
+        $("count").textContent = mCount+" / "+(data.total!=null?fmt(data.total):mCount);
+        $("more").hidden = mOffset==null;
+        $("gridStatus").textContent = mCount===0 ? "" : "";
+        if (mCount===0) $("grid").innerHTML = '<div class="empty" style="grid-column:1/-1">'+svg("photo")+'<div>Ничего не найдено</div></div>';
+      } catch(e){ snack("Ошибка: "+e.message); }
+      finally { mLoading=false; busy(false); $("more").disabled=false; if($("gridStatus").textContent==="Загрузка…")$("gridStatus").textContent=""; }
+    }
+    function renderMedia(items){
+      const grid = $("grid");
+      for (const it of items){
+        const full = fileUrl(it.id, it.file);
+        const cell = document.createElement("div"); cell.className = "cell";
+        if (it.kind==="video"){
+          cell.innerHTML = '<div class="play"><span>'+svg("play")+'</span></div>';
+          cell.onclick = () => openLightbox(full,"video");
+        } else {
+          const img = document.createElement("img"); img.loading="lazy"; img.src = fileUrl(it.id,it.file,"400x400");
+          cell.appendChild(img); cell.onclick = () => openLightbox(full,"image");
+        }
+        // Кнопка копирования groupId поверх фото (не открывает лайтбокс).
+        if (it.groupId){
+          const cp = document.createElement("button"); cp.className="copy-badge state";
+          cp.innerHTML = svg("copy")+'<span class="cid">'+esc(it.groupId)+'</span>';
+          cp.title = "Копировать groupId";
+          cp.onclick = (e) => { e.stopPropagation(); copyText(it.groupId, "groupId скопирован"); };
+          cell.appendChild(cp);
+        }
+        const tag = document.createElement("div"); tag.className="tag";
+        const meta = (it.cat?esc(it.cat)+" · ":"")+esc(it.groupId||"");
+        tag.innerHTML = '<span class="tmeta">'+meta+'</span><a href="'+full+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">открыть</a>';
+        cell.appendChild(tag); grid.appendChild(cell);
+      }
+    }
+
+    // ═══════════ PROFILES ═══════════
+    let pOffset = 0, pCount = 0, pLoading = false;
+    async function fetchProfiles(reset){
+      if (pLoading) return; pLoading=true; busy(true); $("pmore").disabled=true; $("pStatus").textContent="Загрузка…";
+      if (reset){ pOffset=0; pCount=0; $("pgrid").innerHTML=""; }
+      const p = new URLSearchParams(); const g = $("pgroup").value.trim();
+      if (g) p.set("groupId", g); p.set("offset", String(pOffset||0)); p.set("max","60");
+      try {
+        const res = await fetch("/modapi/pb-profiles?"+p, { headers: hdr() });
+        if (res.status===401) return gateOut("Неверный секрет.");
+        if (!res.ok) throw new Error("HTTP "+res.status);
+        const data = await res.json(); renderProfiles(data.items||[]);
+        pOffset = data.nextOffset==null ? null : data.nextOffset; pCount += (data.items||[]).length;
+        $("pcount").textContent = pCount+" / "+(data.total!=null?fmt(data.total):pCount);
+        $("pmore").hidden = pOffset==null;
+        if (pCount===0) $("pgrid").innerHTML = '<div class="empty" style="grid-column:1/-1">'+svg("profiles")+'<div>Профили не найдены</div></div>';
+      } catch(e){ snack("Ошибка: "+e.message); }
+      finally { pLoading=false; busy(false); $("pmore").disabled=false; if($("pStatus").textContent==="Загрузка…")$("pStatus").textContent=""; }
+    }
+    function renderProfiles(items){
+      const grid = $("pgrid");
+      for (const it of items){
+        const card = document.createElement("div"); card.className="pcard";
+        const avFull = it.avatarId ? fileUrl(it.avatarId, it.avatarFile) : (it.avatarHttp||"");
+        let av;
+        if (avFull){ av = document.createElement("img"); av.loading="lazy";
+          av.src = it.avatarId ? fileUrl(it.avatarId, it.avatarFile, "400x400") : avFull;
+          av.onclick = () => openLightbox(avFull,"image"); }
+        else { av = document.createElement("div"); av.textContent = (it.name||it.uid||"?").trim().charAt(0).toUpperCase()||"?"; }
+        av.className="pav"; card.appendChild(av);
+        const info = document.createElement("div"); info.className="pinfo";
+        const nm = document.createElement("div"); nm.className="pname"; nm.textContent = it.name||"(без имени)"; info.appendChild(nm);
+        const sub = document.createElement("div");
+        if (it.groupId){ sub.className="psub copy"; sub.title="Копировать groupId";
+          sub.innerHTML = svg("copy")+'<span>'+esc([it.groupId,it.uid].filter(Boolean).join(" · "))+'</span>';
+          sub.onclick = () => copyText(it.groupId, "groupId скопирован"); }
+        else { sub.className="psub"; sub.textContent = it.uid||""; }
+        info.appendChild(sub);
+        const lines = [];
+        if (it.status) lines.push(["online","🟢",it.status]);
+        if (it.message) lines.push(["chat","",it.message]);
+        if (it.moodLabel) lines.push(["mood","",it.moodLabel]);
+        if (it.music) lines.push(["play","🎵",it.music]);
+        lines.forEach(l => { const d = document.createElement("div"); d.className="pline";
+          d.innerHTML = '<span class="pk">'+svg(l[0])+'</span><span>'+esc(l[2])+'</span>'; info.appendChild(d); });
+        card.appendChild(info); grid.appendChild(card);
+      }
+    }
+
+    // ── lightbox ──
+    function openLightbox(url, kind){
+      const box = $("lightbox");
+      [...box.childNodes].forEach(n => { if (!n.classList || !n.classList.contains("lb-close")) box.removeChild(n); });
+      const spin = document.createElement("div"); spin.className="spinner"; spin.style.position="absolute"; box.appendChild(spin);
+      const el = document.createElement(kind==="video"?"video":"img");
+      el.onload = el.onloadeddata = () => spin.remove(); el.onerror = () => spin.remove(); el.src = url;
+      if (kind==="video"){ el.controls=true; el.autoplay=true; el.playsInline=true; }
+      el.onclick = (e) => e.stopPropagation(); box.appendChild(el); box.classList.add("open");
+    }
+    function closeLightbox(){ const box=$("lightbox"); box.classList.remove("open");
+      [...box.childNodes].forEach(n => { if (!n.classList || !n.classList.contains("lb-close")) box.removeChild(n); }); }
+
+    // ── gate ──
+    function gateIn(){ $("gate").style.display="none"; $("app").hidden=false; buildNav(); buildAreaChips(); loadStats(); }
+    function gateOut(msg){ sessionStorage.removeItem("modSecret"); busy(false); $("app").hidden=true; $("gate").style.display="flex"; $("gateErr").textContent=msg||""; contentLoaded=profilesLoaded=false; }
+
+    // ── wire ──
+    $("enter").onclick = () => { const s=$("secret").value.trim(); if(!s)return; sessionStorage.setItem("modSecret",s); $("gateErr").textContent=""; gateIn(); };
+    $("secret").addEventListener("keydown", e => { if(e.key==="Enter")$("enter").click(); });
+    $("refresh").onclick = () => { loadStats(); if(curTab==="content")fetchMedia(true); if(curTab==="profiles")fetchProfiles(true); snack("Обновлено"); };
+    $("fab").onclick = () => loadStats();
+    $("logout").onclick = () => gateOut("");
+    $("apply").onclick = () => fetchMedia(true);
+    $("group").addEventListener("keydown", e => { if(e.key==="Enter")fetchMedia(true); });
+    $("more").onclick = () => fetchMedia(false);
+    $("papply").onclick = () => fetchProfiles(true);
+    $("pgroup").addEventListener("keydown", e => { if(e.key==="Enter")fetchProfiles(true); });
+    $("pmore").onclick = () => fetchProfiles(false);
+    $("lightbox").onclick = closeLightbox; $("lbClose").onclick = closeLightbox;
+    document.addEventListener("keydown", e => { if(e.key==="Escape")closeLightbox(); });
+    document.querySelector("main").addEventListener("scroll", ()=>{}, {passive:true});
+    window.addEventListener("scroll", () => $("appbar").classList.toggle("scrolled", window.scrollY>4), {passive:true});
+    let rzT; window.addEventListener("resize", () => { clearTimeout(rzT); rzT=setTimeout(()=>{ if(curTab==="overview"&&lastStats)renderTrend(); },180); });
+
+    // init
+    applyTheme(localStorage.getItem("modTheme") || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+    if (secret()) gateIn();
+  </script>
+</body>
+</html>

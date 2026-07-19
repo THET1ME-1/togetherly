@@ -1,0 +1,525 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Permissions для QR-сканера -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    
+    <!-- Permissions для фото/видео (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Fallback для Android 12 и ниже -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Нужен для сохранения в галерею на Android 9 и ниже -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    
+    <!-- Permissions для геолокации -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Карта «где мы»: шеринг локации с партнёром идёт через foreground-сервис
+         (FOREGROUND_SERVICE_LOCATION) с постоянным уведомлением. Пока сервис
+         активен, приложение считается «in use» и получает локацию в фоне БЕЗ
+         ACCESS_BACKGROUND_LOCATION. Это разрешение намеренно НЕ объявляем, чтобы
+         не проходить декларацию фоновой геолокации в Google Play (форма+видео).
+         Вернуть только если понадобится headless-автозапуск (напр. после ребута
+         без открытия приложения) — тогда нужен boot-receiver и декларация. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Пуш без FCM (§5): foreground-сервис типа dataSync держит SSE-подписку
+         PbPushService живой, пока приложение свёрнуто/выгружено (flutter_foreground_task).
+         WAKE_LOCK нужен для allowWakeLock (соединение не засыпает в Doze). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Мгновенная фоновая доставка БЕЗ FCM держится на живом WS-сокете в
+         foreground-сервисе. Doze/«оптимизация батареи» рвут сетевой сокет даже
+         у foreground-сервиса → пуши и виджеты обновляются только при открытии
+         приложения. Это разрешение позволяет показать системный диалог
+         «не оптимизировать» и держать соединение живым при свёрнутом приложении. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Переопределяем неявные требования GPS, чтобы не блокировать планшеты и Chromebook -->
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    
+    <!-- Интернет (Firebase Storage) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- AdMob — разрешение для рекламного идентификатора -->
+    <!-- Больше не удаляем — приложение использует рекламу (AdMob) -->
+    
+    <!-- Push-уведомления (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Вибрация для уведомлений -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Восстановление таймерного alarm'а после перезагрузки -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Точные будильники для живого виджета-лепестка -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    
+    <!-- In-app billing for consumable products (coins) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+
+    <!-- Рекламный идентификатор для Google Mobile Ads (Android 13+/API 33).
+         Без него ad ID заменяется нулями → ломается показ рекламы и аналитика. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    
+    <application
+        android:label="Togetherly"
+        android:name="${applicationName}"
+        android:icon="@mipmap/launcher_icon"
+        android:enableOnBackInvokedCallback="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <!-- MAIN/LAUNCHER вынесен в <activity-alias> ниже (кастомизация
+                 иконки приложения по теме). Сами deep-link фильтры остаются
+                 здесь, на MainActivity, и резолвятся независимо от того, какой
+                 alias сейчас «лаунчер» — приглашения и виджет продолжают
+                 работать при любой выбранной иконке. -->
+
+            <!-- HomeWidget: открытие приложения по клику на виджет -->
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.LAUNCH" />
+            </intent-filter>
+            
+            <!-- Deep link для приглашений -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Обработка loveapp://invite/{code} -->
+                <data android:scheme="loveapp" android:host="invite" />
+            </intent-filter>
+            
+            <!-- Web link: PocketBase-VPS (новый рабочий домен, обслуживает
+                 assetlinks + /invite лендинг через pb_hooks/invite_web.pb.js) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="togetherly.duckdns.org"
+                      android:pathPrefix="/invite" />
+            </intent-filter>
+
+            <!-- Web link: Firebase Hosting (легаси-домен, для уже разосланных
+                 ссылок; удалить после полного гашения Firebase) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="togetherly-d4856.web.app"
+                      android:pathPrefix="/invite" />
+            </intent-filter>
+        </activity>
+
+        <!-- ───── Кастомизация иконки приложения (тестовый набор: 5 тем) ─────
+             Каждый alias = вариант launcher-иконки, указывает на MainActivity.
+             В рантайме включён ровно один (PackageManager.setComponentEnabledSetting
+             через MethodChannel 'app_icon'). Дефолт — pink (enabled=true), остальные
+             отключены. label у всех "Togetherly", меняется только icon/roundIcon. -->
+        <activity-alias
+            android:name=".IconPink"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_pink"
+            android:roundIcon="@mipmap/ic_launcher_pink_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconPurple"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_purple"
+            android:roundIcon="@mipmap/ic_launcher_purple_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconBlue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_blue"
+            android:roundIcon="@mipmap/ic_launcher_blue_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconGreen"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_green"
+            android:roundIcon="@mipmap/ic_launcher_green_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconMidnight"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_midnight"
+            android:roundIcon="@mipmap/ic_launcher_midnight_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconOrange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_orange"
+            android:roundIcon="@mipmap/ic_launcher_orange_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconLavender"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_lavender"
+            android:roundIcon="@mipmap/ic_launcher_lavender_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconCherry"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_cherry"
+            android:roundIcon="@mipmap/ic_launcher_cherry_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconMint"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_mint"
+            android:roundIcon="@mipmap/ic_launcher_mint_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconSunset"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_sunset"
+            android:roundIcon="@mipmap/ic_launcher_sunset_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconMonochrome"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_monochrome"
+            android:roundIcon="@mipmap/ic_launcher_monochrome_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconForest"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_forest"
+            android:roundIcon="@mipmap/ic_launcher_forest_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconOcean"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ocean"
+            android:roundIcon="@mipmap/ic_launcher_ocean_round"
+            android:label="Togetherly"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- Иконка-сердечко для foreground-сервиса (flutter_foreground_task),
+             чтобы в шторке не было чёрного квадрата / дефолтной иконки. -->
+        <meta-data
+            android:name="com.togetherly.love.notification_icon"
+            android:resource="@drawable/ic_notification" />
+
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1956369312643059~3521559179"/>
+
+        <!-- image_cropper: UCrop активность -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
+        <!-- HomeWidget: фоновый ресивер для обновления виджета когда процесс убит.
+             С home_widget 0.8.1+ фоновая работа идёт через WorkManager
+             (HomeWidgetBackgroundWorker), устаревший JobIntentService-сервис убран —
+             он и вызывал краши enqueueWork/completeWork (IllegalArgumentException). -->
+        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="false" />
+
+        <!-- ═══ Виджет рабочего стола: Парный ═══ -->
+        <receiver android:name=".LoveWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/love_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Счётчик дней вместе ═══ -->
+        <receiver android:name=".DaysCounterWidgetProvider"
+            android:exported="true"
+            android:label="Дни вместе">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/days_counter_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Огонёк пары (серия дней подряд) ═══ -->
+        <receiver android:name=".StreakWidgetProvider"
+            android:exported="true"
+            android:label="Огонёк пары">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/streak_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Таймер / Обратный отсчёт ═══ -->
+        <receiver android:name=".TimerWidgetProvider"
+            android:exported="true"
+            android:label="Таймер">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/timer_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Лепестковый таймер ═══ -->
+        <receiver android:name=".PetalTimerWidgetProvider"
+            android:exported="true"
+            android:label="Лепестковый таймер">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.togetherly.love.PETAL_TIMER_TICK" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/petal_timer_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Фото дня ═══ -->
+        <receiver android:name=".PhotoDayWidgetProvider"
+            android:exported="true"
+            android:label="Фото дня">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/photo_day_widget_info" />
+        </receiver>
+
+        <receiver android:name=".SelfPhotoWidgetProvider"
+            android:exported="true"
+            android:label="Фото-виджет">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/self_photo_widget_info" />
+        </receiver>
+
+        <receiver android:name=".PartnerPhotoWidgetProvider"
+            android:exported="true"
+            android:label="Фото партнёра">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/partner_photo_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Настроение ═══ -->
+        <receiver android:name=".MoodWidgetProvider"
+            android:exported="true"
+            android:label="Настроение">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/mood_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Фото-сетка ═══ -->
+        <receiver android:name=".PhotoGridWidgetProvider"
+            android:exported="true"
+            android:label="Фото-сетка">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/photo_grid_widget_info" />
+        </receiver>
+
+        <!-- ═══ Виджет: Relationship Stats ═══ -->
+        <receiver android:name=".RelationshipStatsWidgetProvider"
+            android:exported="true"
+            android:label="Статистика">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/relationship_stats_widget_info" />
+        </receiver>
+
+        <!-- Receiver для ротации карусели фото-виджета -->
+        <receiver android:name=".PhotoDayRotationReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.togetherly.love.ACTION_ROTATE_TIMER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Пуш без FCM (§5): foreground-сервис flutter_foreground_task, держит
+             SSE-подписку PbPushService при свёрнутом/выгруженном приложении.
+             ВНИМАНИЕ: имя класса менять нельзя (его ищет плагин). Без
+             android:stopWithTask — сервис переживает свайп из недавних. -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <!-- Image picker / Gallery -->
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+            <data android:mimeType="image/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+            <data android:mimeType="video/*" />
+        </intent>
+        <!-- Camera -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.VIDEO_CAPTURE" />
+        </intent>
+        <!-- File picker -->
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+        </intent>
+        <!-- Text processing -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Required by in_app_update to detect the Play Store package on Android 11+ -->
+        <package android:name="com.android.vending" />
+    </queries>
+</manifest>

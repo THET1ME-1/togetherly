@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Togetherly — Google Play Banner</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f0f0f0;
+    font-family: 'Inter', sans-serif;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .info { text-align: center; max-width: 540px; }
+  .info h1 { font-size: 20px; font-weight: 400; color: #333; margin-bottom: 6px; }
+  .info p  { font-size: 13px; color: #888; line-height: 1.6; }
+
+  .banner-outer {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    /* масштаб под маленький экран через JS */
+    transform-origin: top center;
+  }
+
+  /* ========== ПРЕВЬЮ-БАННЕР 1024×500 ========== */
+  .banner {
+    position: relative;
+    width: 1024px;
+    height: 500px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #FBDCCA 0%, #F5C4B8 40%, #F0B5AB 100%);
+  }
+
+  /* Паттерн */
+  .pat {
+    position: absolute; inset: 0; z-index: 1; opacity: 0.06; pointer-events: none;
+  }
+  .pat svg { width: 100%; height: 100%; }
+  .pat-dots {
+    position: absolute; inset: 0; z-index: 1; opacity: 0.035; pointer-events: none;
+    background-image: radial-gradient(circle, #E8956A 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Glows */
+  .g1 { position: absolute; top: -100px; right: -50px; width: 400px; height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+        z-index: 2; pointer-events: none; }
+  .g2 { position: absolute; bottom: -80px; left: -40px; width: 350px; height: 350px;
+        background: radial-gradient(circle, rgba(254,126,139,0.15) 0%, transparent 70%);
+        z-index: 2; pointer-events: none; }
+  .g3 { position: absolute; top: 50%; right: 80px; transform: translateY(-50%);
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 65%);
+        z-index: 2; pointer-events: none; }
+
+  /* Плавающие сердечки */
+  .fh { position: absolute; z-index: 3; opacity: 0.09; fill: #FE7E8B;
+        animation: fha 7s ease-in-out infinite; pointer-events: none; }
+  .fh:nth-child(1) { top:8%;  left:5%;   animation-delay:0s; }
+  .fh:nth-child(2) { top:15%; right:12%; animation-delay:1.8s; }
+  .fh:nth-child(3) { bottom:12%; left:10%; animation-delay:3.2s; }
+  .fh:nth-child(4) { bottom:20%; right:8%; animation-delay:0.9s; }
+  .fh:nth-child(5) { top:45%; left:3%;  animation-delay:4.5s; }
+  @keyframes fha {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-8px) rotate(4deg); }
+  }
+
+  /* Контент */
+  .content {
+    position: absolute; top: 0; left: 0; width: 520px; height: 100%; z-index: 10;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 50px 0 65px;
+  }
+  .tagline {
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: #FE7E8B; margin-bottom: 8px; opacity: 0.8;
+  }
+  .title {
+    font-family: 'Playfair Display', serif; font-size: 54px;
+    font-weight: 500; font-style: italic; color: #FE7E8B;
+    line-height: 1.05; margin-bottom: 12px;
+  }
+  .desc {
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 300;
+    color: #9E6B5E; line-height: 1.6; max-width: 340px; margin-bottom: 16px;
+  }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px;
+    border-radius: 16px; background: rgba(255,255,255,0.55); backdrop-filter: blur(4px);
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+    color: #B05A50; white-space: nowrap;
+  }
+  .badge svg { width: 12px; height: 12px; fill: #FE7E8B; flex-shrink: 0; }
+
+  /* Телефон */
+  .phone-area {
+    position: absolute; top: 50%; right: 55px; transform: translateY(-50%); z-index: 5;
+  }
+  .phone-body {
+    position: relative; width: 220px; height: 455px;
+    background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 40%, #111 100%);
+    border-radius: 30px; padding: 8px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3), 0 10px 20px rgba(0,0,0,0.15),
+      inset 1px 1px 0 rgba(255,255,255,0.12), inset -1px -1px 0 rgba(0,0,0,0.3),
+      0 0 60px rgba(254,126,139,0.1);
+  }
+  .phone-body::before {
+    content:''; position:absolute; right:-2px; top:110px;
+    width:3px; height:35px;
+    background:linear-gradient(180deg,#3a3a3a,#222,#3a3a3a); border-radius:0 3px 3px 0;
+  }
+  .phone-body::after {
+    content:''; position:absolute; left:-2px; top:96px;
+    width:3px; height:24px;
+    background:linear-gradient(180deg,#3a3a3a,#222,#3a3a3a); border-radius:3px 0 0 3px;
+  }
+  .vol2 {
+    position:absolute; left:-2px; top:127px; width:3px; height:24px;
+    background:linear-gradient(180deg,#3a3a3a,#222,#3a3a3a);
+    border-radius:3px 0 0 3px; z-index:2;
+  }
+  .phone-screen {
+    position:relative; width:100%; height:100%;
+    border-radius:23px; overflow:hidden; background:#111;
+  }
+  .phone-screen img { width:100%; height:100%; object-fit:cover; display:block; }
+  .di {
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    width:66px; height:19px; background:#000; border-radius:13px;
+    z-index:20; box-shadow:0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .di::after {
+    content:''; position:absolute; right:13px; top:50%; transform:translateY(-50%);
+    width:7px; height:7px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #1a1a3a, #0a0a15);
+  }
+  .hb {
+    position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+    width:72px; height:3px; background:rgba(255,255,255,0.25);
+    border-radius:3px; z-index:20;
+  }
+  .sg {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(255,255,255,0.05) 0%,transparent 35%,transparent 65%,rgba(255,255,255,0.02) 100%);
+    z-index:15; pointer-events:none; border-radius:23px;
+  }
+  .pb { position:absolute; inset:0; border-radius:30px; border:1px solid rgba(255,255,255,0.08); pointer-events:none; z-index:6; }
+
+  /* Подсказка без фото */
+  .drop-hint {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px;
+    background:rgba(0,0,0,0.7); color:#fff; font-size:11px; text-align:center;
+    line-height:1.4; border-radius:23px; z-index:25;
+    font-family:'Inter',sans-serif; transition:opacity 0.2s;
+  }
+  .drop-hint svg { width:20px; height:20px; fill:#FE7E8B; opacity:0.8; }
+  .drop-hint.hidden { display:none; }
+
+  /* Кнопки */
+  .controls { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .btn-upload {
+    display:inline-flex; align-items:center; gap:8px; padding:12px 28px;
+    background:#333; color:#fff; border:none; border-radius:8px;
+    font-family:'Inter',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; transition:background 0.2s;
+  }
+  .btn-upload:hover { background:#555; }
+  .btn-upload svg { width:16px; height:16px; fill:#fff; }
+
+  .btn-dl {
+    display:inline-flex; align-items:center; gap:8px; padding:12px 28px;
+    background:#FE7E8B; color:#fff; border:none; border-radius:8px;
+    font-family:'Inter',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; transition:all 0.2s;
+    box-shadow:0 4px 16px rgba(254,126,139,0.3);
+    min-width:220px; justify-content:center;
+  }
+  .btn-dl:hover { background:#fd6a79; transform:translateY(-1px); }
+  .btn-dl:disabled { opacity:0.4; pointer-events:none; }
+  .btn-dl svg { width:16px; height:16px; fill:#fff; flex-shrink:0; }
+
+  .status { font-size:12px; color:#888; text-align:center; min-height:18px; }
+
+  @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="info">
+  <h1>Google Play Banner</h1>
+  <p>1024 × 500 px · PNG · Upload a screenshot and click Download</p>
+</div>
+
+<!-- ========== ПРЕВЬЮ ========== -->
+<div class="banner-outer" id="bannerOuter">
+  <div class="banner" id="banner">
+
+    <div class="pat">
+      <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+        <defs>
+          <pattern id="hp" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+            <path d="M40 58 C40 58,22 42,22 32 C22 24,28 20,34 20 C37 20,40 22,40 26 C40 22,43 20,46 20 C52 20,58 24,58 32 C58 42,40 58,40 58Z" fill="#FE7E8B"/>
+          </pattern>
+          <pattern id="cp" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+            <circle cx="60" cy="60" r="25" fill="none" stroke="#FE7E8B" stroke-width="0.8"/>
+            <circle cx="0" cy="0" r="15" fill="none" stroke="#FE7E8B" stroke-width="0.5"/>
+            <circle cx="120" cy="120" r="15" fill="none" stroke="#FE7E8B" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#cp)"/>
+        <rect width="100%" height="100%" fill="url(#hp)"/>
+      </svg>
+    </div>
+    <div class="pat-dots"></div>
+    <div class="g1"></div>
+    <div class="g2"></div>
+    <div class="g3"></div>
+
+    <div class="fh"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+    <div class="fh"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+    <div class="fh"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+    <div class="fh"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+    <div class="fh"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+
+    <div class="content">
+      <div class="tagline">Stay Together</div>
+      <div class="title">Togetherly</div>
+      <div class="desc">Relationship timer, widgets, mood calendar and shared drawing</div>
+      <div class="badges">
+        <div class="badge">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.5 14.5h-1v-5h1v5zm0-6.5h-1V8h1v2z"/></svg>
+          Timer
+        </div>
+        <div class="badge">
+          <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm0 11h7v7H3zm11-11h7v7h-7zm0 11h7v7h-7z"/></svg>
+          Widgets
+        </div>
+        <div class="badge">
+          <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm4 8H8v-1c0-2 4-3.1 4-3.1s4 1.1 4 3.1v1z"/></svg>
+          Moods
+        </div>
+        <div class="badge">
+          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-1.34-1.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          Drawing
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-area" id="phoneArea">
+      <div class="phone-body">
+        <div class="vol2"></div>
+        <div class="pb"></div>
+        <div class="phone-screen">
+          <img id="phoneImg" alt="">
+          <div class="drop-hint" id="dropHint">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Drop screenshot here<br>or click to choose
+          </div>
+          <div class="di"></div>
+          <div class="sg"></div>
+          <div class="hb"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Upload screenshot
+  </button>
+  <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImg(this)">
+
+  <button class="btn-dl" id="btnDl" onclick="downloadBanner()">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Download PNG 1024×500
+  </button>
+</div>
+
+<div class="status" id="status"></div>
+
+<script>
+// ========================================
+//  МАСШТАБ ПРЕВЬЮ ПОД ЭКРАН
+// ========================================
+function fitPreview() {
+  const outer = document.getElementById('bannerOuter');
+  const maxW = window.innerWidth - 40;
+  if (maxW < 1024) {
+    const s = maxW / 1024;
+    outer.style.transform = `scale(${s})`;
+    outer.style.marginBottom = (500 * s - 500) + 'px';
+  } else {
+    outer.style.transform = 'none';
+    outer.style.marginBottom = '0';
+  }
+}
+fitPreview();
+window.addEventListener('resize', fitPreview);
+
+// ========================================
+//  ЗАГРУЗКА ФОТО
+// ========================================
+let imageData = null;
+
+function uploadImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  readFile(file);
+  input.value = '';
+}
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageData = e.target.result;
+    document.getElementById('phoneImg').src = imageData;
+    document.getElementById('dropHint').classList.add('hidden');
+    document.getElementById('status').textContent = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+// Клик по телефону — открыть picker
+document.getElementById('phoneArea').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+
+// Drag & Drop на телефон
+const phoneArea = document.getElementById('phoneArea');
+phoneArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  phoneArea.style.opacity = '0.8';
+});
+phoneArea.addEventListener('dragleave', () => { phoneArea.style.opacity = '1'; });
+phoneArea.addEventListener('drop', e => {
+  e.preventDefault();
+  phoneArea.style.opacity = '1';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) readFile(file);
+});
+
+// ========================================
+//  СКАЧИВАНИЕ — Canvas API (без html2canvas)
+// ========================================
+async function downloadBanner() {
+  if (!imageData) {
+    document.getElementById('status').textContent = '⚠ Please upload a screenshot first';
+    return;
+  }
+
+  const btn = document.getElementById('btnDl');
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff;animation:spin 0.8s linear infinite"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Рендер...';
+
+  // Дожидаемся шрифтов
+  await document.fonts.ready;
+  // Доп. пауза на случай если браузер ещё не применил их к canvas
+  await new Promise(r => setTimeout(r, 200));
+
+  try {
+    const canvas = await render();
+    // Сохраняем именно PNG
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = 'togetherly-google-play-banner.png';
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }, 'image/png');
+
+    const mb = (canvas.width * canvas.height * 4 / 1024 / 1024).toFixed(1);
+    document.getElementById('status').textContent = `✓ Saved · ${canvas.width}×${canvas.height} px`;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Saved!';
+  } catch(err) {
+    console.error(err);
+    document.getElementById('status').textContent = '✗ Error: ' + err.message;
+    btn.innerHTML = '✗ Error';
+  }
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Download PNG 1024×500';
+  }, 2500);
+}
+
+// ========================================
+//  РЕНДЕР НА CANVAS — точно 1024×500
+// ========================================
+async function render() {
+  // Google Play Feature Graphic: ровно 1024×500
+  const W = 1024, H = 500;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+
+  // 1. Фон-градиент
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0,   '#FBDCCA');
+  bg.addColorStop(0.4, '#F5C4B8');
+  bg.addColorStop(1,   '#F0B5AB');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Точки (точная копия CSS: background-size 24px, opacity 0.035)
+  ctx.save();
+  ctx.globalAlpha = 0.035;
+  ctx.fillStyle = '#E8956A';
+  for (let x = 12; x < W + 24; x += 24)
+    for (let y = 12; y < H + 24; y += 24) {
+      ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI*2); ctx.fill();
+    }
+  ctx.restore();
+
+  // 3. Паттерн (кружки + сердечки, opacity 0.06)
+  ctx.save();
+  ctx.globalAlpha = 0.055;
+  ctx.strokeStyle = '#FE7E8B';
+  ctx.lineWidth = 0.8;
+  for (let x = 60; x < W + 120; x += 120)
+    for (let y = 60; y < H + 120; y += 120) {
+      ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI*2); ctx.stroke();
+    }
+  ctx.fillStyle = '#FE7E8B';
+  for (let x = 40; x < W; x += 80)
+    for (let y = 40; y < H; y += 80)
+      drawHeart(ctx, x, y, 11);
+  ctx.restore();
+
+  // 4. Glow правый верхний (белый)
+  const g1 = ctx.createRadialGradient(W + 30, -80, 5, W + 30, -80, 500);
+  g1.addColorStop(0, 'rgba(255,255,255,0.38)');
+  g1.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+
+  // 5. Glow левый нижний (розовый)
+  const g2 = ctx.createRadialGradient(-40, H + 80, 5, -40, H + 80, 450);
+  g2.addColorStop(0, 'rgba(254,126,139,0.14)');
+  g2.addColorStop(1, 'rgba(254,126,139,0)');
+  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+
+  // 6. Glow центральный (справа у телефона)
+  const g3 = ctx.createRadialGradient(830, 250, 10, 830, 250, 280);
+  g3.addColorStop(0, 'rgba(255,255,255,0.14)');
+  g3.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
+
+  // 7. Текст (левая часть) — точно как в HTML
+  drawBannerText(ctx, W, H);
+
+  // 8. Телефон (правая часть)
+  await drawPhone(ctx, W, H);
+
+  return c;
+}
+
+// ——— Сердечко ———
+function drawHeart(ctx, cx, cy, size) {
+  const s = size / 40;
+  ctx.save();
+  ctx.translate(cx - 40*s, cy - 39*s);
+  ctx.scale(s, s);
+  ctx.beginPath();
+  ctx.moveTo(40, 58);
+  ctx.bezierCurveTo(40,58, 22,42, 22,32);
+  ctx.bezierCurveTo(22,24, 28,20, 34,20);
+  ctx.bezierCurveTo(37,20, 40,22, 40,26);
+  ctx.bezierCurveTo(40,22, 43,20, 46,20);
+  ctx.bezierCurveTo(52,20, 58,24, 58,32);
+  ctx.bezierCurveTo(58,42, 40,58, 40,58);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ——— Текст (точно как HTML: padding 0 50px 0 65px, flex-center в 500px) ———
+function drawBannerText(ctx, W, H) {
+  const lx = 65; // padding-left из CSS
+
+  // Рассчитываем вертикальный центр как flex: justify-content: center
+  // Высоты блоков (приблизительно как в CSS):
+  // tagline: 14px + margin-bottom 8px = 22
+  // title: 54px * 1.05 + margin-bottom 12px = 69
+  // desc: ~42px (2 строки) + margin-bottom 16px = 58
+  // badges: 26px
+  // Итого: ~175px → старт: (500-175)/2 = 162
+  let cy = 162;
+
+  // Tagline
+  ctx.save();
+  ctx.fillStyle = '#FE7E8B';
+  ctx.globalAlpha = 0.8;
+  ctx.font = '500 12px "Inter", sans-serif';
+  ctx.letterSpacing = '3.6px';
+  ctx.textBaseline = 'top';
+  ctx.fillText('STAY TOGETHER', lx, cy);
+  ctx.restore();
+  cy += 22;
+
+  // Title — Playfair Display Italic 54px
+  ctx.save();
+  ctx.fillStyle = '#FE7E8B';
+  ctx.font = 'italic 500 54px "Playfair Display", serif';
+  ctx.letterSpacing = '0';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Togetherly', lx - 2, cy);
+  ctx.restore();
+  cy += 54 * 1.05 + 12; // line-height 1.05 + margin
+
+  // Description 13px
+  ctx.save();
+  ctx.fillStyle = '#9E6B5E';
+  ctx.font = '300 13px "Inter", sans-serif';
+  ctx.letterSpacing = '0';
+  ctx.textBaseline = 'top';
+  cy += wrapTextRet(ctx, 'Relationship timer, widgets, mood calendar and shared drawing', lx, cy, 340, 13 * 1.6);
+  ctx.restore();
+  cy += 16; // margin-bottom
+
+  // Badges 11px
+  const badges = ['Timer', 'Widgets', 'Moods', 'Drawing'];
+  let bx = lx;
+  ctx.save();
+  ctx.font = '500 11px "Inter", sans-serif';
+  ctx.letterSpacing = '0';
+  badges.forEach(text => {
+    const tw = ctx.measureText(text).width + 22; // padding: 5px 11px
+    const bh = 26;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    roundRect(ctx, bx, cy, tw, bh, bh/2); ctx.fill();
+    ctx.fillStyle = '#B05A50';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + 11, cy + bh/2);
+    bx += tw + 8; // gap: 8px
+  });
+  ctx.restore();
+}
+
+// wrapText возвращает итоговую высоту (число строк * lineH)
+function wrapTextRet(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '', lines = 0;
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line.trim(), x, y + lines * lineH);
+      line = word + ' '; lines++;
+    } else { line = test; }
+  }
+  ctx.fillText(line.trim(), x, y + lines * lineH);
+  return (lines + 1) * lineH;
+}
+
+// ——— Телефон (точная копия HTML: 220×455, right:55, top:50% translateY(-50%)) ———
+async function drawPhone(ctx, W, H) {
+  const phoneW = 220, phoneH = 455;
+  const phoneX = W - 55 - phoneW;   // right: 55px
+  const phoneY = (H - phoneH) / 2;  // translateY(-50%) от top:50%
+
+  // Тень
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.28)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 14;
+
+  // Корпус border-radius:30px
+  const r = 30;
+  roundRect(ctx, phoneX, phoneY, phoneW, phoneH, r);
+  const bodyGrad = ctx.createLinearGradient(phoneX, phoneY, phoneX + phoneW, phoneY + phoneH);
+  bodyGrad.addColorStop(0,   '#2a2a2a');
+  bodyGrad.addColorStop(0.4, '#1a1a1a');
+  bodyGrad.addColorStop(1,   '#111');
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Кнопки (::before right:-2 top:110 h:35 / ::after left:-2 top:96 h:24 / vol2 top:127 h:24)
+  ctx.save();
+  ctx.fillStyle = '#2e2e2e';
+  roundRect(ctx, phoneX + phoneW + 2, phoneY + 110, 3, 35, 2); ctx.fill();
+  roundRect(ctx, phoneX - 5, phoneY + 96,  3, 24, 2); ctx.fill();
+  roundRect(ctx, phoneX - 5, phoneY + 127, 3, 24, 2); ctx.fill();
+  ctx.restore();
+
+  // Экран: padding:8px, border-radius:23px
+  const pad = 8;
+  const scrX = phoneX + pad, scrY = phoneY + pad;
+  const scrW = phoneW - pad*2, scrH = phoneH - pad*2;
+  const scrR = 23;
+
+  ctx.save();
+  roundRect(ctx, scrX, scrY, scrW, scrH, scrR);
+  ctx.clip();
+  ctx.fillStyle = '#111';
+  ctx.fill();
+
+  // Скриншот (object-fit:cover)
+  const img = await loadImage(imageData);
+  const { sx, sy, sw, sh } = coverFit(img.width, img.height, scrW, scrH);
+  ctx.drawImage(img, sx, sy, sw, sh, scrX, scrY, scrW, scrH);
+
+  // Блик
+  const glare = ctx.createLinearGradient(scrX, scrY, scrX + scrW, scrY + scrH);
+  glare.addColorStop(0,    'rgba(255,255,255,0.05)');
+  glare.addColorStop(0.35, 'rgba(255,255,255,0)');
+  glare.addColorStop(0.65, 'rgba(255,255,255,0)');
+  glare.addColorStop(1,    'rgba(255,255,255,0.018)');
+  ctx.fillStyle = glare;
+  roundRect(ctx, scrX, scrY, scrW, scrH, scrR);
+  ctx.fill();
+  ctx.restore();
+
+  // Dynamic Island: top:8 w:66 h:19
+  const diCx = phoneX + phoneW / 2;
+  ctx.save();
+  ctx.fillStyle = '#000';
+  roundRect(ctx, diCx - 33, scrY + 8, 66, 19, 13); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(diCx + 19, scrY + 17, 7, 0, Math.PI * 2);
+  const camG = ctx.createRadialGradient(diCx + 17, scrY + 15, 1, diCx + 19, scrY + 17, 7);
+  camG.addColorStop(0, '#1a1a3a'); camG.addColorStop(1, '#0a0a15');
+  ctx.fillStyle = camG; ctx.fill();
+  ctx.restore();
+
+  // Home bar: bottom:6 w:72 h:3
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  roundRect(ctx, diCx - 36, scrY + scrH - 9, 72, 3, 2); ctx.fill();
+  ctx.restore();
+
+  // Рамка корпуса
+  ctx.save();
+  roundRect(ctx, phoneX, phoneY, phoneW, phoneH, r);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // Розовое свечение
+  ctx.save();
+  const halo = ctx.createRadialGradient(
+    phoneX + phoneW/2, phoneY + phoneH*0.65, 10,
+    phoneX + phoneW/2, phoneY + phoneH*0.65, 260
+  );
+  halo.addColorStop(0, 'rgba(254,126,139,0.10)');
+  halo.addColorStop(1, 'rgba(254,126,139,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(phoneX - 60, 0, phoneW + 120, H);
+  ctx.restore();
+}
+
+// ——— Утилиты ———
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function coverFit(iw, ih, bw, bh) {
+  const scale = Math.max(bw / iw, bh / ih);
+  const dw = bw / scale, dh = bh / scale;
+  return { sx: (iw - dw)/2, sy: (ih - dh)/2, sw: dw, sh: dh };
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line.trim(), x, y);
+      line = word + ' ';
+      y += lineH;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
+}
+
+const imgCache = {};
+function loadImage(src) {
+  if (imgCache[src]) return Promise.resolve(imgCache[src]);
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { imgCache[src] = img; res(img); };
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+</script>
+
+</body>
+</html>
