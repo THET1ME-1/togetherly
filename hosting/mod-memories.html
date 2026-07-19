@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Memories — модерация</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #121316; color: #e8e8ea;
+    }
+    header {
+      position: sticky; top: 0; z-index: 10; background: #1b1c20;
+      border-bottom: 1px solid #2a2c33; padding: 12px 16px;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    header h1 { font-size: 16px; margin: 0 8px 0 0; font-weight: 600; }
+    input, button, select {
+      font: inherit; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid #34363d; background: #25262b; color: #e8e8ea;
+    }
+    button { cursor: pointer; background: #3a6df0; border-color: #3a6df0; }
+    button:disabled { opacity: .5; cursor: default; }
+    button.ghost { background: #25262b; border-color: #34363d; }
+    .muted { color: #8b8d96; font-size: 13px; }
+    #gate {
+      max-width: 360px; margin: 18vh auto; padding: 24px;
+      background: #1b1c20; border: 1px solid #2a2c33; border-radius: 14px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    #grid {
+      display: grid; gap: 6px; padding: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    .cell {
+      position: relative; aspect-ratio: 1; background: #1b1c20;
+      border-radius: 10px; overflow: hidden; border: 1px solid #2a2c33;
+    }
+    .cell img, .cell video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .cell .tag {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 3px 6px; font-size: 10px; line-height: 1.3;
+      background: linear-gradient(transparent, rgba(0,0,0,.8));
+      color: #d8d8dc; word-break: break-all;
+    }
+    .cell .play {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; font-size: 34px; color: #fff;
+      text-shadow: 0 1px 6px #000; cursor: pointer;
+    }
+    #footer { padding: 16px; text-align: center; }
+    #err { color: #ff6b6b; padding: 0 16px; }
+    a.dl { color: #7aa2ff; text-decoration: none; font-size: 11px; }
+    /* Раздел «Профили»: карточки шире медиа-сетки. */
+    #grid.profiles { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .pcard {
+      display: flex; gap: 12px; align-items: flex-start; padding: 12px;
+      background: #1b1c20; border: 1px solid #2a2c33; border-radius: 12px;
+    }
+    .pav {
+      width: 56px; height: 56px; border-radius: 50%; flex: 0 0 auto;
+      object-fit: cover; background: #25262b; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #8b8d96;
+    }
+    .pinfo { min-width: 0; flex: 1; }
+    .pinfo .pname { font-weight: 600; word-break: break-word; }
+    .pinfo .psub { color: #8b8d96; font-size: 12px; word-break: break-all; }
+    .pinfo .pstatus { margin-top: 6px; font-size: 13px; word-break: break-word; }
+    .pinfo .pbadge {
+      display: inline-block; margin-left: 6px; padding: 1px 6px; font-size: 10px;
+      border-radius: 6px; background: #2a2c33; color: #b9bbc4; vertical-align: middle;
+    }
+    /* Лайтбокс: просмотр медиа поверх страницы через <img>/<video> (инлайн-рендер
+       по байтам), без перехода на файл — иначе Supabase отдаёт его на скачивание. */
+    #lightbox {
+      position: fixed; inset: 0; z-index: 50; display: none;
+      background: rgba(0,0,0,.92);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img, #lightbox video {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+    }
+    #lbClose {
+      position: absolute; top: 12px; right: 18px; font-size: 30px;
+      line-height: 1; color: #fff; cursor: pointer; user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Гейт по shared-secret. Сам секрет проверяется на сервере (функция),
+       страница лишь хранит его в sessionStorage и шлёт заголовком. -->
+  <div id="gate">
+    <h1 style="margin:0">🔒 Модерация memories</h1>
+    <p class="muted" style="margin:0">Введите секрет доступа.</p>
+    <input id="secret" type="password" placeholder="Секрет" autocomplete="off" />
+    <button id="enter">Войти</button>
+    <p id="gateErr" class="muted" style="color:#ff6b6b"></p>
+  </div>
+
+  <div id="app" hidden>
+    <header>
+      <h1>Memories</h1>
+      <input id="group" placeholder="groupId (опц. фильтр)" style="width:220px" />
+      <select id="source" title="Хранилище">
+        <option value="firebase">Firebase Storage</option>
+        <option value="supabase">Supabase (нет в Firebase)</option>
+      </select>
+      <select id="area">
+        <option value="memories">Memories</option>
+        <option value="widget">Виджеты</option>
+        <option value="all">Все</option>
+        <option value="profiles">Профили (имена/статусы/аватары)</option>
+      </select>
+      <select id="sort">
+        <option value="newest">Сначала новые</option>
+        <option value="oldest">Сначала старые</option>
+      </select>
+      <button id="apply" class="ghost">Применить</button>
+      <button id="logout" class="ghost">Выйти</button>
+      <span id="count" class="muted"></span>
+    </header>
+    <div id="err"></div>
+    <div id="grid"></div>
+    <div id="footer">
+      <button id="more" hidden>Загрузить ещё</button>
+      <div id="status" class="muted"></div>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <span id="lbClose">✕</span>
+  </div>
+
+  <script>
+    // Эндпоинт зависит от выбранного хранилища: Firebase Storage или Supabase
+    // Storage. Оба возвращают одинаковый формат ответа.
+    const API_BY_SOURCE = {
+      firebase: "/modapi/memories",
+      supabase: "/modapi/sb-memories",
+    };
+    const $ = (id) => document.getElementById(id);
+    const apiUrl = () => API_BY_SOURCE[$("source").value] || API_BY_SOURCE.firebase;
+    let nextOffset = 0;      // offset для следующей страницы (null = больше нет)
+    let loadedCount = 0;     // сколько уже отрисовано
+    let loading = false;
+
+    function secret() { return sessionStorage.getItem("modSecret") || ""; }
+
+    function fmtSize(b) {
+      if (!b) return "";
+      const u = ["B","KB","MB","GB"]; let i = 0; let n = b;
+      while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+      return n.toFixed(n < 10 && i > 0 ? 1 : 0) + u[i];
+    }
+
+    async function fetchPage(reset) {
+      if (loading) return;
+      loading = true;
+      $("more").disabled = true;
+      $("status").textContent = "Загрузка…";
+      $("err").textContent = "";
+
+      const profiles = $("area").value === "profiles";
+      if (reset) {
+        nextOffset = 0; loadedCount = 0;
+        $("grid").innerHTML = "";
+        $("grid").classList.toggle("profiles", profiles);
+      }
+
+      const params = new URLSearchParams();
+      const g = $("group").value.trim();
+      if (g) params.set("groupId", g);
+      params.set("area", $("area").value);
+      params.set("sort", $("sort").value);
+      params.set("offset", String(nextOffset || 0));
+      params.set("max", "60");
+
+      // Профили читаются из таблиц Supabase (имена/статусы/аватары), источник
+      // (Firebase/Supabase) для них не применяется.
+      const endpoint = profiles ? "/modapi/sb-profiles" : apiUrl();
+      try {
+        const res = await fetch(endpoint + "?" + params.toString(), {
+          headers: { "x-mod-secret": secret() },
+        });
+        if (res.status === 401) {
+          gateOut("Неверный секрет.");
+          return;
+        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        render(data.items || []);
+        nextOffset = (data.nextOffset === undefined) ? null : data.nextOffset;
+        loadedCount += (data.items || []).length;
+        const hasMore = nextOffset != null;
+        $("count").textContent =
+          loadedCount + " из " + (data.total ?? loadedCount) +
+          (profiles ? " профилей" : " медиа");
+        $("more").hidden = !hasMore;
+        $("status").textContent = loadedCount === 0 ? "Ничего не найдено." : "";
+      } catch (e) {
+        $("err").textContent = "Ошибка: " + e.message;
+        $("status").textContent = "";
+      } finally {
+        loading = false;
+        $("more").disabled = false;
+      }
+    }
+
+    // Показ медиа поверх страницы. Используем <img>/<video> (рендер по байтам),
+    // а НЕ переход на URL — так браузер не уводит файл в «Загрузки».
+    function openLightbox(url, kind) {
+      const box = $("lightbox");
+      // убрать прежний медиа-узел (всё, кроме кнопки закрытия)
+      for (const n of [...box.childNodes]) {
+        if (n.id !== "lbClose") box.removeChild(n);
+      }
+      const el = document.createElement(kind === "video" ? "video" : "img");
+      el.src = url;
+      if (kind === "video") {
+        el.controls = true; el.autoplay = true; el.playsInline = true;
+      }
+      el.onclick = (e) => e.stopPropagation(); // клик по медиа не закрывает
+      box.appendChild(el);
+      box.classList.add("open");
+    }
+    function closeLightbox() {
+      const box = $("lightbox");
+      box.classList.remove("open");
+      for (const n of [...box.childNodes]) {
+        if (n.id !== "lbClose") box.removeChild(n); // остановить видео/освободить
+      }
+    }
+
+    // Карточка профиля: аватар + имя + e-mail/uid + статус/сообщение/настроение.
+    // Всё через textContent — поля задаются пользователем (защита от инъекций).
+    function profileCard(it) {
+      const card = document.createElement("div");
+      card.className = "pcard";
+
+      let av;
+      if (it.avatarUrl) {
+        av = document.createElement("img");
+        av.loading = "lazy";
+        av.src = it.avatarUrl;
+        av.alt = "";
+        av.onclick = () => openLightbox(it.avatarUrl, "image");
+      } else {
+        av = document.createElement("div");
+        av.textContent =
+          (it.name || it.uid || "?").trim().charAt(0).toUpperCase() || "?";
+      }
+      av.className = "pav";
+      card.appendChild(av);
+
+      const info = document.createElement("div");
+      info.className = "pinfo";
+
+      const name = document.createElement("div");
+      name.className = "pname";
+      name.textContent = it.name || "(без имени)";
+      if (it.badge) {
+        const b = document.createElement("span");
+        b.className = "pbadge";
+        b.textContent = it.badge;
+        name.appendChild(b);
+      }
+      info.appendChild(name);
+
+      const sub = document.createElement("div");
+      sub.className = "psub";
+      sub.textContent = [it.email, it.uid].filter(Boolean).join(" · ");
+      info.appendChild(sub);
+
+      const lines = [];
+      if (it.status) lines.push("🟢 " + it.status);
+      if (it.message) lines.push("💬 " + it.message);
+      if (it.moodLabel) lines.push("🙂 " + it.moodLabel);
+      if (it.music) lines.push("🎵 " + it.music);
+      for (const l of lines) {
+        const d = document.createElement("div");
+        d.className = "pstatus";
+        d.textContent = l;
+        info.appendChild(d);
+      }
+
+      card.appendChild(info);
+      return card;
+    }
+
+    function render(items) {
+      const grid = $("grid");
+      for (const it of items) {
+        if (it.kind === "profile") { grid.appendChild(profileCard(it)); continue; }
+
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        if (it.kind === "video") {
+          const play = document.createElement("div");
+          play.className = "play";
+          play.textContent = "▶";
+          play.onclick = () => openLightbox(it.url, "video");
+          cell.appendChild(play);
+        } else {
+          const img = document.createElement("img");
+          img.loading = "lazy";
+          img.src = it.url;
+          img.onclick = () => openLightbox(it.url, "image");
+          cell.appendChild(img);
+        }
+
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        const date = it.updated ? new Date(it.updated).toLocaleDateString() : "";
+        tag.innerHTML =
+          (it.area === "widget" ? "🧩 " : "") +
+          (it.groupId ? it.groupId + " · " : "") + fmtSize(it.size) +
+          (date ? " · " + date : "") +
+          ' · <a class="dl" href="' + it.url + '" target="_blank" rel="noopener">скачать</a>';
+        cell.appendChild(tag);
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function gateIn() {
+      $("gate").hidden = true;
+      $("app").hidden = false;
+      fetchPage(true);
+    }
+    function gateOut(msg) {
+      sessionStorage.removeItem("modSecret");
+      $("app").hidden = true;
+      $("gate").hidden = false;
+      $("gateErr").textContent = msg || "";
+    }
+
+    $("enter").onclick = () => {
+      const s = $("secret").value.trim();
+      if (!s) return;
+      sessionStorage.setItem("modSecret", s);
+      gateIn();
+    };
+    $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") $("enter").click(); });
+    $("apply").onclick = () => fetchPage(true);
+    $("source").onchange = () => fetchPage(true);
+    $("area").onchange = () => fetchPage(true);
+    $("sort").onchange = () => fetchPage(true);
+    $("group").addEventListener("keydown", (e) => { if (e.key === "Enter") fetchPage(true); });
+    $("more").onclick = () => fetchPage(false);
+    $("logout").onclick = () => gateOut("");
+    $("lightbox").onclick = closeLightbox;          // клик по фону закрывает
+    $("lbClose").onclick = closeLightbox;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+    });
+
+    // Авто-вход, если секрет уже в сессии
+    if (secret()) gateIn();
+  </script>
+</body>
+</html>

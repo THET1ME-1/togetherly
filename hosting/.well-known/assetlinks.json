@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.togetherly.love",
+      "sha256_cert_fingerprints": [
+        "8F:DF:49:55:24:67:80:B8:AA:96:DF:FC:B8:65:2B:58:EB:E7:7B:E0:42:30:72:9A:72:20:1B:7C:23:B5:FC:C4",
+        "1E:94:4F:00:FE:F1:17:D5:00:03:56:03:44:FC:BE:4F:9F:69:BF:FA:4C:F3:5B:A8:9F:26:D0:32:C3:3A:4E:13"
+      ]
+    }
+  }
+]

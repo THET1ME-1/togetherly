@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sign in with Apple (обязательно для App Store, т.к. есть вход через Google) -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+
+	<!-- Push-уведомления (firebase_messaging). На релизе = production. -->
+	<key>aps-environment</key>
+	<string>production</string>
+
+	<!-- Общая группа с виджет-расширением (home_widget пишет сюда данные виджетов). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.togetherly.love</string>
+	</array>
+
+	<!-- Universal Links — паритет с Android App Links (приглашения по https://).
+	     togetherly.duckdns.org — живой VPS, обслуживает инвайт-лендинг и AASA
+	     (/.well-known/apple-app-site-association) после гашения Firebase Hosting.
+	     Firebase-хост оставлен для совместимости со старыми ссылками. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:togetherly.duckdns.org</string>
+		<string>applinks:togetherly-d4856.web.app</string>
+	</array>
+</dict>
+</plist>

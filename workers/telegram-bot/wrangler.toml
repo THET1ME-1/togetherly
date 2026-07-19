@@ -1,0 +1,14 @@
+name = "togetherly-bug-bot"
+main = "src/index.js"
+compatibility_date = "2026-07-14"
+account_id = "2aa046441595c8cd541c3b42f2aa5ab7"
+
+# Логи в панели Cloudflare: без них падение Gemini/Todoist снова будет немым.
+[observability]
+enabled = true
+
+# Секреты (не в git) ставятся так:
+#   echo -n "<value>" | npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   echo -n "<value>" | npx wrangler secret put TODOIST_API_TOKEN
+#   echo -n "<value>" | npx wrangler secret put GEMINI_API_KEY
+#   echo -n "<value>" | npx wrangler secret put TG_WEBHOOK_SECRET

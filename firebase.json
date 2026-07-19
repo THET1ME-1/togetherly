@@ -1,0 +1,43 @@
+{
+  "hosting": {
+    "public": "hosting",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      { "source": "/invite/**", "destination": "/invite/index.html" },
+      { "source": "/modapi/memories", "function": { "functionId": "modBrowseMemories", "region": "us-central1" } },
+      { "source": "/modapi/sb-memories", "function": { "functionId": "modBrowseSupabaseMemories", "region": "us-central1" } },
+      { "source": "/modapi/sb-profiles", "function": { "functionId": "modBrowseSupabaseProfiles", "region": "us-central1" } }
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      }
+    ]
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "functions": {
+    "source": "functions"
+  }
+}

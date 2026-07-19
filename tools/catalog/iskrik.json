@@ -1,0 +1,11 @@
+{
+  "id": "iskrik",
+  "kind": "mascot",
+  "nameRu": "Искрик",
+  "nameEn": "Iskrik",
+  "sort": 12,
+  "minApp": "1.14.0",
+  "removeBg": true,
+  "image": "../mascot_src/iskrik.jpg",
+  "unlock": { "type": "level", "level": 10 }
+}

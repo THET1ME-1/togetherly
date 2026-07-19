@@ -1,0 +1,11 @@
+{
+  "id": "spiky",
+  "kind": "mascot",
+  "nameRu": "Спайки",
+  "nameEn": "Spiky",
+  "sort": 10,
+  "minApp": "1.14.0",
+  "removeBg": true,
+  "image": "../mascot_src/spiky.jpg",
+  "unlock": { "type": "level", "level": 3 }
+}

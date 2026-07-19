@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Togetherly – Privacy Policy / Политика конфиденциальности</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff7e8b 0%, #ff4f6b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 48px;
+      color: #1a1a1a;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px 44px;
+      max-width: 780px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+    }
+
+    /* ── Header ── */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, #ff7e8b, #ff4f6b);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .logo-name { font-size: 22px; font-weight: 700; color: #ff4f6b; }
+
+    .updated { font-size: 13px; color: #aaa; margin-bottom: 28px; }
+
+    /* ── Language switcher ── */
+    .lang-switch {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 36px;
+    }
+    .lang-btn {
+      padding: 8px 22px;
+      border-radius: 50px;
+      border: 2px solid #ff4f6b;
+      background: transparent;
+      color: #ff4f6b;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .lang-btn.active {
+      background: linear-gradient(135deg, #ff7e8b, #ff4f6b);
+      color: #fff;
+      border-color: transparent;
+    }
+    .lang-btn:hover:not(.active) { background: #fff0f1; }
+
+    /* ── Content sections ── */
+    .section { display: none; }
+    .section.visible { display: block; }
+
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    h2 { font-size: 17px; font-weight: 700; margin: 28px 0 10px; color: #333; }
+    h3 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; color: #555; }
+
+    p { font-size: 15px; color: #444; line-height: 1.75; margin-bottom: 10px; }
+
+    ol, ul {
+      padding-left: 22px;
+      color: #444;
+      font-size: 15px;
+      line-height: 1.85;
+      margin-bottom: 10px;
+    }
+
+    .highlight-box {
+      background: #fff4f5;
+      border: 1px solid #ffd6db;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.7;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0 20px;
+    }
+    th {
+      background: #f8f8f8;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 1px solid #eee;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #444;
+      vertical-align: top;
+    }
+
+    a { color: #ff4f6b; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, #ff7e8b, #ff4f6b);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(255,79,107,0.3);
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .88; text-decoration: none; }
+
+    hr { border: none; border-top: 1px solid #f0f0f0; margin: 32px 0; }
+
+    .contact-footer {
+      margin-top: 36px;
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+    }
+
+    @media (max-width: 540px) {
+      .card { padding: 32px 18px; }
+      h1 { font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Header -->
+  <div class="logo">
+    <div class="logo-icon">💑</div>
+    <span class="logo-name">Togetherly</span>
+  </div>
+  <p class="updated">Last updated / Обновлено: 17 June 2026 / 17 июня 2026</p>
+
+  <!-- Language switcher -->
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="switchLang('ru')">🇷🇺 Русский</button>
+    <button class="lang-btn" onclick="switchLang('en')">🇬🇧 English</button>
+  </div>
+
+  <!-- ══════════════════════════ RUSSIAN ══════════════════════════ -->
+  <div id="ru" class="section visible">
+
+    <h1>Политика конфиденциальности</h1>
+    <p>Настоящая Политика конфиденциальности описывает, какие данные обрабатывает мобильное приложение <strong>Togetherly</strong>, для каких целей они используются, как хранятся и какие права есть у пользователя.</p>
+    <p>Используя приложение, вы подтверждаете, что ознакомились с этой Политикой и принимаете её условия.</p>
+
+    <hr>
+
+    <h2>1. Какие данные мы собираем</h2>
+
+    <h3>Данные учётной записи</h3>
+    <ul>
+      <li>Имя или отображаемое имя</li>
+      <li>Адрес электронной почты</li>
+      <li>Идентификатор пользователя (Firebase UID)</li>
+      <li>Фотография профиля</li>
+      <li>Способ входа (Google или email/пароль)</li>
+    </ul>
+
+    <h3>Данные профиля и настроек</h3>
+    <ul>
+      <li>Пол, выбранный язык, тема оформления</li>
+      <li>Данные подключения к партнёру или группе</li>
+    </ul>
+
+    <h3>Пользовательский контент</h3>
+    <ul>
+      <li>Воспоминания, заметки, комментарии</li>
+      <li>Фотографии, видео, музыкальные файлы</li>
+      <li>Рисунки, таймеры, статусы, записи настроения</li>
+      <li>Данные виджета рабочего стола</li>
+    </ul>
+
+    <h3>Данные геолокации</h3>
+    <ul>
+      <li><strong>Приблизительное местоположение</strong> — для отображения расстояния между партнёрами, не сохраняется</li>
+      <li><strong>Точное местоположение</strong> — если вы добавляете геометку к воспоминанию (сохраняется в Firestore)</li>
+    </ul>
+
+    <h3>Технические данные</h3>
+    <ul>
+      <li>FCM push-токен (для отправки уведомлений)</li>
+      <li>Временные файлы, кэш</li>
+    </ul>
+
+    <h3>Данные аналитики</h3>
+    <ul>
+      <li>Обезличенная статистика использования (открытия экранов, события, тип устройства, версия ОС, примерный регион)</li>
+      <li>Агрегированные демографические данные (пол, возраст) и интересы — только при включённой функции Google Signals и только в обобщённом виде, по пользователям, вошедшим в аккаунт Google с включённой персонализацией рекламы</li>
+    </ul>
+
+    <hr>
+
+    <h2>2. Как используются данные</h2>
+    <ol>
+      <li>Создание и обслуживание учётной записи</li>
+      <li>Синхронизация контента между участниками пары или группы</li>
+      <li>Отправка push-уведомлений (при наличии разрешения)</li>
+      <li>Работа виджетов, таймеров и прочих функций</li>
+      <li>Обеспечение безопасности и устранение ошибок</li>
+    </ol>
+
+    <hr>
+
+    <h2>3. Разрешения устройства</h2>
+    <table>
+      <thead><tr><th>Разрешение</th><th>Для чего используется</th><th>Обязательно?</th></tr></thead>
+      <tbody>
+        <tr><td>Камера</td><td>Фото, видео, сканирование QR</td><td>Нет</td></tr>
+        <tr><td>Галерея / Файлы</td><td>Выбор фото, видео, музыки</td><td>Нет</td></tr>
+        <tr><td>Геолокация</td><td>Геометки в воспоминаниях</td><td>Нет</td></tr>
+        <tr><td>Уведомления</td><td>Push-уведомления от партнёра</td><td>Нет</td></tr>
+      </tbody>
+    </table>
+    <p>Вы можете отозвать любое разрешение в настройках устройства в любой момент.</p>
+
+    <hr>
+
+    <h2>4. Где хранятся данные</h2>
+    <div class="highlight-box">
+      Данные хранятся локально на устройстве (кэш, SharedPreferences) и в облаке Google Firebase: <strong>Firebase Authentication</strong>, <strong>Cloud Firestore</strong>, <strong>Firebase Storage</strong>, <strong>Firebase Cloud Messaging</strong>.
+    </div>
+
+    <hr>
+
+    <h2>5. Передача третьим лицам</h2>
+    <p>Данные могут обрабатываться следующими третьими лицами:</p>
+    <ul>
+      <li><strong>Google Firebase</strong> — аутентификация, база данных, хранение файлов, уведомления</li>
+      <li><strong>Google Sign-In</strong> — если выбран вход через Google</li>
+      <li><strong>Google Analytics (Firebase)</strong> — обезличенная статистика использования. При включённой функции Google Signals дополняет статистику агрегированными демографическими данными (пол, возраст) и интересами и может формировать аудитории для ремаркетинга в связанных рекламных аккаунтах Google. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank">Отказ от Google Analytics</a>.</li>
+      <li><strong>Google AdMob</strong> — реклама. AdMob может обрабатывать рекламный идентификатор устройства, IP-адрес, действия в приложении и приблизительное местоположение. <a href="https://policies.google.com/privacy" target="_blank">Политика конфиденциальности Google</a>.</li>
+      <li><strong>Рекламная сеть Яндекса (Yandex Mobile Ads)</strong> — реклама. Может обрабатывать рекламный идентификатор устройства, IP-адрес, данные об устройстве, действия в приложении и приблизительное местоположение. <a href="https://yandex.ru/legal/confidential/" target="_blank">Политика конфиденциальности Яндекса</a>.</li>
+      <li>Платформы Apple и Google — в рамках работы ОС</li>
+    </ul>
+    <p>Данные внутри пары/группы видны другим участникам этой пары/группы.</p>
+
+    <hr>
+
+    <h2>6. Реклама и аналитика</h2>
+    <p>Приложение использует <strong>Google AdMob</strong> и <strong>Рекламную сеть Яндекса (Yandex Mobile Ads)</strong> для показа рекламы, включая баннеры и видеорекламу за вознаграждение. Вам может показываться персонализированная или неперсонализированная реклама в зависимости от вашего согласия.</p>
+    <p>Для показа рекламы эти сети могут обрабатывать: рекламный идентификатор устройства, IP-адрес, данные о действиях в приложении, приблизительное местоположение, тип и версию операционной системы.</p>
+    <p>Приложение также использует <strong>Google Analytics (Google Analytics для Firebase)</strong> для сбора обезличенной статистики использования и улучшения работы приложения. При включённой функции <strong>Google Signals</strong> активируются расширенные рекламные функции Google Analytics: сервис дополняет статистику агрегированными демографическими данными (пол, возраст) и данными об интересах, а также может формировать аудитории для ремаркетинга и передавать их в связанные рекламные аккаунты Google. Все эти данные используются только в обобщённом (агрегированном) виде и относятся лишь к пользователям, вошедшим в аккаунт Google с включённой персонализацией рекламы; идентифицировать конкретного человека по ним нельзя.</p>
+    <p>Вы можете управлять персонализацией рекламы и аналитики в настройках устройства (Google → Реклама), в настройках аккаунта Google или через запрос согласия при первом запуске приложения (для пользователей ЕЭЗ/Великобритании). Подробнее: <a href="https://policies.google.com/privacy" target="_blank">Политика Google</a>, <a href="https://tools.google.com/dlpage/gaoptout" target="_blank">отказ от Google Analytics</a>, <a href="https://yandex.ru/legal/confidential/" target="_blank">Политика Яндекса</a>.</p>
+
+    <hr>
+
+    <h2>7. Сроки хранения</h2>
+    <p>Данные хранятся, пока аккаунт активен и контент не удалён. После удаления аккаунта все данные удаляются в течение <strong>30 дней</strong>.</p>
+
+    <hr>
+
+    <h2>8. Удаление данных</h2>
+    <p>Вы можете удалять отдельные элементы (воспоминания, комментарии, рисунки и т.д.) прямо в приложении. Для полного удаления аккаунта:</p>
+    <a class="btn" href="/delete-account">🗑️ Удалить аккаунт и данные</a>
+
+    <hr>
+
+    <h2>9. Безопасность</h2>
+    <p>Всё взаимодействие с сервером происходит по протоколу <strong>HTTPS/TLS</strong>. Мы применяем разумные технические меры защиты, однако ни одна система не гарантирует абсолютной безопасности.</p>
+
+    <hr>
+
+    <h2>10. Дети</h2>
+    <p>Приложение не предназначено для детей младше 13 лет. Если вы считаете, что ребёнок передал данные без разрешения, свяжитесь с нами.</p>
+
+    <hr>
+
+    <h2>11. Ваши права</h2>
+    <ul>
+      <li>Доступ к своим данным</li>
+      <li>Исправление неточных данных</li>
+      <li>Удаление данных</li>
+      <li>Ограничение обработки</li>
+      <li>Отзыв согласия</li>
+    </ul>
+
+    <hr>
+
+    <h2>12. Изменения Политики</h2>
+    <p>Мы можем обновлять эту Политику. Дата последнего изменения указана в начале страницы.</p>
+
+    <hr>
+
+    <h2>13. Контакты</h2>
+    <p>По вопросам конфиденциальности: <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a></p>
+
+  </div>
+
+  <!-- ══════════════════════════ ENGLISH ══════════════════════════ -->
+  <div id="en" class="section">
+
+    <h1>Privacy Policy</h1>
+    <p>This Privacy Policy explains what data the <strong>Togetherly</strong> mobile application may process, why that data is used, how it is stored, and what rights users may have.</p>
+    <p>By using the application, you acknowledge that you have read and accepted this Privacy Policy.</p>
+
+    <hr>
+
+    <h2>1. What Data We Collect</h2>
+
+    <h3>Account data</h3>
+    <ul>
+      <li>Name or display name</li>
+      <li>Email address</li>
+      <li>User identifier (Firebase UID)</li>
+      <li>Profile photo</li>
+      <li>Selected sign-in method (Google or email/password)</li>
+    </ul>
+
+    <h3>Profile and settings data</h3>
+    <ul>
+      <li>Gender, language preference, theme setting</li>
+      <li>Partner or group connection data</li>
+    </ul>
+
+    <h3>User-generated content</h3>
+    <ul>
+      <li>Memories, notes, comments</li>
+      <li>Photos, videos, music files</li>
+      <li>Drawings, timers, statuses, mood entries</li>
+      <li>Home screen widget data</li>
+    </ul>
+
+    <h3>Location data</h3>
+    <ul>
+      <li><strong>Approximate location</strong> — to display distance between partners; not stored</li>
+      <li><strong>Precise location</strong> — when you add a location tag to a memory (stored in Firestore)</li>
+    </ul>
+
+    <h3>Technical data</h3>
+    <ul>
+      <li>FCM push notification token</li>
+      <li>Temporary files and cache</li>
+    </ul>
+
+    <h3>Analytics data</h3>
+    <ul>
+      <li>De-identified usage statistics (screen views, events, device type, OS version, approximate region)</li>
+      <li>Aggregated demographic data (gender, age) and interests — only when the Google Signals feature is enabled and only in aggregated form, for users signed in to a Google account with Ads Personalization enabled</li>
+    </ul>
+
+    <hr>
+
+    <h2>2. How We Use Data</h2>
+    <ol>
+      <li>Creating and maintaining user accounts</li>
+      <li>Synchronising content between members of a pair or group</li>
+      <li>Sending push notifications (when permission is granted)</li>
+      <li>Operating widgets, timers, and other app features</li>
+      <li>Ensuring security and resolving technical issues</li>
+    </ol>
+
+    <hr>
+
+    <h2>3. Device Permissions</h2>
+    <table>
+      <thead><tr><th>Permission</th><th>Purpose</th><th>Required?</th></tr></thead>
+      <tbody>
+        <tr><td>Camera</td><td>Photos, videos, QR scanning</td><td>No</td></tr>
+        <tr><td>Gallery / Files</td><td>Selecting photos, videos, music</td><td>No</td></tr>
+        <tr><td>Location</td><td>Geotagging memories</td><td>No</td></tr>
+        <tr><td>Notifications</td><td>Push notifications from partner</td><td>No</td></tr>
+      </tbody>
+    </table>
+    <p>You can revoke any permission at any time in your device settings.</p>
+
+    <hr>
+
+    <h2>4. Where Data Is Stored</h2>
+    <div class="highlight-box">
+      Data is stored locally on your device (cache, SharedPreferences) and in Google Firebase cloud services: <strong>Firebase Authentication</strong>, <strong>Cloud Firestore</strong>, <strong>Firebase Storage</strong>, <strong>Firebase Cloud Messaging</strong>.
+    </div>
+
+    <hr>
+
+    <h2>5. Sharing With Third Parties</h2>
+    <p>Data may be processed by the following third parties:</p>
+    <ul>
+      <li><strong>Google Firebase</strong> — authentication, database, file storage, notifications</li>
+      <li><strong>Google Sign-In</strong> — if you choose to sign in with Google</li>
+      <li><strong>Google Analytics (Firebase)</strong> — de-identified usage statistics. When the Google Signals feature is enabled, it augments statistics with aggregated demographic data (gender, age) and interests, and may build remarketing audiences and share them with linked Google advertising accounts. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank">Google Analytics opt-out</a>.</li>
+      <li><strong>Google AdMob</strong> — advertising. AdMob may process your device's advertising ID, IP address, in-app activity, and approximate location to serve ads. <a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a>.</li>
+      <li><strong>Yandex Mobile Ads (Yandex Advertising Network)</strong> — advertising. May process your device's advertising ID, IP address, device data, in-app activity, and approximate location to serve ads. <a href="https://yandex.com/legal/confidential/" target="_blank">Yandex Privacy Policy</a>.</li>
+      <li>Apple and Google platform services — as required by the operating system</li>
+    </ul>
+    <p>Content created in a pair or group is visible to other members of that pair or group.</p>
+
+    <hr>
+
+    <h2>6. Advertising & Analytics</h2>
+    <p>The app uses <strong>Google AdMob</strong> and the <strong>Yandex Advertising Network (Yandex Mobile Ads)</strong> to display advertisements, including banners and rewarded video. You may see personalized or non-personalized ads depending on your consent choices.</p>
+    <p>To serve ads, these networks may process: your device's advertising ID, IP address, in-app activity data, approximate location, device type and OS version.</p>
+    <p>The app also uses <strong>Google Analytics (Google Analytics for Firebase)</strong> to collect de-identified usage statistics and improve the app. When the <strong>Google Signals</strong> feature is enabled, Google Advertising Features are activated in Google Analytics: the service augments statistics with aggregated demographic data (gender, age) and interest data, and may build remarketing audiences and share them with linked Google advertising accounts. All such data is used in aggregated form only and relates only to users signed in to a Google account with Ads Personalization enabled; it cannot be used to identify an individual.</p>
+    <p>You can manage ad and analytics personalization in your device settings (Google → Ads), in your Google account settings, or through the consent request when you first open the app (for EEA/UK users). Learn more: <a href="https://policies.google.com/privacy" target="_blank">Google Policy</a>, <a href="https://tools.google.com/dlpage/gaoptout" target="_blank">Google Analytics opt-out</a>, <a href="https://yandex.com/legal/confidential/" target="_blank">Yandex Policy</a>.</p>
+
+    <hr>
+
+    <h2>7. Data Retention</h2>
+    <p>Data is retained while your account is active and content has not been deleted. After account deletion, all data is removed within <strong>30 days</strong>.</p>
+
+    <hr>
+
+    <h2>8. Deleting Your Data</h2>
+    <p>You can delete individual items (memories, comments, drawings, etc.) directly in the app. To delete your full account:</p>
+    <a class="btn" href="/delete-account">🗑️ Delete Account &amp; Data</a>
+
+    <hr>
+
+    <h2>9. Security</h2>
+    <p>All communication with the server uses <strong>HTTPS/TLS</strong>. We apply reasonable technical measures to protect data, but no system can guarantee absolute security.</p>
+
+    <hr>
+
+    <h2>10. Children</h2>
+    <p>The app is not intended for children under 13. If you believe a child has provided data without appropriate consent, please contact us.</p>
+
+    <hr>
+
+    <h2>11. Your Rights</h2>
+    <ul>
+      <li>Access to your data</li>
+      <li>Correction of inaccurate data</li>
+      <li>Deletion of data</li>
+      <li>Restriction of processing</li>
+      <li>Withdrawal of consent</li>
+    </ul>
+
+    <hr>
+
+    <h2>12. Changes to This Policy</h2>
+    <p>We may update this Policy from time to time. The date of the latest update is shown at the top of this page.</p>
+
+    <hr>
+
+    <h2>13. Contact</h2>
+    <p>For privacy-related questions: <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a></p>
+
+  </div>
+
+  <div class="contact-footer">
+    Togetherly · <a href="/delete-account">Delete Account</a> · <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a>
+  </div>
+
+</div>
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(lang).classList.add('visible');
+    document.querySelector('[onclick="switchLang(\'' + lang + '\')"]').classList.add('active');
+  }
+</script>
+</body>
+</html>

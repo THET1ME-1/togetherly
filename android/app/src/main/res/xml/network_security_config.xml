@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bugsink (self-hosted краш-репортинг, замена Crashlytics) пока обслуживается по
+  HTTP: PocketBase занимает 80/443 на домене, Bugsink висит на 77.91.95.34:8000.
+  На Android 9+ (API 28) cleartext-трафик ЗАПРЕЩЁН по умолчанию → POST'ы Sentry в
+  Bugsink молча отваливались, и баги не доходили до панели.
+
+  Разрешаем cleartext ТОЛЬКО для этого IP. Весь остальной трафик (PocketBase
+  HTTPS, медиа, OAuth) остаётся HTTPS-only — глобально cleartext НЕ открываем.
+  TODO: перевести Bugsink на HTTPS-сабдомен через reverse-proxy и удалить это.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">77.91.95.34</domain>
+    </domain-config>
+</network-security-config>

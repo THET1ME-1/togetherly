@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:baselineAligned="false"
+    android:background="@drawable/widget_bg_rounded"
+    android:clipToOutline="true">
+
+    <!-- ═══════ Левая половина (Я) ═══════ -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/widget_left_panel">
+
+        <!-- Фото как фон -->
+        <ImageView
+            android:id="@+id/my_bg_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <!-- Лёгкое затемнение (только при наличии фото) -->
+        <ImageView
+            android:id="@+id/my_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#1A000000"
+            android:visibility="gone" />
+
+        <!-- Контент (центр + аватарка внизу) -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="6dp">
+
+            <!-- Центральный контент -->
+            <LinearLayout
+                android:id="@+id/my_center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageView
+                    android:id="@+id/my_mood_emoji"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/my_mood_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="24sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/my_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="10sp"
+                    android:textColor="#CC000000"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_marginTop="3dp" />
+
+                <TextView
+                    android:id="@+id/my_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="9sp"
+                    android:textColor="#99000000"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:layout_marginTop="2dp" />
+
+                <TextView
+                    android:id="@+id/my_music"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="8sp"
+                    android:textColor="#88000000"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_marginTop="3dp" />
+
+            </LinearLayout>
+
+            <!-- Аватарка в нижнем левом углу (как в виджете настроения) -->
+            <ImageView
+                android:id="@+id/my_avatar"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
+                android:layout_marginBottom="4dp"
+                android:layout_marginStart="4dp"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
+
+        </RelativeLayout>
+    </FrameLayout>
+
+    <!-- ═══════ Разделитель ═══════ -->
+    <LinearLayout
+        android:layout_width="20dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#FFFFFFFF">
+
+        <ImageView
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#33000000" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="&#9829;"
+            android:textSize="12sp"
+            android:textColor="#FF6B8A"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp" />
+
+        <ImageView
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#33000000" />
+
+    </LinearLayout>
+
+    <!-- ═══════ Правая половина (Партнёр) ═══════ -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/widget_right_panel">
+
+        <!-- Фото как фон -->
+        <ImageView
+            android:id="@+id/partner_bg_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <!-- Лёгкое затемнение (только при наличии фото) -->
+        <ImageView
+            android:id="@+id/partner_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#1A000000"
+            android:visibility="gone" />
+
+        <!-- Контент -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="6dp">
+
+            <LinearLayout
+                android:id="@+id/partner_center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageView
+                    android:id="@+id/partner_mood_emoji"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/partner_mood_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="24sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/partner_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="10sp"
+                    android:textColor="#CC000000"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_marginTop="3dp" />
+
+                <TextView
+                    android:id="@+id/partner_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="9sp"
+                    android:textColor="#99000000"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:layout_marginTop="2dp" />
+
+                <TextView
+                    android:id="@+id/partner_music"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="8sp"
+                    android:textColor="#88000000"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_marginTop="3dp" />
+
+            </LinearLayout>
+
+            <!-- Аватарка в нижнем правом углу -->
+            <ImageView
+                android:id="@+id/partner_avatar"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginBottom="4dp"
+                android:layout_marginEnd="4dp"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
+
+        </RelativeLayout>
+    </FrameLayout>
+
+</LinearLayout>

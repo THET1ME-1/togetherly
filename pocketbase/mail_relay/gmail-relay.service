@@ -1,0 +1,18 @@
+[Unit]
+Description=Togetherly Gmail API mail relay (PocketBase -> Gmail HTTP API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Креды (Client ID/Secret/Refresh token/Sender) — в /etc/gmail-relay.env (chmod 600,
+# НЕ в репозитории). Скрипт слушает только 127.0.0.1:8099.
+EnvironmentFile=/etc/gmail-relay.env
+ExecStart=/usr/bin/python3 /opt/gmail-relay/gmail_relay.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

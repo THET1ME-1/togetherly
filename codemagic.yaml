@@ -1,0 +1,136 @@
+# Codemagic CI — сборка/подпись/публикация iOS в облачном Mac.
+# Android по-прежнему собирается в GitHub Actions (.github/workflows/release-apk.yml).
+#
+# ПЕРЕД ПЕРВЫМ ЗАПУСКОМ (один раз, в панели Codemagic):
+#   1. Teams → Integrations → App Store Connect → добавить API-ключ (.p8 + Key ID +
+#      Issuer ID). Назвать его ИМЕННО как в `integrations.app_store_connect` ниже.
+#   2. Подключить репозиторий github.com/JbSharan2/love_app.
+#   3. (Если GoogleService-Info.plist НЕ закоммичен) — добавить его как зашифрованную
+#      переменную и распаковывать в скрипте; сейчас предполагается, что он в репо
+#      по пути ios/Runner/GoogleService-Info.plist.
+#
+# Запуск: пуш тега вида `ios-1.14.0` (см. triggering ниже) или вручную (Start build).
+
+definitions:
+  instance: &instance
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+
+workflows:
+  ios-appstore:
+    name: iOS — App Store / TestFlight
+    <<: *instance
+    integrations:
+      # ИМЯ ключа App Store Connect, заведённого в Codemagic (шаг 1 выше).
+      app_store_connect: TogetherlyASC
+    environment:
+      # ПОДПИСЬ целиком в скрипте ниже. Приватный ключ сертификата — ПОСТОЯННЫЙ,
+      # лежит в СЕКРЕТНОЙ переменной Codemagic `CERTIFICATE_PRIVATE_KEY` (репо
+      # ПУБЛИЧНЫЙ — ключ в git больше НЕ хранится). Один и тот же ключ →
+      # fetch-signing-files переиспользует ОДИН distribution-сертификат каждую
+      # сборку и создаёт app_store-профили (приложение И виджет).
+      #
+      # Как завести (один раз): Codemagic → App environment variables →
+      # создать группу `ios_signing`, добавить в неё переменную
+      # CERTIFICATE_PRIVATE_KEY = ключ в base64 одной строкой
+      # (`base64 -w0 ios/certs/dist_cert_key.pem`), флаг Secure. Скрипт подписи
+      # ниже раскодирует base64 в PEM. Группа импортируется через `groups:`.
+      #
+      # НЕ генерить ключ в билде (openssl) — так под каждый прогон заводился НОВЫЙ
+      # сертификат, лимит Apple исчерпывался, fetch-signing-files падал, профили не
+      # скачивались, use-profiles оставлял проект в Automatic → архив на безголовом
+      # Mac падал с «No Accounts» / «No profiles ... com.togetherly.love».
+      #
+      # Ключ интеграции TogetherlyASC доступен CLI автоматически как env.
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ios_signing   # содержит секрет CERTIFICATE_PRIVATE_KEY (создать в UI)
+      vars:
+        BUNDLE_ID: "com.togetherly.love"
+        # Числовой Apple ID приложения из App Store Connect (App Information →
+        # General → Apple ID). Нужен для авто-публикации в TestFlight.
+        APP_STORE_APP_ID: 6781019737
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'ios-*'
+          include: true
+    scripts:
+      - name: Flutter packages
+        script: |
+          # SPM (экспериментальный) конфликтует на tocropviewcontroller
+          # (image_cropper 3.x vs dkimagepickercontroller 2.x) — собираем через
+          # CocoaPods (Podfile + шаг Pod install ниже).
+          flutter config --no-enable-swift-package-manager
+          flutter pub get
+      - name: Pod install
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Set up code signing (manual, App Store)
+        # ПОСТОЯННЫЙ приватный ключ из @env:CERTIFICATE_PRIVATE_KEY → один и тот же
+        # distribution-сертификат переиспользуется каждую сборку (не плодим новые,
+        # не упираемся в лимит Apple). fetch-signing-files создаёт/докачивает
+        # app_store-профили приложения И виджета; add-certificates кладёт серт+ключ
+        # в keychain; use-profiles ПЕРЕВОДИТ проект в manual-подпись (иначе архив
+        # уходит в Automatic → «No Accounts» на безголовом Mac).
+        #
+        # set -euxo pipefail: если подпись сорвётся (401 = права ASC-ключа, лимит
+        # сертификатов, нет CERTIFICATE_PRIVATE_KEY) — билд падает ЗДЕСЬ с реальной
+        # причиной в логе, а не глубже в «Build IPA» с невнятным «No Accounts».
+        #
+        # Ключ хранится в переменной CERTIFICATE_PRIVATE_KEY как base64 (поле
+        # значения в Codemagic однострочное — многострочный PEM туда не вставить).
+        # Раскодируем в PEM-файл и передаём его через @file:. Декод под `set +x`,
+        # чтобы значение не светилось в логе (плюс переменная помечена Secret).
+        script: |
+          set -euxo pipefail
+          keychain initialize
+          set +x
+          printf '%s' "$CERTIFICATE_PRIVATE_KEY" | openssl base64 -d -A > /tmp/dist_cert_key.pem
+          set -x
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key @file:/tmp/dist_cert_key.pem \
+            --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID.TogetherlyWidget" \
+            --type IOS_APP_STORE \
+            --certificate-key @file:/tmp/dist_cert_key.pem \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+          rm -f /tmp/dist_cert_key.pem
+      - name: Build IPA
+        script: |
+          set -e
+          # build-NAME (marketing, 1.15.x) берём из pubspec.yaml.
+          # build-NUMBER (CFBundleVersion) НЕ из pubspec — иначе забываешь его
+          # поднять и публикация падает с 409 "bundle version 99 already used".
+          # Спрашиваем у App Store Connect последний залитый build и делаем +1 —
+          # номер всегда монотонно растёт сам, руками трогать не нужно.
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo 0)
+          [ -z "$LATEST_BUILD_NUMBER" ] && LATEST_BUILD_NUMBER=0
+          NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "ASC latest build = $LATEST_BUILD_NUMBER → building with $NEW_BUILD_NUMBER"
+          flutter build ipa --release \
+            --build-number="$NEW_BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # На первом этапе — только TestFlight (внутреннее тестирование).
+        # Когда убедитесь, что сборка работает — можно включить submit_to_app_store.
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - sasamatrosov87@gmail.com
+        notify:
+          success: true
+          failure: true

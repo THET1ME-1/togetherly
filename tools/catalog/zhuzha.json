@@ -1,0 +1,11 @@
+{
+  "id": "zhuzha",
+  "kind": "mascot",
+  "nameRu": "Жужа",
+  "nameEn": "Zhuzha",
+  "sort": 13,
+  "minApp": "1.14.0",
+  "removeBg": true,
+  "image": "../mascot_src/zhuzha.jpg",
+  "unlock": { "type": "level", "level": 15 }
+}

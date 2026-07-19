@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Приглашение в Togetherly</title>
+  <meta name="description" content="Вас приглашают в Togetherly — романтичное пространство для двоих.">
+  <meta name="theme-color" content="#0f1021">
+  <!-- Open Graph -->
+  <meta property="og:title" content="Приглашение в Togetherly 💗">
+  <meta property="og:description" content="Вас приглашают присоединиться к Togetherly — приватному пространству для вас двоих.">
+  <meta property="og:image" content="https://togetherly-d4856.web.app/logo.jpg">
+  <meta property="og:url" content="https://togetherly-d4856.web.app/invite">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1020;
+      --pink: #ff6fae;
+      --peach: #ffb38a;
+      --violet: #8f7cff;
+      --text: #f7f8fc;
+      --muted: #a7afd1;
+      --card: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(circle at 15% 25%, rgba(143, 124, 255, 0.25), transparent 35%),
+        radial-gradient(circle at 85% 10%, rgba(105, 217, 255, 0.15), transparent 30%),
+        radial-gradient(circle at 90% 75%, rgba(255, 111, 174, 0.22), transparent 35%),
+        linear-gradient(180deg, #090d19 0%, #0d1326 50%, #0a1020 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Subtle grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 80%);
+      opacity: 0.5;
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 32px 36px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 111, 174, 0.08) inset;
+    }
+
+    .heart-icon {
+      font-size: 52px;
+      line-height: 1;
+      margin-bottom: 20px;
+      animation: heartbeat 1.6s ease-in-out infinite;
+      display: block;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      20% { transform: scale(1.12); }
+      40% { transform: scale(1); }
+      60% { transform: scale(1.08); }
+    }
+
+    .app-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--pink), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    /* Code box */
+    .code-section {
+      background: rgba(255, 111, 174, 0.08);
+      border: 1px solid rgba(255, 111, 174, 0.2);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 28px;
+    }
+
+    .code-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .code-value {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      background: linear-gradient(135deg, var(--pink), var(--peach));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .code-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 16px 24px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ff6fae, #c97dff);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-bottom: 12px;
+      font-family: inherit;
+      box-shadow: 0 8px 32px rgba(255, 111, 174, 0.35);
+    }
+
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      padding: 14px 24px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.11); }
+
+    .store-buttons {
+      display: none;
+      gap: 10px;
+      flex-direction: column;
+      margin-top: 12px;
+    }
+
+    .store-buttons.visible { display: flex; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .no-code-msg {
+      display: none;
+      font-size: 14px;
+      color: #f87171;
+      margin-top: 12px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: rgba(167, 175, 209, 0.5);
+      z-index: 1;
+    }
+
+    @media (max-width: 400px) {
+      .card { padding: 32px 22px 28px; }
+      h1 { font-size: 22px; }
+      .code-value { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <span class="heart-icon">💗</span>
+  <div class="app-name">Togetherly</div>
+  <h1>Вас приглашают!</h1>
+  <p class="subtitle">Кто-то хочет создать с вами<br>приватное пространство для двоих.</p>
+
+  <div class="code-section" id="codeSection" style="display:none">
+    <div class="code-label">Код приглашения</div>
+    <div class="code-value" id="codeDisplay">——</div>
+    <div class="code-hint">Введите этот код в приложении вручную,<br>если кнопка ниже не сработала</div>
+  </div>
+
+  <p class="no-code-msg" id="noCodeMsg">Код приглашения не найден в ссылке.</p>
+
+  <button class="btn-primary" id="btnOpen" onclick="openApp()">
+    <span class="spinner" id="spinner"></span>Открыть в приложении
+  </button>
+
+  <div class="store-buttons" id="storeButtons">
+    <div class="divider">Нет приложения?</div>
+    <a class="btn-secondary" href="https://play.google.com/store/apps/details?id=com.togetherly.love" id="btnAndroid">
+      📲 Скачать для Android
+    </a>
+  </div>
+</div>
+
+<div class="footer">© Togetherly · togetherly-d4856.web.app</div>
+
+<script>
+  // Extract invite code from URL path: /invite/ABC123
+  function getInviteCode() {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    // parts = ['invite', 'ABC123']
+    const idx = parts.indexOf('invite');
+    if (idx !== -1 && parts[idx + 1]) {
+      return parts[idx + 1].toUpperCase();
+    }
+    // Fallback: check ?code= query param
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('code') || '').toUpperCase() || null;
+  }
+
+  const code = getInviteCode();
+
+  // Show code if present
+  if (code && /^[A-Z0-9]{6}$/.test(code)) {
+    document.getElementById('codeSection').style.display = 'block';
+    document.getElementById('codeDisplay').textContent = code;
+  } else {
+    document.getElementById('noCodeMsg').style.display = 'block';
+    document.getElementById('btnOpen').disabled = true;
+    document.getElementById('spinner').style.display = 'none';
+  }
+
+  var redirected = false;
+
+  function openApp() {
+    if (!code) return;
+
+    // Try native deep link first (loveapp://invite/CODE)
+    const deepLink = 'loveapp://invite/' + code;
+    window.location.href = deepLink;
+
+    // After 2s, if still on page → show store buttons
+    setTimeout(function () {
+      if (!document.hidden) {
+        showStoreFallback();
+      }
+    }, 2000);
+  }
+
+  function showStoreFallback() {
+    document.getElementById('storeButtons').classList.add('visible');
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('btnOpen').textContent = 'Открыть в приложении';
+  }
+
+  // Auto-redirect on page load if code is valid
+  if (code && /^[A-Z0-9]{6}$/.test(code)) {
+    // Small delay so page renders first
+    setTimeout(openApp, 400);
+  }
+
+  // When user returns to tab (app was opened or they switched back)
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && !redirected) {
+      // Page is visible again → app likely didn't open
+      showStoreFallback();
+    }
+  });
+</script>
+</body>
+</html>

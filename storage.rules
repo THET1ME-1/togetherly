@@ -1,0 +1,76 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Проверка членства в группе через Firestore
+    function isGroupMember(groupId) {
+      return request.auth != null
+          && request.auth.uid in firestore.get(
+               /databases/(default)/documents/groups/$(groupId)
+             ).data.members;
+    }
+
+    // Воспоминания — читают и пишут только участники группы.
+    // uploadFile не вызывает getDownloadURL() для этих путей — download-токены
+    // не создаются. Доступ к файлам только через Cloud Function getSignedUrl
+    // (проверка членства в группе + Signed URL на 1 час).
+    match /memories/{groupId}/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    match /music/{groupId}/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 30 * 1024 * 1024;
+    }
+
+    match /timer_backgrounds/{groupId}/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /widget/{groupId}/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Маскоты группы — конкретное правило ВЫШЕ общего groups/{groupId} ниже,
+    // чтобы лимит размера для маскотов (5 MB) не перекрывался общим (50 MB).
+    match /groups/{groupId}/mascots/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Рисунки холста и прочие данные группы — только участники.
+    match /groups/{groupId}/{allPaths=**} {
+      allow read: if isGroupMember(groupId);
+      allow write: if isGroupMember(groupId)
+                   && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    // Wallpapers — публичное чтение, запись запрещена
+    match /wallpapers/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Аватарки — читать может любой авторизованный (нужно показывать
+    // партнёра, посетителей чата и т.д.), писать — только владелец.
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Default: deny all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

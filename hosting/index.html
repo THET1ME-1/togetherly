@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Togetherly — романтичное пространство для двоих</title>
+  <meta name="description" content="Togetherly — стильное и приватное пространство для пары: воспоминания, таймеры, карта мест, настроение и совместные моменты.">
+  <meta name="theme-color" content="#0f1021">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #121932;
+      --bg-card: rgba(18, 25, 50, 0.66);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f7f8fc;
+      --muted: #a7afd1;
+      --pink: #ff6fae;
+      --peach: #ffb38a;
+      --violet: #8f7cff;
+      --cyan: #69d9ff;
+      --green: #73f0c4;
+      --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --max: 1180px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(143, 124, 255, 0.22), transparent 26%),
+        radial-gradient(circle at 80% 0%, rgba(105, 217, 255, 0.18), transparent 22%),
+        radial-gradient(circle at 100% 70%, rgba(255, 111, 174, 0.18), transparent 26%),
+        linear-gradient(180deg, #090d19 0%, #0d1326 38%, #0a1020 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 85%);
+      opacity: 0.6;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 999px;
+      filter: blur(70px);
+      opacity: 0.34;
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 16s ease-in-out infinite;
+    }
+    .orb-1 { width: 360px; height: 360px; top: 90px; left: -80px; background: rgba(143, 124, 255, 0.34); }
+    .orb-2 { width: 300px; height: 300px; top: 180px; right: -60px; background: rgba(255, 111, 174, 0.28); animation-delay: -5s; }
+    .orb-3 { width: 280px; height: 280px; bottom: 120px; left: 18%; background: rgba(105, 217, 255, 0.18); animation-delay: -10s; }
+
+    @keyframes drift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -24px, 0) scale(1.08); }
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      width: min(var(--max), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(18px);
+      background: rgba(9, 13, 25, 0.52);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 78px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      object-fit: cover;
+      box-shadow: 0 12px 30px rgba(255, 111, 174, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-sub {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .lang-switch button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .lang-switch button.active {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 111, 174, 0.9), rgba(143, 124, 255, 0.95));
+      box-shadow: 0 10px 24px rgba(143, 124, 255, 0.28);
+    }
+
+    .top-link {
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    }
+
+    .top-link:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+    }
+
+    .hero {
+      padding: 48px 0 72px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .eyebrow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--pink), var(--cyan));
+      box-shadow: 0 0 18px rgba(255, 111, 174, 0.6);
+    }
+
+    .hero-title {
+      margin: 18px 0 18px;
+      font-size: clamp(42px, 7vw, 84px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      font-weight: 900;
+      max-width: 760px;
+    }
+
+    .gradient-word {
+      background: linear-gradient(135deg, #fff 0%, #ffd6ec 18%, #ff9ebf 46%, #8f7cff 78%, #69d9ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-text {
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 19px);
+      line-height: 1.78;
+      max-width: 620px;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      border-radius: 18px;
+      padding: 16px 22px;
+      font-size: 15px;
+      font-weight: 800;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--pink), #fd8f98 55%, #b084ff);
+      box-shadow: 0 18px 36px rgba(255, 111, 174, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 46px rgba(255, 111, 174, 0.38);
+    }
+
+    .btn-secondary {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 18px 36px rgba(7, 10, 20, 0.24);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 42px rgba(7, 10, 20, 0.32);
+    }
+
+    .hero-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #dde2fb;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 620px;
+    }
+
+    .shot-stack {
+      position: relative;
+      width: min(100%, 460px);
+      margin-left: auto;
+      min-height: 640px;
+    }
+
+    .shot-frame {
+      position: relative;
+      border-radius: 34px;
+      padding: 10px;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .shot-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), transparent 20%);
+      pointer-events: none;
+    }
+
+    .shot-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 26px;
+    }
+
+    .shot-hero {
+      width: min(100%, 410px);
+      margin-left: auto;
+      transform: rotate(4deg);
+    }
+
+    .shot-widgets {
+      position: absolute;
+      width: 220px;
+      top: 180px;
+      left: -26px;
+      transform: rotate(-9deg);
+      z-index: 3;
+    }
+
+    .shot-profile {
+      position: absolute;
+      width: 210px;
+      right: -14px;
+      bottom: 4px;
+      transform: rotate(8deg);
+      z-index: 3;
+    }
+
+    .floating-card {
+      position: absolute;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      animation: float-card 8s ease-in-out infinite;
+    }
+
+    .floating-card strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .floating-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .floating-one { top: 38px; left: -28px; width: 220px; animation-delay: -1s; }
+    .floating-two { right: -18px; bottom: 76px; width: 200px; animation-delay: -4s; }
+
+    @keyframes float-card {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .section {
+      padding: 42px 0 14px;
+    }
+
+    .section-heading {
+      max-width: 760px;
+      margin-bottom: 30px;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffd4e5;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .section-heading h2 {
+      margin: 0 0 14px;
+      font-size: clamp(30px, 4.5vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.8;
+      max-width: 700px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .feature-card {
+      grid-column: span 4;
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+      transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: auto -25% -45% auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 60%);
+      pointer-events: none;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(255, 255, 255, 0.14);
+      box-shadow: 0 36px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .feature-card.wide { grid-column: span 6; }
+    .feature-icon {
+      width: 58px;
+      height: 58px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      font-size: 28px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .feature-card h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      line-height: 1.12;
+      letter-spacing: -0.04em;
+    }
+
+    .feature-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .feature-tags span {
+      padding: 8px 11px;
+      border-radius: 999px;
+      color: #eff2ff;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .feature-media {
+      margin: 0 0 18px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.24);
+    }
+
+    .feature-media img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .timeline {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .timeline-step {
+      padding: 22px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .timeline-step b {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      margin-bottom: 14px;
+      color: #fff;
+      font-size: 15px;
+      background: linear-gradient(135deg, var(--pink), var(--violet));
+      box-shadow: 0 10px 20px rgba(143, 124, 255, 0.25);
+    }
+
+    .timeline-step h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+
+    .timeline-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .split-banner {
+      margin: 34px 0 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 18px;
+    }
+
+    .banner-main,
+    .banner-side {
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .banner-main {
+      padding: 30px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 179, 138, 0.18), transparent 26%),
+        linear-gradient(135deg, rgba(255, 111, 174, 0.2), rgba(143, 124, 255, 0.18), rgba(105, 217, 255, 0.16)),
+        rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .banner-side {
+      padding: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .banner-shot {
+      margin-top: 18px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.26);
+    }
+
+    .banner-shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .stat-box {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .stat-box strong {
+      display: block;
+      font-size: 26px;
+      letter-spacing: -0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-box span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .cta {
+      margin: 44px 0 66px;
+      padding: 34px;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at top right, rgba(105, 217, 255, 0.2), transparent 20%),
+        radial-gradient(circle at bottom left, rgba(255, 111, 174, 0.18), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .cta h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .cta p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 680px;
+      font-size: 15px;
+    }
+
+    .cta .btn-primary {
+      white-space: nowrap;
+    }
+
+    footer {
+      padding: 0 0 60px;
+    }
+
+    .footer-box {
+      border-radius: 30px;
+      padding: 24px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .footer-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .footer-info img {
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
+      object-fit: cover;
+    }
+
+    .footer-info strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .footer-info span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .footer-links a {
+      text-decoration: none;
+      color: #eef2ff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: 0.25s ease;
+    }
+
+    .footer-links a:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .lang-en { display: none; }
+    body.en .lang-en { display: revert; }
+    body.en .lang-ru { display: none; }
+
+    .auth-view {
+      min-height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-card {
+      width: min(100%, 520px);
+      padding: 34px;
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      text-align: center;
+      backdrop-filter: blur(22px);
+    }
+
+    .auth-card img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 22px;
+      box-shadow: 0 16px 40px rgba(255, 111, 174, 0.28);
+      margin-bottom: 20px;
+    }
+
+    .auth-card h1 {
+      margin: 0 0 12px;
+      font-size: 40px;
+      letter-spacing: -0.05em;
+    }
+
+    .auth-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .auth-loader {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      margin: 24px auto 0;
+      border: 3px solid rgba(255,255,255,0.12);
+      border-top-color: var(--cyan);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    body.auth-mode .page { display: none; }
+    body.auth-mode .auth-view { display: flex; }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .split-banner,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        min-height: auto;
+      }
+
+      .shot-stack {
+        margin: 0 auto;
+      }
+
+      .floating-one { left: 10px; }
+      .floating-two { right: 10px; }
+    }
+
+    @media (max-width: 900px) {
+      .feature-card,
+      .feature-card.wide {
+        grid-column: span 6;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner {
+        min-height: 72px;
+      }
+
+      .brand-sub,
+      .top-link {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 30px;
+      }
+
+      .hero-title {
+        font-size: 44px;
+      }
+
+      .feature-card,
+      .feature-card.wide {
+        grid-column: span 12;
+      }
+
+      .shot-stack {
+        width: 100%;
+        min-height: auto;
+      }
+
+      .shot-hero {
+        width: 100%;
+        transform: none;
+      }
+
+      .shot-widgets,
+      .shot-profile {
+        position: static;
+        width: 72%;
+        margin-top: 14px;
+        transform: none;
+      }
+
+      .hero-visual {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .cta {
+        padding: 28px 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="auth-view">
+    <div class="auth-card">
+      <img src="/logo.jpg" alt="Togetherly logo">
+      <h1>Togetherly</h1>
+      <p class="lang-ru">Открываем приложение и завершаем подтверждение входа…</p>
+      <p class="lang-en">Opening the app and finishing sign-in verification…</p>
+      <div class="auth-loader"></div>
+    </div>
+  </div>
+
+  <div class="page">
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <a class="brand" href="#top">
+          <img class="brand-logo" src="/logo.jpg" alt="Togetherly logo">
+          <div>
+            <div class="brand-title">Togetherly</div>
+            <span class="brand-sub lang-ru">private love space</span>
+            <span class="brand-sub lang-en">private love space</span>
+          </div>
+        </a>
+
+        <div class="nav-actions">
+          <div class="lang-switch" aria-label="Language switcher">
+            <button class="active" type="button" data-lang-button="ru">RU</button>
+            <button type="button" data-lang-button="en">EN</button>
+          </div>
+          <a class="top-link" href="/privacy-policy">
+            <span class="lang-ru">Политика</span>
+            <span class="lang-en">Privacy</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="reveal visible">
+            <div class="eyebrow">
+              <span class="eyebrow-dot"></span>
+              <span class="lang-ru">романтичное цифровое пространство для двоих</span>
+              <span class="lang-en">a romantic digital space for two</span>
+            </div>
+
+            <h1 class="hero-title">
+              <span class="lang-ru">Ваши чувства, моменты и память — в одном <span class="gradient-word">красивом месте</span></span>
+              <span class="lang-en">Your feelings, memories and little moments — in one <span class="gradient-word">beautiful place</span></span>
+            </h1>
+
+            <p class="hero-text lang-ru">
+              Togetherly — это уютное приложение для пары: сохраняйте фото и видео, отмечайте особенные даты, делитесь настроением, рисуйте вместе и создавайте собственную историю без шума соцсетей.
+            </p>
+            <p class="hero-text lang-en">
+              Togetherly is a cozy app for couples: keep photos and videos, celebrate your important dates, share moods, draw together and build your own story away from noisy social networks.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn-primary" href="#download">
+                <span>✨</span>
+                <span class="lang-ru">Смотреть возможности</span>
+                <span class="lang-en">Explore features</span>
+              </a>
+              <a class="btn-secondary" href="/delete-account">
+                <span>🗑️</span>
+                <span class="lang-ru">Удаление аккаунта</span>
+                <span class="lang-en">Delete account</span>
+              </a>
+            </div>
+
+            <div class="hero-pills">
+              <span class="pill lang-ru">🔒 приватность без компромиссов</span>
+              <span class="pill lang-en">🔒 privacy-first by design</span>
+              <span class="pill lang-ru">💖 только для пары</span>
+              <span class="pill lang-en">💖 built for couples</span>
+              <span class="pill lang-ru">🎨 красиво и нежно</span>
+              <span class="pill lang-en">🎨 dreamy and elegant</span>
+            </div>
+          </div>
+
+          <div class="hero-visual reveal">
+            <div class="shot-stack">
+              <div class="shot-frame shot-hero">
+                <img src="/appshots/hero-home.jpg" alt="Togetherly home screen screenshot">
+              </div>
+
+              <div class="shot-frame shot-widgets">
+                <img src="/appshots/widgets.jpg" alt="Togetherly widgets screenshot">
+              </div>
+
+              <div class="shot-frame shot-profile">
+                <img src="/appshots/profile.jpg" alt="Togetherly profile screenshot">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading reveal">
+            <div class="section-label">
+              <span>✦</span>
+              <span class="lang-ru">экран за экраном</span>
+              <span class="lang-en">screen by screen</span>
+            </div>
+            <h2>
+              <span class="lang-ru">Каждый экран показывает <span class="gradient-word">реальный сценарий использования</span></span>
+              <span class="lang-en">Each section highlights a <span class="gradient-word">real in-app experience</span></span>
+            </h2>
+            <p class="lang-ru">Ниже — не абстрактные обещания, а реальные экраны Togetherly: главный таймер, виджеты, экран связи с партнёром и настройки профиля.</p>
+            <p class="lang-en">Below are not abstract promises, but actual Togetherly screens: the main timer, widgets, connection space and profile settings.</p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card wide reveal">
+              <div class="feature-media">
+                <img src="/appshots/hero-home.jpg" alt="Togetherly home screen preview">
+              </div>
+              <div class="feature-icon">📸</div>
+              <h3 class="lang-ru">Главный экран с таймером отношений</h3>
+              <h3 class="lang-en">Home screen with relationship timer</h3>
+              <p class="lang-ru">Это центральный экран приложения: даты, настроение, быстрые действия и большой визуальный таймер, который превращает важную дату в красивый ритуал на каждый день.</p>
+              <p class="lang-en">This is the app’s central screen: dates, moods, quick actions and a large visual timer that turns an important date into a beautiful everyday ritual.</p>
+              <div class="feature-tags">
+                <span class="lang-ru">главный экран</span>
+                <span class="lang-en">home screen</span>
+                <span class="lang-ru">таймер</span>
+                <span class="lang-en">timer</span>
+                <span class="lang-ru">быстрые действия</span>
+                <span class="lang-en">quick actions</span>
+              </div>
+            </article>
+
+            <article class="feature-card reveal">
+              <div class="feature-media">
+                <img src="/appshots/widgets.jpg" alt="Togetherly widgets preview">
+              </div>
+              <div class="feature-icon">⏳</div>
+              <h3 class="lang-ru">Экран виджетов</h3>
+              <h3 class="lang-en">Widgets screen</h3>
+              <p class="lang-ru">Здесь можно выбрать и настроить виджеты для рабочего стола: счётчик дней, таймеры и другие блоки, которые выносят Togetherly за пределы приложения.</p>
+              <p class="lang-en">Here users can choose and configure home screen widgets: days together, timers and other blocks that bring Togetherly beyond the app itself.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <div class="feature-media">
+                <img src="/appshots/connection.jpg" alt="Togetherly connection preview">
+              </div>
+              <div class="feature-icon">💞</div>
+              <h3 class="lang-ru">Экран связи и общего пространства</h3>
+              <h3 class="lang-en">Connection and shared space screen</h3>
+              <p class="lang-ru">Этот экран показывает статус связи, участников, QR-подключение и управление общим пространством пары или группы.</p>
+              <p class="lang-en">This screen shows connection status, members, QR invitation and controls for the shared couple or group space.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <div class="feature-media">
+                <img src="/appshots/profile.jpg" alt="Togetherly profile preview">
+              </div>
+              <div class="feature-icon">🎨</div>
+              <h3 class="lang-ru">Профиль, тема и личные настройки</h3>
+              <h3 class="lang-en">Profile, theme and personal settings</h3>
+              <p class="lang-ru">На экране профиля пользователь меняет тему приложения, управляет данными аккаунта, статусом отношений и видит важную персональную информацию.</p>
+              <p class="lang-en">On the profile screen users change the app theme, manage account data, relationship status and view their key personal information.</p>
+              <div class="feature-tags">
+                <span class="lang-ru">темы</span>
+                <span class="lang-en">themes</span>
+                <span class="lang-ru">профиль</span>
+                <span class="lang-en">profile</span>
+                <span class="lang-ru">отношения</span>
+                <span class="lang-en">relationship info</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="split-banner reveal">
+            <div class="banner-main">
+              <div class="section-label">
+                <span>♥</span>
+                <span class="lang-ru">для пары каждый день</span>
+                <span class="lang-en">for couples every day</span>
+              </div>
+              <h2 style="margin:0 0 14px; font-size: clamp(28px, 4vw, 46px); line-height:1.04; letter-spacing:-0.05em;">
+                <span class="lang-ru">Togetherly помогает сохранять важные моменты, быть ближе и чувствовать связь каждый день</span>
+                <span class="lang-en">Togetherly helps you keep meaningful moments, stay close and feel connected every day</span>
+              </h2>
+              <p style="margin:0; color:var(--muted); line-height:1.8; font-size:15px; max-width: 720px;">
+                <span class="lang-ru">В приложении можно хранить совместные воспоминания, управлять таймерами отношений, делиться настроением, настраивать виджеты и вести своё личное пространство без лишнего шума.</span>
+                <span class="lang-en">Inside the app you can keep shared memories, manage relationship timers, share moods, set up widgets and build a private space without unnecessary noise.</span>
+              </p>
+              <div class="stat-grid">
+                <div class="stat-box">
+                  <strong>2</strong>
+                  <span class="lang-ru">языка на одной странице</span>
+                  <span class="lang-en">languages on one page</span>
+                </div>
+                <div class="stat-box">
+                  <strong>100%</strong>
+                  <span class="lang-ru">адаптивный интерфейс</span>
+                  <span class="lang-en">responsive layout</span>
+                </div>
+                <div class="stat-box">
+                  <strong>∞</strong>
+                  <span class="lang-ru">моментов, которые можно сохранить</span>
+                  <span class="lang-en">moments worth keeping</span>
+                </div>
+                <div class="stat-box">
+                  <strong>0</strong>
+                  <span class="lang-ru">лишнего визуального шума</span>
+                  <span class="lang-en">unnecessary visual noise</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="banner-side">
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                <img src="/logo.jpg" alt="Togetherly logo" style="width:54px;height:54px;border-radius:18px;object-fit:cover;box-shadow:0 12px 30px rgba(255,111,174,0.25);">
+                <div>
+                  <strong style="display:block; font-size:18px;">Togetherly</strong>
+                  <span style="color:var(--muted); font-size:13px;" class="lang-ru">романтика, привычки, память</span>
+                  <span style="color:var(--muted); font-size:13px;" class="lang-en">romance, rituals, memories</span>
+                </div>
+              </div>
+              <p style="margin:0 0 12px; color:var(--muted); line-height:1.8; font-size:14px;" class="lang-ru">Экран подключения помогает быстро объединиться в общее пространство, видеть статус связи и управлять совместной жизнью внутри приложения.</p>
+              <p style="margin:0 0 12px; color:var(--muted); line-height:1.8; font-size:14px;" class="lang-en">The connection screen helps you join the same space quickly, see connection status and manage your shared life inside the app.</p>
+              <div class="banner-shot">
+                <img src="/appshots/connection.jpg" alt="Togetherly connection screen screenshot">
+              </div>
+              <div class="feature-tags" style="margin-top:18px;">
+                <span class="lang-ru">совместное пространство</span>
+                <span class="lang-en">shared space</span>
+                <span class="lang-ru">QR-подключение</span>
+                <span class="lang-en">QR invite</span>
+                <span class="lang-ru">статус связи</span>
+                <span class="lang-en">connection status</span>
+                <span class="lang-ru">участники</span>
+                <span class="lang-en">members</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading reveal">
+            <div class="section-label">
+              <span>↘</span>
+              <span class="lang-ru">как это работает</span>
+              <span class="lang-en">how it works</span>
+            </div>
+            <h2>
+              <span class="lang-ru">Три шага до вашего <span class="gradient-word">общего пространства</span></span>
+              <span class="lang-en">Three steps to your <span class="gradient-word">shared space</span></span>
+            </h2>
+          </div>
+
+          <div class="timeline">
+            <div class="timeline-step reveal">
+              <b>1</b>
+              <h3 class="lang-ru">Создайте аккаунт</h3>
+              <h3 class="lang-en">Create an account</h3>
+              <p class="lang-ru">Вход через Google или email — быстро, понятно и без лишних шагов.</p>
+              <p class="lang-en">Sign in with Google or email — fast, clear and without unnecessary friction.</p>
+            </div>
+
+            <div class="timeline-step reveal">
+              <b>2</b>
+              <h3 class="lang-ru">Подключите партнёра</h3>
+              <h3 class="lang-en">Connect your partner</h3>
+              <p class="lang-ru">Приглашение по QR-коду или ссылке создаёт общее пространство буквально за минуту.</p>
+              <p class="lang-en">A QR code or invite link creates your shared space in under a minute.</p>
+            </div>
+
+            <div class="timeline-step reveal">
+              <b>3</b>
+              <h3 class="lang-ru">Живите внутри вашей истории</h3>
+              <h3 class="lang-en">Live inside your story</h3>
+              <p class="lang-ru">Добавляйте воспоминания, следите за датами, отмечайте настроение и храните ваши моменты в одном месте.</p>
+              <p class="lang-en">Add memories, track your dates, share moods and keep your moments in one place.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="download">
+        <div class="container">
+          <div class="cta reveal">
+            <div>
+              <h2 class="lang-ru">Начните свою историю в Togetherly</h2>
+              <h2 class="lang-en">Start your story in Togetherly</h2>
+              <p class="lang-ru">Создайте аккаунт, пригласите партнёра и соберите в одном месте ваши даты, воспоминания, виджеты, статусы и важные моменты.</p>
+              <p class="lang-en">Create an account, invite your partner and bring your dates, memories, widgets, statuses and meaningful moments into one place.</p>
+            </div>
+            <a class="btn-primary" href="mailto:stgroup.dev@gmail.com">
+              <span>💌</span>
+              <span class="lang-ru">Связаться</span>
+              <span class="lang-en">Contact</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container footer-box reveal">
+        <div class="footer-info">
+          <img src="/logo.jpg" alt="Togetherly logo">
+          <div>
+            <strong>Togetherly</strong>
+            <span class="lang-ru">личное пространство для двоих</span>
+            <span class="lang-en">a private space for two</span>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="/privacy-policy">
+            <span class="lang-ru">Политика конфиденциальности</span>
+            <span class="lang-en">Privacy Policy</span>
+          </a>
+          <a href="/delete-account">
+            <span class="lang-ru">Удаление аккаунта</span>
+            <span class="lang-en">Delete Account</span>
+          </a>
+          <a href="mailto:stgroup.dev@gmail.com">stgroup.dev@gmail.com</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAuthFlow = urlParams.has('oobCode') || urlParams.has('mode');
+
+    if (isAuthFlow) {
+      document.body.classList.add('auth-mode');
+      setTimeout(() => {
+        window.location.href = 'togetherly://emaillink?' + urlParams.toString();
+      }, 350);
+    }
+
+    const langButtons = document.querySelectorAll('[data-lang-button]');
+
+    function setLang(lang) {
+      document.documentElement.lang = lang;
+      document.body.classList.toggle('en', lang === 'en');
+      langButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.langButton === lang);
+      });
+    }
+
+    langButtons.forEach((button) => {
+      button.addEventListener('click', () => setLang(button.dataset.langButton));
+    });
+
+    setLang('ru');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.18 });
+
+    document.querySelectorAll('.reveal').forEach((item, index) => {
+      if (index === 0) return;
+      observer.observe(item);
+    });
+  </script>
+</body>
+</html>

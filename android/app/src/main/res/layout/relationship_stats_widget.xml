@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/stats_widget_bg"
+    android:clipToOutline="true"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- Row 1: Days Together + Memories -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <!-- Days Together -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/stat_bg_pink"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:gravity="start">
+
+            <ImageView
+                android:id="@+id/icon_days"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/stat_icon_circle"
+                android:src="@drawable/ic_stat_calendar"
+                android:padding="6dp"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/stat_days_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="0"
+                android:textColor="#212121"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/stat_days_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Days Together"
+                android:textColor="#757575"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <!-- Memories -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/stat_bg_blue"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:gravity="start">
+
+            <ImageView
+                android:id="@+id/icon_memories"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/stat_icon_circle"
+                android:src="@drawable/ic_stat_photo"
+                android:padding="5dp"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/stat_memories_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="0"
+                android:textColor="#212121"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/stat_memories_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Memories"
+                android:textColor="#757575"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Row 2: Drawings + Miss Yous -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <!-- Drawings -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/stat_bg_yellow"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:gravity="start">
+
+            <ImageView
+                android:id="@+id/icon_drawings"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/stat_icon_circle"
+                android:src="@drawable/ic_stat_brush"
+                android:padding="5dp"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/stat_drawings_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="0"
+                android:textColor="#212121"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/stat_drawings_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Drawings"
+                android:textColor="#757575"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <!-- Miss Yous -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/stat_bg_purple"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:gravity="start">
+
+            <ImageView
+                android:id="@+id/icon_miss_you"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/stat_icon_circle"
+                android:src="@drawable/ic_stat_heart"
+                android:padding="5dp"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/stat_miss_you_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="0"
+                android:textColor="#212121"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/stat_miss_you_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Miss Yous"
+                android:textColor="#757575"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

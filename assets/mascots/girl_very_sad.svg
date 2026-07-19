@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+  <!-- Body (greyed out) -->
+  <rect x="26" y="78" width="48" height="42" rx="14" fill="#B07090"/>
+  <!-- Long hair back -->
+  <ellipse cx="50" cy="70" rx="34" ry="30" fill="#7A2E2E"/>
+  <!-- Head -->
+  <circle cx="50" cy="50" r="30" fill="#FFD5A8"/>
+  <!-- Ears -->
+  <circle cx="21" cy="52" r="7" fill="#FFD5A8"/>
+  <circle cx="79" cy="52" r="7" fill="#FFD5A8"/>
+  <circle cx="21" cy="52" r="4" fill="#FFBF8A"/>
+  <circle cx="79" cy="52" r="4" fill="#FFBF8A"/>
+  <!-- Hair top -->
+  <ellipse cx="50" cy="24" rx="26" ry="13" fill="#7A2E2E"/>
+  <ellipse cx="26" cy="36" rx="7" ry="14" fill="#7A2E2E"/>
+  <ellipse cx="74" cy="36" rx="7" ry="14" fill="#7A2E2E"/>
+  <!-- Hair bow (very droopy/wilted) -->
+  <path d="M 60 22 Q 70 18 72 24 Q 66 26 60 22" fill="#884460" opacity="0.7"/>
+  <path d="M 60 22 Q 70 28 72 24 Q 66 22 60 22" fill="#664048" opacity="0.7"/>
+  <circle cx="66" cy="22" r="2.5" fill="#884460" opacity="0.7"/>
+  <!-- Eyes white -->
+  <ellipse cx="39" cy="49" rx="7" ry="7.5" fill="white"/>
+  <ellipse cx="61" cy="49" rx="7" ry="7.5" fill="white"/>
+  <!-- Eyes iris - looking down -->
+  <circle cx="39" cy="53" r="4.5" fill="#6B3A5A"/>
+  <circle cx="61" cy="53" r="4.5" fill="#6B3A5A"/>
+  <circle cx="41" cy="51" r="1.8" fill="white"/>
+  <circle cx="63" cy="51" r="1.8" fill="white"/>
+  <!-- Eyelashes (drooping) -->
+  <line x1="33" y1="44" x2="30" y2="43" stroke="#3E2314" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="37" y1="42" x2="35" y2="40" stroke="#3E2314" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="55" y1="42" x2="55" y2="40" stroke="#3E2314" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="59" y1="44" x2="62" y2="43" stroke="#3E2314" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Eyebrows very sad -->
+  <path d="M 30 39 Q 39 46 46 40" stroke="#8B3A3A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 54 40 Q 61 46 70 39" stroke="#8B3A3A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Dark circles -->
+  <ellipse cx="39" cy="55" rx="8" ry="5" fill="#B0A0C0" opacity="0.25"/>
+  <ellipse cx="61" cy="55" rx="8" ry="5" fill="#B0A0C0" opacity="0.25"/>
+  <!-- Nose -->
+  <ellipse cx="50" cy="57" rx="3" ry="2" fill="#FFBF8A"/>
+  <!-- Very sad mouth -->
+  <path d="M 36 70 Q 50 57 64 70" stroke="#CC4444" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Two tears -->
+  <path d="M 37 57 Q 34 64 37 68 Q 40 64 37 57" fill="#88CCEE"/>
+  <path d="M 63 57 Q 66 64 63 68 Q 60 64 63 57" fill="#88CCEE"/>
+</svg>
