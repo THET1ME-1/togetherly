@@ -1,36 +1,51 @@
 /**
- * Суммарный счётчик установок Togetherly для бейджа shields.io.
+ * Счётчики Togetherly для бейджей shields.io.
  *
- * Зачем: приложение живёт в четырёх местах, и ни один готовый бейдж не умеет
- * складывать их вместе. Плюс у GitHub счётчик релизов нельзя перенести между
- * репозиториями — при переезде на THET1ME-1/togetherly он обнулился, хотя
- * загрузки честно были.
+ * Главный источник — собственная админка (PocketBase, /modapi/stats). Она знает
+ * РЕАЛЬНОЕ число пользователей со всех платформ разом: Google Play, RuStore,
+ * APK с GitHub и iOS. Это честнее суммы магазинных счётчиков, потому что не
+ * двоит одного человека, поставившего приложение из двух мест.
  *
- * Что считаем:
- *   - GitHub: скачивания ТОЛЬКО .apk из релизов обоих репозиториев (живьём).
- *     version.json намеренно НЕ считаем: его дёргает автообновление у каждого
- *     пользователя при каждой проверке, и он раздувал счётчик в разы
- *     (7131 «скачиваний» против 790 реальных APK).
- *   - Google Play и RuStore: числа из консолей, задаются переменными
- *     PLAY_INSTALLS / RUSTORE_INSTALLS (у магазинов нет публичного API
- *     статистики). Обновляются правкой переменной, без передеплоя кода.
+ * Почему не считаем скачивания магазинов:
+ *   - у Google Play и RuStore нет публичного API статистики (только консоли);
+ *   - счётчик релизов GitHub нельзя перенести между репозиториями, при переезде
+ *     на THET1ME-1/togetherly он обнулился;
+ *   - бейдж `downloads/total` у GitHub считал в основном version.json, который
+ *     дёргает автообновление у каждого пользователя (7131 «скачиваний» против
+ *     790 реальных APK).
  *
  * Роуты:
- *   GET /badge   → JSON для shields.io (endpoint-бейдж)
- *   GET /json    → разбивка по источникам (для отладки и проверки)
+ *   GET /badge      → пользователи (главный бейдж)
+ *   GET /badge/apk  → скачивания .apk с GitHub (оба репозитория)
+ *   GET /json       → разбивка для проверки
  *
- * Бейдж в README:
- *   ![Installs](https://img.shields.io/endpoint?url=https://<worker>/badge)
+ * ВАЖНО: наружу отдаём ТОЛЬКО агрегированные числа. Полный ответ /modapi/stats
+ * содержит внутреннюю аналитику и никогда не проксируется.
  */
 
+const STATS_URL = 'https://togetherly.duckdns.org/modapi/stats';
 const GITHUB_REPOS = [
   'THET1ME-1/togetherly',
   'THET1ME-1/togetherly_app_releases',
 ];
 
-// GitHub троттлит анонимные запросы (60/час на IP), а бейдж могут дёргать
-// часто — держим результат в кэше Cloudflare.
+// Кэш бережёт и лимит анонимных запросов GitHub (60/час), и PocketBase —
+// /modapi/stats это пачка COUNT(*) по SQLite, дёргать её часто незачем.
 const CACHE_SECONDS = 3600;
+
+// Версия в ключе кэша: без неё после деплоя Cloudflare ещё час отдаёт ответы
+// старой формы (уже наступали на это). Поднимать при смене формата ответа.
+const CACHE_VERSION = 'v2';
+
+async function totalUsers(env) {
+  if (!env.MOD_SECRET) return 0;
+  const res = await fetch(STATS_URL, {
+    headers: { 'X-Mod-Secret': env.MOD_SECRET, 'User-Agent': 'togetherly-badge' },
+  });
+  if (!res.ok) throw new Error(`stats ${res.status}`);
+  const data = await res.json();
+  return data.totalUsers || 0;
+}
 
 async function githubApkDownloads(repo) {
   let total = 0;
@@ -60,49 +75,39 @@ function compact(n) {
   return String(n);
 }
 
-async function collect(env) {
-  const perRepo = {};
-  let github = 0;
-  for (const repo of GITHUB_REPOS) {
-    const n = await githubApkDownloads(repo);
-    perRepo[repo] = n;
-    github += n;
-  }
-  const play = parseInt(env.PLAY_INSTALLS || '0', 10) || 0;
-  const rustore = parseInt(env.RUSTORE_INSTALLS || '0', 10) || 0;
-  return { github, perRepo, play, rustore, total: github + play + rustore };
-}
+const badge = (label, message, color) => ({ schemaVersion: 1, label, message, color });
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const cache = caches.default;
-    const cacheKey = new Request(url.toString(), request);
+    const cacheKey = new Request(`${url.origin}${url.pathname}?cv=${CACHE_VERSION}`, request);
 
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
 
-    let data;
-    try {
-      data = await collect(env);
-    } catch (e) {
-      // Бейдж не должен показывать ошибку — отдаём заглушку без кэша.
-      return Response.json(
-        { schemaVersion: 1, label: 'installs', message: 'n/a', color: 'lightgrey' },
-        { headers: { 'Cache-Control': 'no-store' } },
-      );
-    }
-
     let body;
-    if (url.pathname === '/json') {
-      body = data;
-    } else {
-      body = {
-        schemaVersion: 1,
-        label: 'installs',
-        message: compact(data.total),
-        color: '8E4657',
-      };
+    try {
+      if (url.pathname === '/badge/apk') {
+        let apk = 0;
+        for (const r of GITHUB_REPOS) apk += await githubApkDownloads(r);
+        body = badge('apk downloads', compact(apk), '8E4657');
+      } else if (url.pathname === '/json') {
+        const perRepo = {};
+        let apk = 0;
+        for (const r of GITHUB_REPOS) {
+          perRepo[r] = await githubApkDownloads(r);
+          apk += perRepo[r];
+        }
+        body = { users: await totalUsers(env), githubApk: apk, perRepo };
+      } else {
+        body = badge('users', compact(await totalUsers(env)), 'E75480');
+      }
+    } catch (e) {
+      // Бейдж не должен показывать поломку — отдаём заглушку и НЕ кэшируем.
+      return Response.json(badge('users', 'n/a', 'lightgrey'), {
+        headers: { 'Cache-Control': 'no-store' },
+      });
     }
 
     const res = Response.json(body, {

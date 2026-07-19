@@ -2,13 +2,5 @@ name = "togetherly-badge"
 main = "src/index.js"
 compatibility_date = "2026-07-19"
 
-# Числа из консолей магазинов — публичного API статистики у них нет.
-# Обновляются без правки кода:
-#   npx wrangler deploy                       (после изменения значений ниже)
-# либо разово через панель Cloudflare → Settings → Variables.
-#
-# PLAY_INSTALLS  — Google Play Console → Статистика → всего установок
-# RUSTORE_INSTALLS — RuStore Консоль → статистика загрузок
-[vars]
-PLAY_INSTALLS = "0"
-RUSTORE_INSTALLS = "0"
+# MOD_SECRET задаётся как СЕКРЕТ (не var), чтобы не лежал в репозитории:
+#   npx wrangler secret put MOD_SECRET

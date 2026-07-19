@@ -7,7 +7,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/THET1ME-1/togetherly?style=for-the-badge&label=release&color=E75480)](https://github.com/THET1ME-1/togetherly/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/THET1ME-1/togetherly/total?style=for-the-badge&color=8E4657)](https://github.com/THET1ME-1/togetherly/releases)
+[![Users](https://img.shields.io/endpoint?url=https%3A%2F%2Ftogetherly-badge.badzoff.workers.dev%2Fbadge&style=for-the-badge)](https://github.com/THET1ME-1/togetherly/releases/latest)
 [![License](https://img.shields.io/github/license/THET1ME-1/togetherly?style=for-the-badge&color=8E4657)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/THET1ME-1/togetherly?style=for-the-badge&color=E75480)](https://github.com/THET1ME-1/togetherly/stargazers)
 [![Platform](https://img.shields.io/badge/Android_·_iOS-1F1B24?style=for-the-badge)](https://github.com/THET1ME-1/togetherly/releases/latest)
