@@ -84,3 +84,7 @@ ios/build/
 
 # Локальные билд-артефакты (APK/AAB) — не коммитим
 dist/
+
+# Личная память Claude, в репозиторий не уезжает
+CLAUDE.md
+CLAUDE.local.md
