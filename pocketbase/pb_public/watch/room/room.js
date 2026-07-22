@@ -136,7 +136,7 @@
     } else {
       state.player = { frame };
     }
-    setStatus(`Играет: ${labelOf(src.kind)}`);
+    setStatus(I18N.t('room.playing', { name: labelOf(src.kind) }));
   }
 
   const labels = { youtube: 'YouTube', vimeo: 'Vimeo', vk: 'VK Видео', rutube: 'Rutube' };
@@ -191,7 +191,7 @@
         break;
       }
       case 'chat':
-        addMessage(data.name || 'Гость', data.text, false);
+        addMessage(data.name || I18N.t('room.guest'), data.text, false);
         break;
       case 'sync':
         if (state.kind === 'youtube' && state.player && state.player.getCurrentTime) {
@@ -215,10 +215,36 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function setStatus(text) { $('#status').textContent = text; }
+  function setStatus(text) {
+    const a = $('#status'), b = $('#status2');
+    if (a) a.textContent = text;
+    if (b) b.textContent = text;
+  }
+
   function setViewers(n) {
     state.viewers = n;
-    $('#viewers').textContent = n === 1 ? 'вы один' : `смотрят: ${n}`;
+    const el = $('#viewers');
+    if (el) el.textContent = n === 1 ? I18N.t('room.alone') : I18N.t('room.viewers', { n });
+    // Партнёр пришёл — уходим с экрана ожидания в саму комнату.
+    if (n > 1) openStage();
+  }
+
+  function openStage() {
+    if (!$('#waiting').hidden) {
+      $('#waiting').hidden = true;
+      $('#stage').hidden = false;
+      addSystem(I18N.t('room.partnerJoined'));
+    }
+  }
+
+  function addSystem(text) {
+    const box = $('#chat');
+    if (!box) return;
+    const el = document.createElement('div');
+    el.className = 'msg msg--system';
+    el.textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
   }
 
   // ── подключение ──────────────────────────────────────────────────────────
@@ -243,17 +269,17 @@
 
     sub.on('publication', (ctx) => onMessage(ctx.data));
     sub.on('subscribed', (ctx) => {
-      setStatus('Комната готова');
+      setStatus(I18N.t('room.ready'));
       setViewers((ctx.presence && Object.keys(ctx.presence).length) || 1);
       sub.presence().then((p) => setViewers(Object.keys(p.clients || {}).length || 1))
         .catch(() => {});
     });
     sub.on('join', () => setViewers(state.viewers + 1));
     sub.on('leave', () => setViewers(Math.max(1, state.viewers - 1)));
-    sub.on('error', () => setStatus('Связь потеряна, переподключаюсь…'));
+    sub.on('error', () => setStatus(I18N.t('room.lost')));
 
-    centrifuge.on('connected', () => setStatus('Комната готова'));
-    centrifuge.on('disconnected', () => setStatus('Нет связи'));
+    centrifuge.on('connected', () => setStatus(I18N.t('room.ready')));
+    centrifuge.on('disconnected', () => setStatus(I18N.t('room.offline')));
 
     sub.subscribe();
     centrifuge.connect();
@@ -275,40 +301,30 @@
   // ── запуск ───────────────────────────────────────────────────────────────
 
   function shareLink() {
-    return location.origin + location.pathname + '#' + state.room;
-  }
-
-  function enterRoom(room) {
-    location.hash = room;
-    $('#start').hidden = true;
-    $('#room').hidden = false;
-    $('#code').textContent = room;
-    drawPlatforms($('#platforms2'), 18);
-    connect(room).catch(() => setStatus('Не удалось войти в комнату'));
+    return location.origin + location.pathname + '#' + (state.room || roomFromHash());
   }
 
   window.addEventListener('load', () => {
-    drawPlatforms($('#platforms'), 20);
+    I18N.mount();
 
     const room = roomFromHash();
-    if (room) {
-      enterRoom(room);
-    } else {
-      // Кода нет: человек пришёл на главную, комнату создаст сам.
-      $('#create').addEventListener('click', () => enterRoom(newRoom()));
-      $('#join').addEventListener('click', () => {
-        const code = ($('#joinCode').value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (code.length >= 4) enterRoom(code);
-      });
-      $('#joinCode').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') $('#join').click();
-      });
+    if (!room) {
+      // Прямой заход без кода: комнаты нет, отправляем на главную.
+      location.replace('../');
       return;
     }
 
+    state.room = room;
+    $('#code').textContent = room;
+    $('#shareLink').textContent = shareLink().replace(/^https?:\/\//, '');
+    if (navigator.share) $('#share').hidden = false;
+
+    connect(room).catch(() => setStatus(I18N.t('room.lost')));
+
     $('#apply').addEventListener('click', () => {
+      openStage();
       const src = parseSource($('#link').value);
-      if (!src) { setStatus('Ссылка не с той площадки'); return; }
+      if (!src) { setStatus(I18N.t('room.badLink')); return; }
       mountPlayer(src);
       send('source', 0, { url: $('#link').value.trim() });
     });
@@ -316,18 +332,27 @@
     $('#send').addEventListener('click', () => {
       const text = $('#message').value.trim();
       if (!text) return;
-      addMessage('Вы', text, true);
-      send('chat', 0, { text, name: 'Гость' });
+      addMessage(I18N.t('room.you'), text, true);
+      send('chat', 0, { text, name: I18N.t('room.guest') });
       $('#message').value = '';
     });
     $('#message').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') $('#send').click();
     });
 
+    const share = $('#share');
+    if (share) {
+      share.addEventListener('click', () => {
+        navigator.share({ url: shareLink() }).catch(() => {});
+      });
+    }
+    const copy2 = $('#copy2');
+    if (copy2) copy2.addEventListener('click', () => $('#copy').click());
+
     $('#copy').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(shareLink());
-        setStatus('Ссылка скопирована');
+        setStatus(I18N.t('room.copied'));
       } catch (_) {
         setStatus(shareLink());
       }

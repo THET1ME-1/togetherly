@@ -5,87 +5,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Смотреть вместе — Togetherly</title>
 <meta name="description" content="Комната на двоих: одно видео, один тайм-код. YouTube, VK, Rutube и Vimeo синхронно, с чатом. Ничего не сохраняется.">
-<meta name="theme-color" content="#FFF8F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#191113" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#FFF6F4">
+<link rel="stylesheet" href="landing.css">
 </head>
 <body>
 
-<!-- Стартовый экран: пока в ссылке нет кода комнаты -->
-<main id="start" class="start">
-  <div class="start__inner">
-    <span class="tag">Togetherly</span>
-    <h1>Смотрите вместе,<br>даже если врозь</h1>
-    <p class="lead">Создайте комнату и отправьте ссылку. Видео пойдёт синхронно
-      у обоих: паузы, перемотки и чат в одном месте.</p>
+<header class="top">
+  <a class="brand" href="/watch/">TOGETHERLY <span>// ВМЕСТЕ</span></a>
 
-    <div class="cta">
-      <button class="btn btn--filled" id="create">Создать комнату</button>
-      <div class="join">
-        <input id="joinCode" class="input" placeholder="Код комнаты" maxlength="12"
-               autocomplete="off" spellcheck="false">
-        <button class="btn btn--tonal" id="join">Войти</button>
-      </div>
-    </div>
+  <nav class="menu">
+    <a href="#how" data-i18n="nav.how">Как работает</a>
+    <a href="#where" data-i18n="nav.where">Площадки</a>
+    <a href="#privacy" data-i18n="nav.privacy">Приватность</a>
+    <a class="menu__app" href="/#download" data-i18n="nav.app">Приложение</a>
+  </nav>
 
-    <div class="platforms" id="platforms"></div>
-
-    <ul class="steps">
-      <li><span class="steps__num">1</span><b>Создайте</b>Комната появляется сразу, без регистрации.</li>
-      <li><span class="steps__num">2</span><b>Позовите</b>Одна ссылка, и партнёр рядом.</li>
-      <li><span class="steps__num">3</span><b>Смотрите</b>Поставил паузу один, встала у обоих.</li>
-    </ul>
-
-    <p class="fine">Ничего не сохраняется: комната живёт, пока в ней есть люди.
-      Ссылка на видео и переписка исчезают вместе с ней.</p>
+  <div class="lang">
+    <button data-lang-btn="ru">RU</button>
+    <button data-lang-btn="en">EN</button>
   </div>
-</main>
 
-<!-- Комната -->
-<main id="room" class="room" hidden>
-  <header class="bar">
-    <div class="bar__left">
-      <span class="dot"></span>
-      <span class="bar__code">Комната <b id="code">—</b></span>
-    </div>
-    <div class="bar__right">
-      <span class="viewers" id="viewers">вы один</span>
-      <button class="btn btn--tonal btn--small" id="copy">Позвать</button>
-    </div>
-  </header>
+  <button class="icon-btn" id="burger" aria-label="Menu">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</header>
 
-  <section class="stage">
-    <div class="player" id="player">
-      <div class="player__empty">
-        <svg viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
-        <span>Вставьте ссылку на видео</span>
+<div class="drawer" id="drawer" hidden>
+  <a href="#how" data-i18n="nav.how">Как работает</a>
+  <a href="#where" data-i18n="nav.where">Площадки</a>
+  <a href="#privacy" data-i18n="nav.privacy">Приватность</a>
+  <a href="/#download" data-i18n="nav.app">Приложение</a>
+</div>
+
+<main>
+  <section class="hero">
+    <div class="hero__text">
+      <p class="eyebrow" data-i18n="hero.eyebrow">Комната на двоих в браузере</p>
+      <h1>
+        <span data-i18n="hero.title1">СМОТРИМ</span><br>
+        <em data-i18n="hero.title2">ОДНО</em>
+        <span data-i18n="hero.title3">КИНО</span>
+      </h1>
+      <p class="hero__lead" data-i18n="hero.lead">Один тайм-код на двоих.</p>
+
+      <div class="hero__cta">
+        <button class="btn btn--filled" id="create" data-i18n="hero.create">Создать комнату</button>
+        <div class="join">
+          <input id="joinCode" class="input" maxlength="12" autocomplete="off"
+                 spellcheck="false" data-i18n-ph="hero.code" data-i18n-aria="hero.code">
+          <button class="btn btn--ghost" id="join" data-i18n="hero.join">Войти</button>
+        </div>
       </div>
+      <p class="hero__note" data-i18n="hero.note">Без регистрации.</p>
     </div>
 
-    <div class="source">
-      <input id="link" class="source__input" placeholder="Ссылка на YouTube, VK, Rutube или Vimeo"
-             autocomplete="off" spellcheck="false">
-      <button class="btn btn--filled btn--small" id="apply">Включить</button>
-    </div>
-
-    <div class="platforms platforms--small" id="platforms2"></div>
-    <p class="status" id="status">Подключаюсь…</p>
+    <aside class="card-demo" aria-hidden="true">
+      <p class="card-demo__label" data-i18n="demo.label">Пример комнаты</p>
+      <div class="card-demo__row">
+        <div>
+          <span class="card-demo__cap" data-i18n="demo.code">Код</span>
+          <span class="card-demo__big">k7m2p9</span>
+        </div>
+        <div>
+          <span class="card-demo__cap" data-i18n="demo.viewers">Зрителей</span>
+          <span class="card-demo__big card-demo__big--accent">2</span>
+        </div>
+      </div>
+      <div class="card-demo__bar"><span></span></div>
+      <p class="card-demo__cap" data-i18n="demo.sync">Синхронно</p>
+      <div class="card-demo__chat">
+        <span class="bubble" data-i18n="demo.msg1">уже включила</span>
+        <span class="bubble bubble--mine" data-i18n="demo.msg2">догоняю</span>
+      </div>
+    </aside>
   </section>
 
-  <aside class="side">
-    <div class="side__head"><h2>Чат</h2></div>
-    <div class="chat" id="chat"></div>
-    <div class="composer">
-      <input id="message" class="input" placeholder="Написать…" autocomplete="off">
-      <button class="btn btn--filled btn--icon" id="send" aria-label="Отправить">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
-      </button>
+  <section class="section" id="how">
+    <p class="kicker" data-i18n="how.kicker">→ Как это работает</p>
+    <div class="steps">
+      <article>
+        <span class="steps__num">01</span>
+        <h3 data-i18n="how.1.title">Создайте</h3>
+        <p data-i18n="how.1.text">Комната появляется сразу.</p>
+      </article>
+      <article>
+        <span class="steps__num">02</span>
+        <h3 data-i18n="how.2.title">Позовите</h3>
+        <p data-i18n="how.2.text">Отправьте ссылку.</p>
+      </article>
+      <article>
+        <span class="steps__num">03</span>
+        <h3 data-i18n="how.3.title">Смотрите</h3>
+        <p data-i18n="how.3.text">Пауза у одного, пауза у обоих.</p>
+      </article>
     </div>
-  </aside>
+  </section>
+
+  <section class="section" id="where">
+    <p class="kicker" data-i18n="where.kicker">→ Откуда смотреть</p>
+    <div class="tiles" id="tiles"></div>
+    <p class="section__foot" data-i18n="where.foot">Вставьте ссылку с любой площадки.</p>
+  </section>
+
+  <section class="section section--split" id="privacy">
+    <div>
+      <p class="kicker" data-i18n="privacy.kicker">→ Что остаётся на сервере</p>
+      <h2 data-i18n="privacy.title">Ничего</h2>
+      <p class="section__lead" data-i18n="privacy.lead">Комната живёт, пока в ней есть люди.</p>
+    </div>
+    <ul class="facts">
+      <li><b data-i18n="privacy.1.title">Без аккаунта</b><span data-i18n="privacy.1.text">Вход анонимный.</span></li>
+      <li><b data-i18n="privacy.2.title">Без истории</b><span data-i18n="privacy.2.text">Сообщения живут в открытых вкладках.</span></li>
+      <li><b data-i18n="privacy.3.title">Без файлов</b><span data-i18n="privacy.3.text">Видео отдаёт площадка.</span></li>
+    </ul>
+  </section>
+
+  <section class="promo">
+    <div class="promo__text">
+      <p class="kicker kicker--light" data-i18n="promo.kicker">→ А ещё есть приложение</p>
+      <h2 data-i18n="promo.title">Togetherly для пар</h2>
+      <p data-i18n="promo.text">Общие воспоминания и подарки.</p>
+      <a class="btn btn--light" href="/#download" data-i18n="promo.btn">Скачать</a>
+    </div>
+    <div class="promo__art" aria-hidden="true"><span>♥</span><span>▶</span><span>✿</span></div>
+  </section>
 </main>
 
-<script src="vendor/centrifuge.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
-<script src="app.js"></script>
+<footer class="foot">
+  <span class="foot__brand">TOGETHERLY</span>
+  <nav>
+    <a href="/privacy-policy" data-i18n="foot.privacy">Конфиденциальность</a>
+    <a href="/terms" data-i18n="foot.terms">Условия</a>
+    <a href="mailto:support@togetherly.day">support@togetherly.day</a>
+  </nav>
+</footer>
+
+<script src="i18n.js"></script>
+<script src="landing.js"></script>
 </body>
 </html>

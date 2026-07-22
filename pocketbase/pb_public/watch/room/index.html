@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Комната — Togetherly</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFF6F4">
+<link rel="stylesheet" href="../landing.css">
+<link rel="stylesheet" href="room.css">
+</head>
+<body class="room-body">
+
+<header class="top top--room">
+  <a class="brand" href="../">TOGETHERLY <span>// ВМЕСТЕ</span></a>
+  <div class="room-code">
+    <span class="room-code__cap" data-i18n="room.code">Код комнаты</span>
+    <b id="code">—</b>
+  </div>
+  <div class="lang">
+    <button data-lang-btn="ru">RU</button>
+    <button data-lang-btn="en">EN</button>
+  </div>
+</header>
+
+<!-- ОЖИДАНИЕ ПАРТНЁРА -->
+<section class="waiting" id="waiting">
+  <div class="waiting__inner">
+    <div class="pulse" aria-hidden="true"><span></span><span></span><span></span></div>
+    <h1 data-i18n="room.waiting">Ждём партнёра</h1>
+    <p class="waiting__text" data-i18n="room.waitingText">Отправьте ссылку.</p>
+
+    <div class="waiting__link">
+      <span id="shareLink">togetherly.day/watch/room/#—</span>
+    </div>
+
+    <div class="waiting__cta">
+      <button class="btn btn--filled" id="copy" data-i18n="room.copy">Скопировать ссылку</button>
+      <button class="btn btn--ghost" id="share" data-i18n="room.share" hidden>Поделиться</button>
+    </div>
+
+    <p class="waiting__hint" id="status" data-i18n="room.connecting">Подключаюсь…</p>
+  </div>
+</section>
+
+<!-- САМА КОМНАТА -->
+<main class="stage-wrap" id="stage" hidden>
+  <section class="stage">
+    <div class="player" id="player">
+      <div class="player__empty">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+        <span data-i18n="room.empty">Вставьте ссылку на видео</span>
+      </div>
+    </div>
+
+    <div class="source">
+      <input id="link" class="source__input" autocomplete="off" spellcheck="false"
+             data-i18n-ph="room.linkPlaceholder">
+      <button class="btn btn--filled btn--compact" id="apply" data-i18n="room.play">Включить</button>
+    </div>
+
+    <div class="stage__meta">
+      <span class="viewers" id="viewers" data-i18n="room.alone">вы один</span>
+      <span class="status-line" id="status2"></span>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="side__head">
+      <h2 data-i18n="room.chat">Чат</h2>
+      <button class="btn btn--ghost btn--compact" id="copy2" data-i18n="room.copy">Скопировать ссылку</button>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="composer">
+      <input id="message" class="input input--flat" autocomplete="off" data-i18n-ph="room.message">
+      <button class="btn btn--filled btn--icon" id="send" data-i18n-aria="room.play">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
+      </button>
+    </div>
+  </aside>
+</main>
+
+<script src="../i18n.js"></script>
+<script src="../vendor/centrifuge.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="room.js"></script>
+</body>
+</html>
