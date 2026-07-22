@@ -1319,6 +1319,19 @@ abstract class AppStrings {
   String get unitMinShort;
   String get unitHourShort;
   String get unitDayShort;
+
+  // Подарки
+  String giftPushBody(String giftName);
+  String get giftShopTitle;
+  String get giftSent;
+  String get giftNotEnoughCoins;
+  String get giftNoConnection;
+  String get giftFailed;
+  String get giftHeart;
+  String get giftHug;
+  String get giftStar;
+  String get giftSalute;
+  String get giftRocket;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3912,6 +3925,30 @@ class _RuStrings extends AppStrings {
   String get unitHourShort => 'ч';
   @override
   String get unitDayShort => 'д';
+
+  // Подарки
+  @override
+  String giftPushBody(String giftName) => 'Прислал подарок: $giftName';
+  @override
+  String get giftShopTitle => 'Подарки';
+  @override
+  String get giftSent => 'Подарок отправлен';
+  @override
+  String get giftNotEnoughCoins => 'Не хватает монет';
+  @override
+  String get giftNoConnection => 'Нет связи';
+  @override
+  String get giftFailed => 'Не получилось отправить';
+  @override
+  String get giftHeart => 'Сердце';
+  @override
+  String get giftHug => 'Обнимашка';
+  @override
+  String get giftStar => 'Звезда';
+  @override
+  String get giftSalute => 'Салют';
+  @override
+  String get giftRocket => 'Ракета';
 }
 
 class _EnStrings extends AppStrings {
@@ -6455,4 +6492,28 @@ class _EnStrings extends AppStrings {
   String get unitHourShort => 'h';
   @override
   String get unitDayShort => 'd';
+
+  // Gifts
+  @override
+  String giftPushBody(String giftName) => 'Sent you a gift: $giftName';
+  @override
+  String get giftShopTitle => 'Gifts';
+  @override
+  String get giftSent => 'Gift sent';
+  @override
+  String get giftNotEnoughCoins => 'Not enough coins';
+  @override
+  String get giftNoConnection => 'No connection';
+  @override
+  String get giftFailed => 'Could not send';
+  @override
+  String get giftHeart => 'Heart';
+  @override
+  String get giftHug => 'Hug';
+  @override
+  String get giftStar => 'Star';
+  @override
+  String get giftSalute => 'Fireworks';
+  @override
+  String get giftRocket => 'Rocket';
 }
