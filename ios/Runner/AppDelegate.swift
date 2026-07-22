@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -18,6 +19,15 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // Без делегата iOS не показывает локальные уведомления, пока приложение
+    // открыто: отвечать на willPresent некому, и баннер не рисуется. Плагин
+    // flutter_local_notifications ставит делегата сам только на macOS, на iOS
+    // это делается здесь (см. пример плагина, ios/Runner/AppDelegate.swift).
+    //
+    // Вместе с отсутствием APNs это давало «уведомления не приходят вообще»:
+    // в фоне их нет, потому что сокет мёртв, а на переднем плане — из-за этой
+    // строки.
+    UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
