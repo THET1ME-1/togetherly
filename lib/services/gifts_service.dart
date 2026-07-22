@@ -49,11 +49,15 @@ class GiftsService {
     );
   }
 
-  Future<GiftResult> react(String giftId) async {
+  /// [reply] — ответ получателя дарителю: желание, загаданное на звезду.
+  Future<GiftResult> react(String giftId, {String? reply}) async {
     GiftTelemetry.step(giftId, 'react:start');
     return _call(
       path: '/api/gifts/react',
-      body: {'giftId': giftId},
+      body: {
+        'giftId': giftId,
+        if (reply != null && reply.trim().isNotEmpty) 'reply': reply.trim(),
+      },
       giftId: giftId,
       giftKey: '',
       step: 'react',

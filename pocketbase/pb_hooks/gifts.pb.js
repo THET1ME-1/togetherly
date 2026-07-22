@@ -120,6 +120,16 @@ routerAdd("POST", "/api/gifts/send", (e) => {
       user.set("coins", coins - price);
       txApp.save(user);
 
+      // Копилка не тратит монеты, а передаёт их партнёру: единственный способ
+      // поделиться балансом внутри пары.
+      if (giftKey === "piggy" && partner) {
+        try {
+          const p = txApp.findRecordById("users", partner);
+          p.set("coins", (p.getInt("coins") || 0) + price);
+          txApp.save(p);
+        } catch (_) {}
+      }
+
       out = {
         s: 200,
         b: {
@@ -173,9 +183,14 @@ routerAdd("POST", "/api/gifts/send", (e) => {
 routerAdd("POST", "/api/gifts/react", (e) => {
   const REFUND_SHARE = 0.3; // доля цены, возвращаемая дарителю за отклик
 
-  const body = new DynamicModel({ giftId: "" });
+  const MUTUAL_WINDOW_MS = 60 * 1000; // окно «обнял в ответ»
+  const MUTUAL_BONUS = { hug: 5 };    // зеркало mutualBonus в lib/models/gift.dart
+
+  const body = new DynamicModel({ giftId: "", reply: "" });
   e.bindBody(body);
   const giftId = (body.giftId || "").trim();
+  // Желание на звезду: текст получателя, который вернётся дарителю.
+  const reply = String(body.reply || "").slice(0, 500);
   if (!giftId) return e.json(400, { ok: false, error: "gift_not_found" });
 
   let out = { s: 500, b: { ok: false, error: "internal" } };
@@ -212,16 +227,30 @@ routerAdd("POST", "/api/gifts/react", (e) => {
         return;
       }
 
-      const refund = Math.floor((gift.getInt("price") || 0) * REFUND_SHARE);
+      const now = Date.now();
+      const price = gift.getInt("price") || 0;
+      let refund = Math.floor(price * REFUND_SHARE);
+
+      // Успел ответить в первую минуту — обоим по бонусу сверх возврата.
+      // Отсчёт от expires_at, потому что момент отправки известен через него.
+      const bonus = MUTUAL_BONUS[gift.getString("gift_key")] || 0;
+      const sentAt = (gift.getInt("expires_at") || 0) - 24 * 60 * 60 * 1000;
+      const quick = bonus > 0 && sentAt > 0 && now - sentAt <= MUTUAL_WINDOW_MS;
+
       gift.set("state", "reacted");
-      gift.set("reacted_at", Date.now());
-      gift.set("refund", refund);
+      gift.set("reacted_at", now);
+      gift.set("refund", refund + (quick ? bonus : 0));
+      if (reply) gift.set("reply", reply);
       txApp.save(gift);
 
-      if (refund > 0) {
+      if (refund > 0 || quick) {
         const sender = txApp.findRecordById("users", gift.getString("sender_uid"));
-        sender.set("coins", (sender.getInt("coins") || 0) + refund);
+        sender.set("coins", (sender.getInt("coins") || 0) + refund + (quick ? bonus : 0));
         txApp.save(sender);
+      }
+      if (quick) {
+        user.set("coins", (user.getInt("coins") || 0) + bonus);
+        txApp.save(user);
       }
 
       out = {
@@ -229,7 +258,8 @@ routerAdd("POST", "/api/gifts/react", (e) => {
         b: {
           ok: true,
           alreadyReacted: false,
-          refund: refund,
+          refund: refund + (quick ? bonus : 0),
+          mutual: quick ? bonus : 0,
           coins: user.getInt("coins") || 0,
         },
       };

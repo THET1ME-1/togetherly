@@ -76,14 +76,30 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
   @override
   void dispose() {
     _idle.dispose();
+    _replyCtrl.dispose();
     super.dispose();
   }
 
+  final _replyCtrl = TextEditingController();
+
   Future<void> _accept() async {
     if (_busy || _done) return;
+    // Звезда: сначала желание, потом отклик — пустое желание не отправляем.
+    if (widget.gift.wantsReply && _replyCtrl.text.trim().isEmpty) {
+      setState(() => _error = LocaleService.current.giftWishEmpty);
+      return;
+    }
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
-    final res = await GiftsService.instance.react(widget.giftId);
+    // Обнимашка: вибрация в такт, а не один щелчок.
+    if (widget.gift.action == GiftAction.hugBack) {
+      for (var i = 0; i < 3; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 140));
+        HapticFeedback.heavyImpact();
+      }
+    }
+    final res = await GiftsService.instance
+        .react(widget.giftId, reply: _replyCtrl.text);
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -171,6 +187,31 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
                 color: _error != null ? t.textPrimary : t.textSecondary,
               ),
             ),
+            if (widget.gift.wantsReply) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _replyCtrl,
+                maxLength: 200,
+                minLines: 1,
+                maxLines: 3,
+                style: TextStyle(color: t.textPrimary),
+                decoration: InputDecoration(
+                  hintText: s.giftWishHint,
+                  hintStyle: TextStyle(color: t.textMuted),
+                  filled: true,
+                  fillColor: t.surfaceMuted,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              FilledButton(
+                onPressed: _busy ? null : _accept,
+                child: Text(s.giftWishSend),
+              ),
+            ],
             if (widget.gift.action == GiftAction.catchIt && _misses > 0) ...[
               const SizedBox(height: 4),
               Text(s.giftBunnyMisses(_misses),
@@ -232,6 +273,19 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
           idle: _idle,
           onWater: _accept,
         );
+      case GiftAction.doubleTap:
+        return _DoubleTapStage(
+          theme: widget.theme,
+          gift: widget.gift,
+          idle: _idle,
+          done: _done,
+          onAccept: _accept,
+        );
+      case GiftAction.hugBack:
+      case GiftAction.wish:
+      case GiftAction.blast:
+      case GiftAction.urgent:
+      case GiftAction.transfer:
       case GiftAction.tap:
         return _TapStage(
           theme: widget.theme,
@@ -598,6 +652,56 @@ class _TapStage extends StatelessWidget {
           child: child,
         ),
         child: Image.asset(gift.asset, width: 170, height: 170),
+      ),
+    );
+  }
+}
+
+/// Сердце: принимается двойным касанием, одиночное только подсказывает.
+class _DoubleTapStage extends StatefulWidget {
+  const _DoubleTapStage({
+    required this.theme,
+    required this.gift,
+    required this.idle,
+    required this.done,
+    required this.onAccept,
+  });
+
+  final AppTheme theme;
+  final Gift gift;
+  final AnimationController idle;
+  final bool done;
+  final VoidCallback onAccept;
+
+  @override
+  State<_DoubleTapStage> createState() => _DoubleTapStageState();
+}
+
+class _DoubleTapStageState extends State<_DoubleTapStage> {
+  bool _nudge = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onDoubleTap: widget.done ? null : widget.onAccept,
+      onTap: widget.done
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              setState(() => _nudge = true);
+              Future<void>.delayed(const Duration(milliseconds: 260), () {
+                if (mounted) setState(() => _nudge = false);
+              });
+            },
+      child: AnimatedBuilder(
+        animation: widget.idle,
+        builder: (context, child) => Transform.scale(
+          scale: widget.done
+              ? 1.24
+              : (_nudge ? 1.08 : 0.97 + widget.idle.value * 0.06),
+          child: child,
+        ),
+        child: Image.asset(widget.gift.asset, width: 170, height: 170),
       ),
     );
   }

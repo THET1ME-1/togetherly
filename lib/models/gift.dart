@@ -28,10 +28,34 @@ enum GiftAction {
 
   /// Полить: без внимания подарок вянет раньше срока.
   water,
+
+  /// Принять двойным касанием — как лайк в переписке.
+  doubleTap,
+
+  /// Обнять в ответ: успел за минуту — бонус обоим.
+  hugBack,
+
+  /// Загадать желание и отправить его текстом дарителю.
+  wish,
+
+  /// Салют: разворачивается сразу, без ожидания действия.
+  blast,
+
+  /// Срочный зов: уведомление проходит поверх тихого режима.
+  urgent,
+
+  /// Перевод монет партнёру.
+  transfer,
 }
 
 /// Подсказка получателю на русском. Английский текст живёт в [actionHintEn].
 String actionHintRu(GiftAction action) => switch (action) {
+      GiftAction.doubleTap => 'Коснись дважды',
+      GiftAction.hugBack => 'Обними в ответ',
+      GiftAction.wish => 'Загадай желание',
+      GiftAction.blast => 'Смотри салют',
+      GiftAction.urgent => 'Ответь скорее',
+      GiftAction.transfer => 'Забери монеты',
       GiftAction.blow => 'Задуй свечу',
       GiftAction.open => 'Открой коробку',
       GiftAction.crack => 'Разломи печенье',
@@ -41,6 +65,12 @@ String actionHintRu(GiftAction action) => switch (action) {
     };
 
 String actionHintEn(GiftAction action) => switch (action) {
+      GiftAction.doubleTap => 'Double tap',
+      GiftAction.hugBack => 'Hug back',
+      GiftAction.wish => 'Make a wish',
+      GiftAction.blast => 'Enjoy the fireworks',
+      GiftAction.urgent => 'Answer soon',
+      GiftAction.transfer => 'Take the coins',
       GiftAction.blow => 'Blow out the candle',
       GiftAction.open => 'Open the box',
       GiftAction.crack => 'Crack it open',
@@ -58,6 +88,10 @@ class Gift {
     required this.titleEn,
     this.action = GiftAction.tap,
     this.carriesNote = false,
+    this.wantsReply = false,
+    this.keepsForever = false,
+    this.transfersCoins = false,
+    this.mutualBonus = 0,
     this.life = const Duration(hours: 24),
   });
 
@@ -79,8 +113,20 @@ class Gift {
   /// Что делает получатель, чтобы подарок «сработал».
   final GiftAction action;
 
-  /// Даритель может вложить текст: записку, предсказание, письмо.
+  /// Даритель может вложить текст: записку, предсказание, письмо, посвящение.
   final bool carriesNote;
+
+  /// Получатель пишет ответ, и он возвращается дарителю (желание на звезду).
+  final bool wantsReply;
+
+  /// Не расходуется, а остаётся в профиле пары навсегда. Видят только двое.
+  final bool keepsForever;
+
+  /// Цена уходит не в никуда, а на баланс партнёра.
+  final bool transfersCoins;
+
+  /// Монет обоим, если ответ пришёл в первую минуту.
+  final int mutualBonus;
 
   /// Сколько подарок ждёт отклика, прежде чем истечёт.
   final Duration life;
@@ -96,11 +142,14 @@ class GiftCatalog {
   /// Порядок = порядок на витрине: от дешёвых повседневных к дорогим событиям.
   static const List<Gift> all = [
     // Каждый день — 10-15 монет, покрываются дневным бонусом
-    Gift(key: 'heart', price: 10, engine: GiftEngine.response, titleRu: 'Сердце', titleEn: 'Heart'),
-    Gift(key: 'star', price: 10, engine: GiftEngine.response, titleRu: 'Звезда', titleEn: 'Star'),
+    Gift(key: 'heart', price: 10, engine: GiftEngine.response, titleRu: 'Сердце', titleEn: 'Heart',
+        action: GiftAction.doubleTap),
+    Gift(key: 'star', price: 10, engine: GiftEngine.response, titleRu: 'Звезда', titleEn: 'Star',
+        action: GiftAction.wish, wantsReply: true),
     Gift(key: 'fire', price: 10, engine: GiftEngine.response, titleRu: 'Огонёк', titleEn: 'Spark'),
     Gift(key: 'sun', price: 10, engine: GiftEngine.response, titleRu: 'Солнце', titleEn: 'Sun'),
-    Gift(key: 'hug', price: 15, engine: GiftEngine.response, titleRu: 'Обнимашка', titleEn: 'Hug'),
+    Gift(key: 'hug', price: 15, engine: GiftEngine.response, titleRu: 'Обнимашка', titleEn: 'Hug',
+        action: GiftAction.hugBack, mutualBonus: 5),
     Gift(key: 'night', price: 15, engine: GiftEngine.response, titleRu: 'Сладких снов', titleEn: 'Good night'),
     Gift(key: 'cookie', price: 15, engine: GiftEngine.response, titleRu: 'Печенье', titleEn: 'Cookie',
         action: GiftAction.crack, carriesNote: true),
@@ -118,7 +167,8 @@ class GiftCatalog {
     Gift(key: 'cocktail', price: 20, engine: GiftEngine.response, titleRu: 'Коктейль', titleEn: 'Cocktail'),
     Gift(key: 'song', price: 20, engine: GiftEngine.response, titleRu: 'Песня', titleEn: 'Song'),
     Gift(key: 'photo', price: 20, engine: GiftEngine.response, titleRu: 'Кадр', titleEn: 'Photo'),
-    Gift(key: 'piggy', price: 20, engine: GiftEngine.response, titleRu: 'Копилка', titleEn: 'Piggy bank'),
+    Gift(key: 'piggy', price: 20, engine: GiftEngine.response, titleRu: 'Копилка', titleEn: 'Piggy bank',
+        action: GiftAction.transfer, transfersCoins: true),
     Gift(key: 'bouquet', price: 25, engine: GiftEngine.response, titleRu: 'Букет', titleEn: 'Bouquet',
         action: GiftAction.water, life: Duration(days: 3)),
     Gift(key: 'park', price: 25, engine: GiftEngine.response, titleRu: 'Прогулка', titleEn: 'Walk'),
@@ -130,16 +180,20 @@ class GiftCatalog {
     Gift(key: 'letter', price: 30, engine: GiftEngine.response, titleRu: 'Письмо', titleEn: 'Letter',
         action: GiftAction.open, carriesNote: true),
     Gift(key: 'movie', price: 30, engine: GiftEngine.response, titleRu: 'Кино', titleEn: 'Movie'),
-    Gift(key: 'salute', price: 30, engine: GiftEngine.response, titleRu: 'Салют', titleEn: 'Fireworks'),
+    Gift(key: 'salute', price: 30, engine: GiftEngine.response, titleRu: 'Салют', titleEn: 'Fireworks',
+        action: GiftAction.blast),
 
     // Событие — 40-60 монет, за неделю бесплатно не накопить
     Gift(key: 'cake', price: 40, engine: GiftEngine.response, titleRu: 'Торт', titleEn: 'Cake',
         action: GiftAction.blow),
     Gift(key: 'flight', price: 40, engine: GiftEngine.response, titleRu: 'Билет', titleEn: 'Ticket'),
     Gift(key: 'key', price: 40, engine: GiftEngine.response, titleRu: 'Ключик', titleEn: 'Key'),
-    Gift(key: 'medal', price: 50, engine: GiftEngine.response, titleRu: 'Медаль', titleEn: 'Medal'),
-    Gift(key: 'rocket', price: 50, engine: GiftEngine.response, titleRu: 'Ракета', titleEn: 'Rocket'),
-    Gift(key: 'diamond', price: 60, engine: GiftEngine.response, titleRu: 'Кольцо', titleEn: 'Ring'),
+    Gift(key: 'medal', price: 50, engine: GiftEngine.response, titleRu: 'Медаль', titleEn: 'Medal',
+        carriesNote: true, keepsForever: true),
+    Gift(key: 'rocket', price: 50, engine: GiftEngine.response, titleRu: 'Ракета', titleEn: 'Rocket',
+        action: GiftAction.urgent),
+    Gift(key: 'diamond', price: 60, engine: GiftEngine.response, titleRu: 'Кольцо', titleEn: 'Ring',
+        carriesNote: true, keepsForever: true),
   ];
 
   static Gift? byKey(String key) {

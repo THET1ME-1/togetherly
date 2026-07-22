@@ -1329,6 +1329,10 @@ abstract class AppStrings {
   String get giftNoteHint;
   String get giftNoteSkip;
   String get giftNoteSend;
+  String get giftWishHint;
+  String get giftWishSend;
+  String get giftWishEmpty;
+  String giftMutualBonus(int coins);
 
   // Профиль партнёра
   String get partnerGiftsTitle;
@@ -3961,6 +3965,14 @@ class _RuStrings extends AppStrings {
   String get giftNoteSkip => 'Без записки';
   @override
   String get giftNoteSend => 'Отправить';
+  @override
+  String get giftWishHint => 'Загадай желание';
+  @override
+  String get giftWishSend => 'Загадать';
+  @override
+  String get giftWishEmpty => 'Сначала напиши желание';
+  @override
+  String giftMutualBonus(int coins) => 'Успели вовремя: обоим по $coins';
 
   // Профиль партнёра
   @override
@@ -6584,6 +6596,14 @@ class _EnStrings extends AppStrings {
   String get giftNoteSkip => 'No note';
   @override
   String get giftNoteSend => 'Send';
+  @override
+  String get giftWishHint => 'Make a wish';
+  @override
+  String get giftWishSend => 'Wish';
+  @override
+  String get giftWishEmpty => 'Write your wish first';
+  @override
+  String giftMutualBonus(int coins) => 'Right on time: $coins each';
 
   // Partner profile
   @override

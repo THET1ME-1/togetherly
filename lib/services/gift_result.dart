@@ -38,6 +38,7 @@ class GiftResult {
     this.error,
     this.coins,
     this.refund,
+    this.mutual,
     this.repeated = false,
   });
 
@@ -49,6 +50,9 @@ class GiftResult {
 
   /// Сколько монет вернулось дарителю за отклик.
   final int? refund;
+
+  /// Бонус обоим за ответ в первую минуту («обнял в ответ»).
+  final int? mutual;
 
   /// Сервер ответил, что операция уже была выполнена раньше. Монеты при этом
   /// не двигались — так работает защита от двойного списания.
@@ -81,6 +85,7 @@ GiftResult parseGiftResponse(Map<String, dynamic>? body) {
     ok: true,
     coins: (body['coins'] as num?)?.toInt(),
     refund: (body['refund'] as num?)?.toInt(),
+    mutual: (body['mutual'] as num?)?.toInt(),
     repeated: body['alreadySent'] == true || body['alreadyReacted'] == true,
   );
 }
