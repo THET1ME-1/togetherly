@@ -1748,7 +1748,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Локальное включение раздела для проверки на своём устройстве:
+  /// `flutter build apk --dart-define=GIFTS_FORCE=true`. Так подарки можно
+  /// погонять вживую, не открывая их всем парам сразу.
+  static const bool _giftsForced = bool.fromEnvironment('GIFTS_FORCE');
+
   Future<void> _loadGiftsFlag() async {
+    if (_giftsForced) {
+      if (mounted && !_giftsEnabled) setState(() => _giftsEnabled = true);
+      return;
+    }
     final on = await PbDataService().fetchGiftsEnabled();
     if (mounted && on != _giftsEnabled) setState(() => _giftsEnabled = on);
   }
