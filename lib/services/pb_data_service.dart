@@ -2172,6 +2172,22 @@ class PbDataService {
     }
   }
 
+  /// Включён ли раздел подарков (поле `gifts_enabled` в той же единственной
+  /// записи `app_config`, что и `min_build`).
+  ///
+  /// false при любой неопределённости — нет записи, нет поля, сбой сети:
+  /// выключенный раздел безопаснее раздела, который наполовину работает.
+  Future<bool> fetchGiftsEnabled() async {
+    try {
+      final res = await _pb.collection('app_config').getList(perPage: 1);
+      if (res.items.isEmpty) return false;
+      return res.items.first.data['gifts_enabled'] == true;
+    } catch (e) {
+      debugPrint('PbData.fetchGiftsEnabled failed: $e');
+      return false;
+    }
+  }
+
   /// ISO-строка PB → DateTime (публичный хелпер для слоя моделей на cutover).
   static DateTime? parseDate(dynamic v) => _date(v);
 }
