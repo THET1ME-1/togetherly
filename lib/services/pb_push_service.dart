@@ -208,8 +208,10 @@ class PbPushService {
         if (!_pref('notif_gifts')) return; // поля нет в профиле → _pref даёт true
         final gift = GiftCatalog.byKey((r.data['gift_key'] ?? '').toString());
         if (gift == null) return; // подарок из будущей версии приложения
+        // Ракета проходит сквозь подаренную тихую ночь: она для срочного.
         _notify(('gift${r.id}').hashCode, partnerName,
-            LocaleService.current.giftPushBody(gift.title));
+            LocaleService.current.giftPushBody(gift.title),
+            pierceQuiet: gift.piercesQuietHours);
       } catch (err) {
         debugPrint('PbPush gift callback error: $err');
       }
@@ -245,8 +247,9 @@ class PbPushService {
     await _notify(id, title, body);
   }
 
-  Future<void> _notify(int id, String title, String body) async {
-    if (_muted) {
+  Future<void> _notify(int id, String title, String body,
+      {bool pierceQuiet = false}) async {
+    if (_muted && !pierceQuiet) {
       debugPrint('PbPush: тихая ночь — уведомление не показываем');
       return;
     }

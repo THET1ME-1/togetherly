@@ -112,6 +112,25 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
     }
   }
 
+  /// «Не сейчас»: приглашение гаснет, дарителю возвращается вся цена.
+  Future<void> _decline() async {
+    if (_busy || _done) return;
+    setState(() => _busy = true);
+    final res = await GiftsService.instance.decline(widget.giftId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (res.ok) Navigator.of(context).pop(false);
+  }
+
+  /// Пицца: монетка решает, кто заказывает.
+  void _flip() {
+    setState(() => _flipResult = _rnd.nextBool());
+    HapticFeedback.mediumImpact();
+    _accept();
+  }
+
+  bool? _flipResult;
+
   /// Зайчик убегает от промаха и даётся с третьей попытки.
   void _dodge() {
     HapticFeedback.selectionClick();
@@ -174,6 +193,16 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: t.textPrimary)),
+            if (_flipResult != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _flipResult! ? s.giftFlipYou : s.giftFlipPartner,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: t.textPrimary),
+              ),
+            ],
             if (widget.note?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 12),
               _NoteCard(theme: t, text: widget.note!.trim()),
@@ -210,6 +239,33 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
               FilledButton(
                 onPressed: _busy ? null : _accept,
                 child: Text(s.giftWishSend),
+              ),
+            ],
+            if (widget.gift.action == GiftAction.invite) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: _busy ? null : _decline,
+                      child: Text(s.giftDecline,
+                          style: TextStyle(color: t.textSecondary)),
+                    ),
+                  ),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _busy ? null : _accept,
+                      child: Text(s.giftAccept),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (widget.gift.action == GiftAction.coinFlip) ...[
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _busy ? null : _flip,
+                child: Text(s.giftFlipCoin),
               ),
             ],
             if (widget.gift.action == GiftAction.catchIt && _misses > 0) ...[
@@ -281,6 +337,11 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
           done: _done,
           onAccept: _accept,
         );
+      case GiftAction.invite:
+      case GiftAction.coinFlip:
+      case GiftAction.clink:
+      case GiftAction.unlock:
+      case GiftAction.alarm:
       case GiftAction.hugBack:
       case GiftAction.wish:
       case GiftAction.blast:

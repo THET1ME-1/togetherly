@@ -46,7 +46,25 @@ enum GiftAction {
 
   /// Перевод монет партнёру.
   transfer,
+
+  /// Приглашение: принял — открывается общий экран, отказался — монеты назад.
+  invite,
+
+  /// Бросок монетки: кому платить, кому идти.
+  coinFlip,
+
+  /// Чокнуться экранами.
+  clink,
+
+  /// Открыть партнёру секретные записи на сутки.
+  unlock,
+
+  /// Общий будильник на двоих.
+  alarm,
 }
+
+/// Куда ведёт принятое приглашение.
+enum GiftOpens { none, chat, callTimer, watchTogether, map, addPhoto, calendar }
 
 /// Подсказка получателю на русском. Английский текст живёт в [actionHintEn].
 String actionHintRu(GiftAction action) => switch (action) {
@@ -56,6 +74,11 @@ String actionHintRu(GiftAction action) => switch (action) {
       GiftAction.blast => 'Смотри салют',
       GiftAction.urgent => 'Ответь скорее',
       GiftAction.transfer => 'Забери монеты',
+      GiftAction.invite => 'Принимаешь?',
+      GiftAction.coinFlip => 'Бросай монетку',
+      GiftAction.clink => 'Чокнись экраном',
+      GiftAction.unlock => 'Забери ключ',
+      GiftAction.alarm => 'Ставим будильник',
       GiftAction.blow => 'Задуй свечу',
       GiftAction.open => 'Открой коробку',
       GiftAction.crack => 'Разломи печенье',
@@ -71,6 +94,11 @@ String actionHintEn(GiftAction action) => switch (action) {
       GiftAction.blast => 'Enjoy the fireworks',
       GiftAction.urgent => 'Answer soon',
       GiftAction.transfer => 'Take the coins',
+      GiftAction.invite => 'Accept?',
+      GiftAction.coinFlip => 'Flip the coin',
+      GiftAction.clink => 'Clink screens',
+      GiftAction.unlock => 'Take the key',
+      GiftAction.alarm => 'Set the alarm',
       GiftAction.blow => 'Blow out the candle',
       GiftAction.open => 'Open the box',
       GiftAction.crack => 'Crack it open',
@@ -92,6 +120,14 @@ class Gift {
     this.keepsForever = false,
     this.transfersCoins = false,
     this.mutualBonus = 0,
+    this.opens = GiftOpens.none,
+    this.refundsOnDecline = false,
+    this.deliverAfter,
+    this.deliversAtMorning = false,
+    this.carriesDate = false,
+    this.carriesPlace = false,
+    this.piercesQuietHours = false,
+    this.writesToFeed = false,
     this.life = const Duration(hours: 24),
   });
 
@@ -128,6 +164,30 @@ class Gift {
   /// Монет обоим, если ответ пришёл в первую минуту.
   final int mutualBonus;
 
+  /// Какой экран открыть, когда приглашение принято.
+  final GiftOpens opens;
+
+  /// Отказ возвращает дарителю всю цену: иначе звать страшно.
+  final bool refundsOnDecline;
+
+  /// Подарок доходит не сразу, а спустя это время.
+  final Duration? deliverAfter;
+
+  /// Подарок доходит к восьми утра — завтрак не будят ночью.
+  final bool deliversAtMorning;
+
+  /// Даритель выбирает дату: до неё пойдёт обратный отсчёт.
+  final bool carriesDate;
+
+  /// Подарок несёт место отправителя — след на карте.
+  final bool carriesPlace;
+
+  /// Уведомление проходит даже сквозь подаренную тихую ночь.
+  final bool piercesQuietHours;
+
+  /// Оставляет запись в общей ленте пары.
+  final bool writesToFeed;
+
   /// Сколько подарок ждёт отклика, прежде чем истечёт.
   final Duration life;
 
@@ -155,43 +215,54 @@ class GiftCatalog {
         action: GiftAction.crack, carriesNote: true),
     Gift(key: 'bunny', price: 15, engine: GiftEngine.response, titleRu: 'Зайчик', titleEn: 'Bunny',
         action: GiftAction.catchIt),
-    Gift(key: 'paw', price: 15, engine: GiftEngine.response, titleRu: 'Лапка', titleEn: 'Paw'),
+    Gift(key: 'paw', price: 15, engine: GiftEngine.response, titleRu: 'Лапка', titleEn: 'Paw', carriesPlace: true),
     Gift(key: 'spa', price: 15, engine: GiftEngine.response, titleRu: 'Отдых', titleEn: 'Spa'),
 
     // По поводу — 20-30 монет
-    Gift(key: 'coffee', price: 20, engine: GiftEngine.response, titleRu: 'Кофе', titleEn: 'Coffee'),
-    Gift(key: 'tea', price: 20, engine: GiftEngine.response, titleRu: 'Чай', titleEn: 'Tea'),
-    Gift(key: 'croissant', price: 20, engine: GiftEngine.response, titleRu: 'Завтрак', titleEn: 'Breakfast'),
-    Gift(key: 'pizza', price: 20, engine: GiftEngine.response, titleRu: 'Пицца', titleEn: 'Pizza'),
-    Gift(key: 'wine', price: 20, engine: GiftEngine.response, titleRu: 'Бокал', titleEn: 'Wine'),
-    Gift(key: 'cocktail', price: 20, engine: GiftEngine.response, titleRu: 'Коктейль', titleEn: 'Cocktail'),
-    Gift(key: 'song', price: 20, engine: GiftEngine.response, titleRu: 'Песня', titleEn: 'Song'),
-    Gift(key: 'photo', price: 20, engine: GiftEngine.response, titleRu: 'Кадр', titleEn: 'Photo'),
+    Gift(key: 'coffee', price: 20, engine: GiftEngine.response, titleRu: 'Кофе', titleEn: 'Coffee',
+        action: GiftAction.invite, opens: GiftOpens.callTimer, refundsOnDecline: true),
+    Gift(key: 'tea', price: 20, engine: GiftEngine.response, titleRu: 'Чай', titleEn: 'Tea',
+        action: GiftAction.invite, opens: GiftOpens.chat, refundsOnDecline: true),
+    Gift(key: 'croissant', price: 20, engine: GiftEngine.response, titleRu: 'Завтрак', titleEn: 'Breakfast',
+        carriesNote: true, deliversAtMorning: true),
+    Gift(key: 'pizza', price: 20, engine: GiftEngine.response, titleRu: 'Пицца', titleEn: 'Pizza', action: GiftAction.coinFlip),
+    Gift(key: 'wine', price: 20, engine: GiftEngine.response, titleRu: 'Бокал', titleEn: 'Wine', action: GiftAction.clink),
+    Gift(key: 'cocktail', price: 20, engine: GiftEngine.response, titleRu: 'Коктейль', titleEn: 'Cocktail',
+        action: GiftAction.invite, opens: GiftOpens.chat, refundsOnDecline: true,
+        carriesNote: true),
+    Gift(key: 'song', price: 20, engine: GiftEngine.response, titleRu: 'Песня', titleEn: 'Song', carriesNote: true),
+    Gift(key: 'photo', price: 20, engine: GiftEngine.response, titleRu: 'Кадр', titleEn: 'Photo',
+        action: GiftAction.invite, opens: GiftOpens.addPhoto, refundsOnDecline: true),
     Gift(key: 'piggy', price: 20, engine: GiftEngine.response, titleRu: 'Копилка', titleEn: 'Piggy bank',
         action: GiftAction.transfer, transfersCoins: true),
     Gift(key: 'bouquet', price: 25, engine: GiftEngine.response, titleRu: 'Букет', titleEn: 'Bouquet',
         action: GiftAction.water, life: Duration(days: 3)),
-    Gift(key: 'park', price: 25, engine: GiftEngine.response, titleRu: 'Прогулка', titleEn: 'Walk'),
-    Gift(key: 'ramen', price: 25, engine: GiftEngine.response, titleRu: 'Ужин вдвоём', titleEn: 'Dinner'),
-    Gift(key: 'bed', price: 25, engine: GiftEngine.response, titleRu: 'Сон', titleEn: 'Sleep'),
-    Gift(key: 'beach', price: 25, engine: GiftEngine.response, titleRu: 'Отпуск', titleEn: 'Vacation'),
+    Gift(key: 'park', price: 25, engine: GiftEngine.response, titleRu: 'Прогулка', titleEn: 'Walk',
+        action: GiftAction.invite, opens: GiftOpens.map, refundsOnDecline: true),
+    Gift(key: 'ramen', price: 25, engine: GiftEngine.response, titleRu: 'Ужин вдвоём', titleEn: 'Dinner',
+        action: GiftAction.invite, opens: GiftOpens.calendar, refundsOnDecline: true,
+        carriesDate: true),
+    Gift(key: 'bed', price: 25, engine: GiftEngine.response, titleRu: 'Сон', titleEn: 'Sleep', action: GiftAction.alarm),
+    Gift(key: 'beach', price: 25, engine: GiftEngine.response, titleRu: 'Отпуск', titleEn: 'Vacation', carriesDate: true),
     Gift(key: 'giftbox', price: 30, engine: GiftEngine.response, titleRu: 'Коробка', titleEn: 'Gift box',
         action: GiftAction.open, carriesNote: true),
     Gift(key: 'letter', price: 30, engine: GiftEngine.response, titleRu: 'Письмо', titleEn: 'Letter',
-        action: GiftAction.open, carriesNote: true),
-    Gift(key: 'movie', price: 30, engine: GiftEngine.response, titleRu: 'Кино', titleEn: 'Movie'),
+        action: GiftAction.open, carriesNote: true,
+        deliverAfter: Duration(hours: 24)),
+    Gift(key: 'movie', price: 30, engine: GiftEngine.response, titleRu: 'Кино', titleEn: 'Movie',
+        action: GiftAction.invite, opens: GiftOpens.watchTogether, refundsOnDecline: true),
     Gift(key: 'salute', price: 30, engine: GiftEngine.response, titleRu: 'Салют', titleEn: 'Fireworks',
-        action: GiftAction.blast),
+        action: GiftAction.blast, writesToFeed: true),
 
     // Событие — 40-60 монет, за неделю бесплатно не накопить
     Gift(key: 'cake', price: 40, engine: GiftEngine.response, titleRu: 'Торт', titleEn: 'Cake',
         action: GiftAction.blow),
-    Gift(key: 'flight', price: 40, engine: GiftEngine.response, titleRu: 'Билет', titleEn: 'Ticket'),
-    Gift(key: 'key', price: 40, engine: GiftEngine.response, titleRu: 'Ключик', titleEn: 'Key'),
+    Gift(key: 'flight', price: 40, engine: GiftEngine.response, titleRu: 'Билет', titleEn: 'Ticket', carriesDate: true),
+    Gift(key: 'key', price: 40, engine: GiftEngine.response, titleRu: 'Ключик', titleEn: 'Key', action: GiftAction.unlock),
     Gift(key: 'medal', price: 50, engine: GiftEngine.response, titleRu: 'Медаль', titleEn: 'Medal',
         carriesNote: true, keepsForever: true),
     Gift(key: 'rocket', price: 50, engine: GiftEngine.response, titleRu: 'Ракета', titleEn: 'Rocket',
-        action: GiftAction.urgent),
+        action: GiftAction.urgent, piercesQuietHours: true),
     Gift(key: 'diamond', price: 60, engine: GiftEngine.response, titleRu: 'Кольцо', titleEn: 'Ring',
         carriesNote: true, keepsForever: true),
   ];

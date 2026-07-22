@@ -1334,6 +1334,11 @@ abstract class AppStrings {
   String get giftWishEmpty;
   String giftMutualBonus(int coins);
   String giftSunriseGreeting(String name);
+  String get giftAccept;
+  String get giftDecline;
+  String get giftFlipCoin;
+  String get giftFlipYou;
+  String get giftFlipPartner;
 
   // Профиль партнёра
   String get partnerGiftsTitle;
@@ -3976,6 +3981,16 @@ class _RuStrings extends AppStrings {
   String giftMutualBonus(int coins) => 'Успели вовремя: обоим по $coins';
   @override
   String giftSunriseGreeting(String name) => 'Доброе утро! $name подарил тебе рассвет';
+  @override
+  String get giftAccept => 'Принимаю';
+  @override
+  String get giftDecline => 'Не сейчас';
+  @override
+  String get giftFlipCoin => 'Бросить монетку';
+  @override
+  String get giftFlipYou => 'Заказываешь ты 🍕';
+  @override
+  String get giftFlipPartner => 'Заказывает партнёр 🍕';
 
   // Профиль партнёра
   @override
@@ -6609,6 +6624,16 @@ class _EnStrings extends AppStrings {
   String giftMutualBonus(int coins) => 'Right on time: $coins each';
   @override
   String giftSunriseGreeting(String name) => 'Good morning! $name sent you a sunrise';
+  @override
+  String get giftAccept => 'Accept';
+  @override
+  String get giftDecline => 'Not now';
+  @override
+  String get giftFlipCoin => 'Flip a coin';
+  @override
+  String get giftFlipYou => 'You order 🍕';
+  @override
+  String get giftFlipPartner => 'Partner orders 🍕';
 
   // Partner profile
   @override

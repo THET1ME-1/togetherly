@@ -70,6 +70,7 @@ USERS_CUSTOM = [
     # сроки действия подарков-эффектов (epoch ms), см. lib/models/gift_effect.dart
     number("mute_until"), number("sunrise_until"),
     number("spa_until"), number("streak_shield_until"),
+    number("secrets_until"),
     text("display_name"), text("avatar_url"),
     text("gender"), date("birth_date"), number("coins"),
     jsonf("owned_themes"), jsonf("owned_icons"), jsonf("owned_features"),

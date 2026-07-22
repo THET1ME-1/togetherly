@@ -1807,7 +1807,28 @@ class _HomeScreenState extends State<HomeScreen> {
       senderName: _pairData.partnerDisplayName,
       note: (raw['note'] ?? '').toString(),
     );
-    if (accepted == true) await _loadIncomingGifts();
+    if (accepted == true) {
+      await _loadIncomingGifts();
+      _openAfterAccept(gift);
+    } else if (accepted == false) {
+      await _loadIncomingGifts(); // отказ тоже убирает подарок из списка
+    }
+  }
+
+  /// Принятое приглашение ведёт туда, куда звало: в чат, на карту, к таймеру.
+  void _openAfterAccept(Gift gift) {
+    switch (gift.opens) {
+      case GiftOpens.addPhoto:
+        // Кадр: сразу форма добавления — просили фото прямо сейчас.
+        _openMemoryLane(openCreateOnStart: true);
+      case GiftOpens.chat:
+      case GiftOpens.map:
+      case GiftOpens.watchTogether:
+      case GiftOpens.callTimer:
+      case GiftOpens.calendar:
+      case GiftOpens.none:
+        break; // остальное открывается со своих кнопок на главном
+    }
   }
 
   Future<void> _loadGiftsFlag() async {

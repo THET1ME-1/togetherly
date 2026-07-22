@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:love_app/models/gift.dart';
+import 'package:love_app/models/gift_effect.dart';
 
 void main() {
   secondBatch();
@@ -14,10 +15,27 @@ void main() {
     }
   });
 
-  test('подарок без своей механики принимают простым тапом', () {
-    final coffee = GiftCatalog.byKey('coffee')!;
-    expect(coffee.action, GiftAction.tap);
-    expect(coffee.carriesNote, isFalse);
+  test('медаль принимают простым тапом, но она носит подпись', () {
+    final medal = GiftCatalog.byKey('medal')!;
+    expect(medal.action, GiftAction.tap);
+    expect(medal.carriesNote, isTrue);
+  });
+
+  test('каждому подарку каталога досталась своя механика или вложение', () {
+    for (final g in GiftCatalog.all) {
+      // эффекты на приложение живут отдельно, в gift_effect.dart
+      final hasOwn = effectOf(g.key) != null ||
+          g.action != GiftAction.tap ||
+          g.carriesNote ||
+          g.carriesDate ||
+          g.carriesPlace ||
+          g.keepsForever ||
+          g.writesToFeed ||
+          g.deliversAtMorning ||
+          g.deliverAfter != null ||
+          g.piercesQuietHours;
+      expect(hasOwn, isTrue, reason: 'подарок ${g.key} остался просто картинкой');
+    }
   });
 
   test('зайчика надо поймать, букет вянет', () {

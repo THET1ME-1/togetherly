@@ -27,6 +27,8 @@ class GiftsService {
     required String groupId,
     required String giftKey,
     String? note,
+    String? date,
+    String? place,
   }) async {
     final gift = GiftCatalog.byKey(giftKey);
     if (gift == null) {
@@ -42,6 +44,8 @@ class GiftsService {
         'groupId': groupId,
         'giftKey': giftKey,
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        if (date != null && date.isNotEmpty) 'date': date,
+        if (place != null && place.isNotEmpty) 'place': place,
       },
       giftId: giftId,
       giftKey: giftKey,
@@ -61,6 +65,18 @@ class GiftsService {
       giftId: giftId,
       giftKey: '',
       step: 'react',
+    );
+  }
+
+  /// Отказ от приглашения: дарителю возвращается вся цена.
+  Future<GiftResult> decline(String giftId) async {
+    GiftTelemetry.step(giftId, 'decline:start');
+    return _call(
+      path: '/api/gifts/decline',
+      body: {'giftId': giftId},
+      giftId: giftId,
+      giftKey: '',
+      step: 'decline',
     );
   }
 

@@ -1493,6 +1493,23 @@
           "max": 500
         },
         {
+          "name": "place",
+          "type": "text",
+          "required": false,
+          "max": 80
+        },
+        {
+          "name": "deliver_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "date",
+          "type": "text",
+          "required": false,
+          "max": 80
+        },
+        {
           "name": "price",
           "type": "number",
           "required": false

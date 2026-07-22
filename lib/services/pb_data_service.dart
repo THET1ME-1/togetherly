@@ -2212,8 +2212,9 @@ class PbDataService {
     try {
       final res = await _pb.collection('gifts').getList(
             perPage: 20,
-            filter:
-                'group_id = "$groupId" && recipient_uid = "$uid" && state = "sent"',
+            // deliver_at отсекает письмо, которое ещё летит, и завтрак до утра
+            filter: 'group_id = "$groupId" && recipient_uid = "$uid" && '
+                'state = "sent" && deliver_at <= ${DateTime.now().millisecondsSinceEpoch}',
             sort: '-created',
           );
       return res.items

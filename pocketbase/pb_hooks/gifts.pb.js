@@ -29,8 +29,13 @@ routerAdd("POST", "/api/gifts/send", (e) => {
     medal: 50, rocket: 50, diamond: 60,
   };
   const LIFE_MS = 24 * 60 * 60 * 1000;
+  // Подарки, которые доходят не сразу. Зеркало deliverAfter/deliversAtMorning.
+  const DELAY_H = { letter: 24 };
+  const MORNING = { croissant: true };
 
-  const body = new DynamicModel({ giftId: "", groupId: "", giftKey: "", note: "" });
+  const body = new DynamicModel({
+    giftId: "", groupId: "", giftKey: "", note: "", date: "", place: "",
+  });
   e.bindBody(body);
 
   const giftId = (body.giftId || "").trim();
@@ -114,7 +119,22 @@ routerAdd("POST", "/api/gifts/send", (e) => {
       rec.set("note", note);
       rec.set("price", price);
       rec.set("state", "sent");
-      rec.set("expires_at", now + LIFE_MS);
+      // Дата для обратного отсчёта (отпуск, билет, ужин) и место (лапка).
+      if (body.date) rec.set("date", String(body.date).slice(0, 40));
+      if (body.place) rec.set("place", String(body.place).slice(0, 80));
+      // Отложенная доставка: письмо ждёт сутки, завтрак — ближайшее утро.
+      let deliverAt = now;
+      if (DELAY_H[giftKey]) {
+        deliverAt = now + DELAY_H[giftKey] * 60 * 60 * 1000;
+      } else if (MORNING[giftKey]) {
+        const d = new Date(now);
+        const m = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 8, 0, 0, 0);
+        deliverAt = d.getTime() < m.getTime()
+          ? m.getTime()
+          : m.getTime() + 24 * 60 * 60 * 1000;
+      }
+      rec.set("deliver_at", deliverAt);
+      rec.set("expires_at", deliverAt + LIFE_MS);
       txApp.save(rec);
 
       user.set("coins", coins - price);
@@ -261,6 +281,30 @@ routerAdd("POST", "/api/gifts/react", (e) => {
         txApp.save(user);
       }
 
+      // Ключик открывает партнёру секретные записи на сутки.
+      if (gift.getString("gift_key") === "key") {
+        const prevUnlock = user.getInt("secrets_until") || 0;
+        user.set("secrets_until", Math.max(prevUnlock, now + 24 * 60 * 60 * 1000));
+        txApp.save(user);
+      }
+
+      // Салют остаётся записью в общей ленте — событие, а не вспышка.
+      if (gift.getString("gift_key") === "salute") {
+        try {
+          const memCol = txApp.findCollectionByNameOrId("memories");
+          const mem = new Record(memCol);
+          mem.set("group_id", gift.getString("group_id"));
+          mem.set("author_uid", gift.getString("sender_uid"));
+          mem.set("data", JSON.stringify({
+            type: "gift",
+            giftKey: "salute",
+            title: "Салют",
+            createdAt: now,
+          }));
+          txApp.save(mem);
+        } catch (_) {}
+      }
+
       // Эффект подарка на приложение получателя: тихая ночь, рассвет, отдых,
       // щит серии. Срок кладём в профиль — экраны про подарки не знают.
       const eff = EFFECTS[gift.getString("gift_key")];
@@ -319,6 +363,69 @@ routerAdd("POST", "/api/gifts/react", (e) => {
     try {
       $app.logger().error("gifts/react: " + String(err));
     } catch (_) {}
+    out = { s: 500, b: { ok: false, error: "internal" } };
+  }
+  return e.json(out.s, out.b);
+}, $apis.requireAuth());
+
+/// Отказ от приглашения: подарок гаснет, дарителю возвращается ВСЯ цена.
+/// Штраф за «не сейчас» убил бы желание звать вообще.
+routerAdd("POST", "/api/gifts/decline", (e) => {
+  const body = new DynamicModel({ giftId: "" });
+  e.bindBody(body);
+  const giftId = (body.giftId || "").trim();
+  if (!giftId) return e.json(400, { ok: false, error: "gift_not_found" });
+
+  let out = { s: 500, b: { ok: false, error: "internal" } };
+  try {
+    $app.runInTransaction((txApp) => {
+      let gift = null;
+      try { gift = txApp.findRecordById("gifts", giftId); } catch (_) { gift = null; }
+      if (!gift) {
+        out = { s: 404, b: { ok: false, error: "gift_not_found" } };
+        return;
+      }
+      if (gift.getString("recipient_uid") !== e.auth.id) {
+        out = { s: 403, b: { ok: false, error: "not_recipient" } };
+        return;
+      }
+      if (gift.getString("state") !== "sent") {
+        out = { s: 200, b: { ok: true, alreadyReacted: true, refund: 0 } };
+        return;
+      }
+      const price = gift.getInt("price") || 0;
+      gift.set("state", "declined");
+      gift.set("reacted_at", Date.now());
+      gift.set("refund", price);
+      txApp.save(gift);
+      try {
+        const sender = txApp.findRecordById("users", gift.getString("sender_uid"));
+        sender.set("coins", (sender.getInt("coins") || 0) + price);
+        txApp.save(sender);
+      } catch (_) {}
+      out = { s: 200, b: { ok: true, alreadyReacted: false, refund: price } };
+    });
+  } catch (err) {
+    try {
+      $http.send({
+        url: "http://127.0.0.1:8000/api/1/store/",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Sentry-Auth":
+            "Sentry sentry_version=7, sentry_key=05953bce75c54cdb9fe149861d159da5",
+        },
+        body: JSON.stringify({
+          message: "gifts/decline: " + String(err),
+          level: "error",
+          logger: "pb_hooks.gifts",
+          tags: { feature: "gifts", route: "gifts_decline", gift_id: giftId,
+                  error_code: "server" },
+        }),
+        timeout: 5,
+      });
+    } catch (_) {}
+    try { $app.logger().error("gifts/decline: " + String(err)); } catch (_) {}
     out = { s: 500, b: { ok: false, error: "internal" } };
   }
   return e.json(out.s, out.b);
