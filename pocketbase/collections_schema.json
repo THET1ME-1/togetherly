@@ -1481,6 +1481,12 @@
           "required": true
         },
         {
+          "name": "note",
+          "type": "text",
+          "required": false,
+          "max": 500
+        },
+        {
           "name": "price",
           "type": "number",
           "required": false

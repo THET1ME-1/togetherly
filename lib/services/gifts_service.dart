@@ -26,6 +26,7 @@ class GiftsService {
   Future<GiftResult> send({
     required String groupId,
     required String giftKey,
+    String? note,
   }) async {
     final gift = GiftCatalog.byKey(giftKey);
     if (gift == null) {
@@ -36,7 +37,12 @@ class GiftsService {
 
     return _call(
       path: '/api/gifts/send',
-      body: {'giftId': giftId, 'groupId': groupId, 'giftKey': giftKey},
+      body: {
+        'giftId': giftId,
+        'groupId': groupId,
+        'giftKey': giftKey,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
       giftId: giftId,
       giftKey: giftKey,
       step: 'send',

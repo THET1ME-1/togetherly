@@ -40,9 +40,16 @@ class _GiftShopScreenState extends State<GiftShopScreen> {
 
   Future<void> _send(Gift gift) async {
     if (_sending != null) return; // второй тап во время отправки
+
+    String? note;
+    if (gift.carriesNote) {
+      note = await _askNote(gift);
+      if (note == null) return; // передумал на вводе записки
+    }
+
     setState(() => _sending = gift.key);
     final res = await GiftsService.instance
-        .send(groupId: widget.groupId, giftKey: gift.key);
+        .send(groupId: widget.groupId, giftKey: gift.key, note: note);
     if (!mounted) return;
 
     final s = LocaleService.current;
@@ -66,6 +73,88 @@ class _GiftShopScreenState extends State<GiftShopScreen> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(text)));
     if (res.ok) Navigator.of(context).pop();
+  }
+
+  /// Записка внутрь коробки, печенья или письма. null = отменил отправку.
+  Future<String?> _askNote(Gift gift) async {
+    final t = widget.theme;
+    final s = LocaleService.current;
+    final ctrl = TextEditingController();
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: t.cardSurface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Image.asset(gift.asset, width: 44, height: 44),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(gift.title,
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: t.textPrimary)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: ctrl,
+                maxLength: 500,
+                maxLines: 4,
+                minLines: 2,
+                autofocus: true,
+                style: TextStyle(color: t.textPrimary),
+                decoration: InputDecoration(
+                  hintText: s.giftNoteHint,
+                  hintStyle: TextStyle(color: t.textMuted),
+                  filled: true,
+                  fillColor: t.surfaceMuted,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(''),
+                      child: Text(s.giftNoteSkip,
+                          style: TextStyle(color: t.textSecondary)),
+                    ),
+                  ),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(ctrl.text),
+                      child: Text(s.giftNoteSend),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

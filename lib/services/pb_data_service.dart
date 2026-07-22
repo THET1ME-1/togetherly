@@ -2203,6 +2203,28 @@ class PbDataService {
     }
   }
 
+  /// Подарки, которые ждут действия получателя [uid] — свежие сверху.
+  Future<List<Map<String, dynamic>>> fetchIncomingGifts({
+    required String groupId,
+    required String uid,
+  }) async {
+    if (groupId.isEmpty || uid.isEmpty) return const [];
+    try {
+      final res = await _pb.collection('gifts').getList(
+            perPage: 20,
+            filter:
+                'group_id = "$groupId" && recipient_uid = "$uid" && state = "sent"',
+            sort: '-created',
+          );
+      return res.items
+          .map((r) => {'id': r.id, ...Map<String, dynamic>.from(r.data)})
+          .toList();
+    } catch (e) {
+      debugPrint('PbData.fetchIncomingGifts failed: $e');
+      return const [];
+    }
+  }
+
   /// Запись «скучаю» участника [uid]: счётчик и карта дней недели.
   Future<Map<String, dynamic>?> fetchMissYouFor({
     required String groupId,

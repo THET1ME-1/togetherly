@@ -22,6 +22,7 @@ import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
 import 'gifts/gift_shop_screen.dart';
 import 'gifts/partner_profile_screen.dart';
+import 'gifts/gift_receive_sheet.dart';
 import '../widgets/avatar_widget.dart';
 import '../services/achievement_service.dart';
 import '../widgets/achievement_unlock_overlay.dart';
@@ -143,6 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Раздел подарков включён на сервере. По умолчанию выключен: если конфиг не
   /// прочитался, лучше не показывать кнопку, чем показать неработающую.
   bool _giftsEnabled = false;
+
+  /// Подарки, которые ждут моего действия: задутой свечи, открытой коробки.
+  List<Map<String, dynamic>> _incomingGifts = const [];
   String _lastPairId = '';
   int _pairChangedGeneration = 0;
 
@@ -178,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initPairData();
     _loadSideActionPref();
     _loadGiftsFlag();
+    _loadIncomingGifts();
 
     // Онлайн-презенс: heartbeat в PocketBase, пока приложение активно.
     PresenceService().start();
@@ -1279,6 +1284,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _achievementsEntry(),
             ),
           if (_pairData.isPaired && _giftsEnabled) ...[
+            if (_incomingGifts.isNotEmpty)
+              AnimatedSlideIn(
+                delay: const Duration(milliseconds: 460),
+                child: _incomingGiftEntry(),
+              ),
             AnimatedSlideIn(
               delay: const Duration(milliseconds: 465),
               child: _partnerEntry(),
@@ -1760,6 +1770,30 @@ class _HomeScreenState extends State<HomeScreen> {
   /// погонять вживую, не открывая их всем парам сразу.
   static const bool _giftsForced = bool.fromEnvironment('GIFTS_FORCE');
 
+  Future<void> _loadIncomingGifts() async {
+    if (!_pairData.isPaired) return;
+    final list = await PbDataService().fetchIncomingGifts(
+      groupId: _pairData.pairId,
+      uid: PocketBaseService().userId ?? '',
+    );
+    if (mounted) setState(() => _incomingGifts = list);
+  }
+
+  /// Открывает подарок: свечу задувают, коробку открывают, зайчика ловят.
+  Future<void> _openIncomingGift(Map<String, dynamic> raw) async {
+    final gift = GiftCatalog.byKey((raw['gift_key'] ?? '').toString());
+    if (gift == null) return;
+    final accepted = await GiftReceiveSheet.show(
+      context,
+      theme: _t,
+      giftId: (raw['id'] ?? '').toString(),
+      gift: gift,
+      senderName: _pairData.partnerDisplayName,
+      note: (raw['note'] ?? '').toString(),
+    );
+    if (accepted == true) await _loadIncomingGifts();
+  }
+
   Future<void> _loadGiftsFlag() async {
     if (_giftsForced) {
       if (mounted && !_giftsEnabled) setState(() => _giftsEnabled = true);
@@ -1767,6 +1801,52 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final on = await PbDataService().fetchGiftsEnabled();
     if (mounted && on != _giftsEnabled) setState(() => _giftsEnabled = on);
+  }
+
+  /// Подарок ждёт действия — карточка заметная, с самим значком.
+  Widget _incomingGiftEntry() {
+    final raw = _incomingGifts.first;
+    final gift = GiftCatalog.byKey((raw['gift_key'] ?? '').toString());
+    if (gift == null) return const SizedBox.shrink();
+    final s = LocaleService.current;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      child: GestureDetector(
+        onTap: () => _openIncomingGift(raw),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _t.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+                color: _t.primary.withValues(alpha: 0.35), width: 1),
+          ),
+          child: Row(
+            children: [
+              Image.asset(gift.asset, width: 46, height: 46),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.giftIncomingTitle,
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: _t.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text(s.giftIncomingCount(_incomingGifts.length),
+                        style:
+                            TextStyle(fontSize: 12.5, color: _t.textSecondary)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: _t.primary, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Карточка-вход в профиль партнёра: что ему дарили и когда он скучает.

@@ -30,12 +30,14 @@ routerAdd("POST", "/api/gifts/send", (e) => {
   };
   const LIFE_MS = 24 * 60 * 60 * 1000;
 
-  const body = new DynamicModel({ giftId: "", groupId: "", giftKey: "" });
+  const body = new DynamicModel({ giftId: "", groupId: "", giftKey: "", note: "" });
   e.bindBody(body);
 
   const giftId = (body.giftId || "").trim();
   const groupId = (body.groupId || "").trim();
   const giftKey = (body.giftKey || "").trim();
+  // Записка внутри коробки, предсказание в печенье, текст письма.
+  const note = String(body.note || "").slice(0, 500);
   const price = PRICES[giftKey];
 
   if (!giftId || !groupId || !price) {
@@ -109,6 +111,7 @@ routerAdd("POST", "/api/gifts/send", (e) => {
       rec.set("sender_uid", me);
       rec.set("recipient_uid", partner);
       rec.set("gift_key", giftKey);
+      rec.set("note", note);
       rec.set("price", price);
       rec.set("state", "sent");
       rec.set("expires_at", now + LIFE_MS);

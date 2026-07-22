@@ -1320,6 +1320,16 @@ abstract class AppStrings {
   String get unitHourShort;
   String get unitDayShort;
 
+  // Получение подарка
+  String giftFromPartner(String name);
+  String get giftAccepted;
+  String giftBunnyMisses(int misses);
+  String get giftIncomingTitle;
+  String giftIncomingCount(int n);
+  String get giftNoteHint;
+  String get giftNoteSkip;
+  String get giftNoteSend;
+
   // Профиль партнёра
   String get partnerGiftsTitle;
   String get partnerGiftsEmpty;
@@ -3933,6 +3943,25 @@ class _RuStrings extends AppStrings {
   @override
   String get unitDayShort => 'д';
 
+  // Получение подарка
+  @override
+  String giftFromPartner(String name) => 'Подарок от $name';
+  @override
+  String get giftAccepted => 'Принято 💛';
+  @override
+  String giftBunnyMisses(int misses) =>
+      misses == 1 ? 'Ускользнул!' : 'Ускользнул ещё раз, лови!';
+  @override
+  String get giftIncomingTitle => 'Тебе подарок';
+  @override
+  String giftIncomingCount(int n) => n == 1 ? 'ждёт тебя' : 'ждут тебя: $n';
+  @override
+  String get giftNoteHint => 'Вложить записку (необязательно)';
+  @override
+  String get giftNoteSkip => 'Без записки';
+  @override
+  String get giftNoteSend => 'Отправить';
+
   // Профиль партнёра
   @override
   String get partnerGiftsTitle => 'Что дарили';
@@ -6536,6 +6565,25 @@ class _EnStrings extends AppStrings {
   String get unitHourShort => 'h';
   @override
   String get unitDayShort => 'd';
+
+  // Receiving a gift
+  @override
+  String giftFromPartner(String name) => 'A gift from $name';
+  @override
+  String get giftAccepted => 'Accepted 💛';
+  @override
+  String giftBunnyMisses(int misses) =>
+      misses == 1 ? 'It slipped away!' : 'Slipped again, catch it!';
+  @override
+  String get giftIncomingTitle => 'A gift for you';
+  @override
+  String giftIncomingCount(int n) => n == 1 ? 'is waiting' : '$n are waiting';
+  @override
+  String get giftNoteHint => 'Add a note (optional)';
+  @override
+  String get giftNoteSkip => 'No note';
+  @override
+  String get giftNoteSend => 'Send';
 
   // Partner profile
   @override
