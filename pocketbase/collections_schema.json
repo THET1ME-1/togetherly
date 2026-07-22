@@ -751,6 +751,11 @@
           "name": "updated_at",
           "type": "date",
           "required": false
+        },
+        {
+          "name": "gifts_enabled",
+          "type": "bool",
+          "required": false
         }
       ],
       "indexes": [],
@@ -1494,6 +1499,18 @@
           "name": "expires_at",
           "type": "number",
           "required": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
         }
       ],
       "indexes": [
