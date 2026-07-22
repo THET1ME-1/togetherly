@@ -185,6 +185,14 @@ routerAdd("POST", "/api/gifts/react", (e) => {
 
   const MUTUAL_WINDOW_MS = 60 * 1000; // окно «обнял в ответ»
   const MUTUAL_BONUS = { hug: 5 };    // зеркало mutualBonus в lib/models/gift.dart
+  // Подарки, меняющие приложение получателя. Зеркало lib/models/gift_effect.dart.
+  //   morning — до ближайших восьми утра; иначе срок в часах.
+  const EFFECTS = {
+    night: { field: "mute_until", morning: true },
+    sun: { field: "sunrise_until", morning: true },
+    spa: { field: "spa_until", hours: 24 },
+    fire: { field: "streak_shield_until", hours: 24 },
+  };
 
   const body = new DynamicModel({ giftId: "", reply: "" });
   e.bindBody(body);
@@ -250,6 +258,26 @@ routerAdd("POST", "/api/gifts/react", (e) => {
       }
       if (quick) {
         user.set("coins", (user.getInt("coins") || 0) + bonus);
+        txApp.save(user);
+      }
+
+      // Эффект подарка на приложение получателя: тихая ночь, рассвет, отдых,
+      // щит серии. Срок кладём в профиль — экраны про подарки не знают.
+      const eff = EFFECTS[gift.getString("gift_key")];
+      if (eff) {
+        let until;
+        if (eff.morning) {
+          const d = new Date(now);
+          const morning = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 8, 0, 0, 0);
+          until = d.getTime() < morning.getTime()
+            ? morning.getTime()
+            : morning.getTime() + 24 * 60 * 60 * 1000;
+        } else {
+          until = now + eff.hours * 60 * 60 * 1000;
+        }
+        // Продлеваем, а не затираем: два подарка подряд дают больше тишины.
+        const prev = user.getInt(eff.field) || 0;
+        user.set(eff.field, Math.max(prev, until));
         txApp.save(user);
       }
 

@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 import '../models/gift.dart';
+import '../models/gift_effect.dart';
 import 'centrifugo_service.dart';
 import 'locale_service.dart';
 import 'pocketbase_service.dart';
@@ -65,6 +66,14 @@ class PbPushService {
   bool _pref(String col) {
     final v = PocketBaseService().currentUser?.data[col];
     return v is bool ? v : true; // по умолчанию включено
+  }
+
+  /// Тихая ночь: подарок «Сладких снов» гасит уведомления до восьми утра.
+  /// Партнёр дарит тишину, а не просто картинку.
+  bool get _muted {
+    final until =
+        (PocketBaseService().currentUser?.data['mute_until'] as num?)?.toInt();
+    return isEffectActive(until, DateTime.now());
   }
 
   // Сериализация start/stop. Подписки в _subs мутируются и из start(), и из
@@ -237,6 +246,10 @@ class PbPushService {
   }
 
   Future<void> _notify(int id, String title, String body) async {
+    if (_muted) {
+      debugPrint('PbPush: тихая ночь — уведомление не показываем');
+      return;
+    }
     await _ln.show(
       id: id,
       title: title,

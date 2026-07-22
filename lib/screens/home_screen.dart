@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/memory.dart';
 import '../models/pair_achievement.dart';
 import '../models/gift.dart';
+import '../models/gift_effect.dart';
 import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
 import 'gifts/gift_shop_screen.dart';
@@ -147,6 +148,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Подарки, которые ждут моего действия: задутой свечи, открытой коробки.
   List<Map<String, dynamic>> _incomingGifts = const [];
+
+  /// Подарок «Солнце»: утро встречает рассветом и строчкой от партнёра.
+  bool get _sunriseOn => isEffectActive(
+      (PocketBaseService().currentUser?.data['sunrise_until'] as num?)?.toInt(),
+      DateTime.now());
+
+  /// Подарок «Отдых»: на сутки прячем счётчики и задания — тихий экран.
+  bool get _spaOn => isEffectActive(
+      (PocketBaseService().currentUser?.data['spa_until'] as num?)?.toInt(),
+      DateTime.now());
   String _lastPairId = '';
   int _pairChangedGeneration = 0;
 
@@ -1278,10 +1289,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          if (_pairData.isPaired)
+          if (_pairData.isPaired && !_spaOn)
             AnimatedSlideIn(
               delay: const Duration(milliseconds: 460),
               child: _achievementsEntry(),
+            ),
+          if (_sunriseOn)
+            AnimatedSlideIn(
+              delay: const Duration(milliseconds: 120),
+              child: _sunriseBanner(),
             ),
           if (_pairData.isPaired && _giftsEnabled) ...[
             if (_incomingGifts.isNotEmpty)
@@ -1801,6 +1817,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final on = await PbDataService().fetchGiftsEnabled();
     if (mounted && on != _giftsEnabled) setState(() => _giftsEnabled = on);
+  }
+
+  /// Рассвет от подарка «Солнце»: тёплая полоса поверх главного экрана.
+  Widget _sunriseBanner() {
+    final sun = GiftCatalog.byKey('sun');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFDE9C8), Color(0xFFFBD9E2)],
+          ),
+        ),
+        child: Row(
+          children: [
+            if (sun != null) Image.asset(sun.asset, width: 40, height: 40),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                LocaleService.current.giftSunriseGreeting(
+                    _pairData.partnerDisplayName),
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5C4433),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Подарок ждёт действия — карточка заметная, с самим значком.

@@ -1333,6 +1333,7 @@ abstract class AppStrings {
   String get giftWishSend;
   String get giftWishEmpty;
   String giftMutualBonus(int coins);
+  String giftSunriseGreeting(String name);
 
   // Профиль партнёра
   String get partnerGiftsTitle;
@@ -3973,6 +3974,8 @@ class _RuStrings extends AppStrings {
   String get giftWishEmpty => 'Сначала напиши желание';
   @override
   String giftMutualBonus(int coins) => 'Успели вовремя: обоим по $coins';
+  @override
+  String giftSunriseGreeting(String name) => 'Доброе утро! $name подарил тебе рассвет';
 
   // Профиль партнёра
   @override
@@ -6604,6 +6607,8 @@ class _EnStrings extends AppStrings {
   String get giftWishEmpty => 'Write your wish first';
   @override
   String giftMutualBonus(int coins) => 'Right on time: $coins each';
+  @override
+  String giftSunriseGreeting(String name) => 'Good morning! $name sent you a sunrise';
 
   // Partner profile
   @override
