@@ -3396,6 +3396,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _restorePurchases();
                           },
                         ),
+                        // Покупка мимо магазинов: код из телеграм-бота. Нужен
+                        // тем, кто поставил приложение с GitHub — там биллинга
+                        // Google нет вовсе.
+                        _coinShopItem(
+                          icon: Icons.confirmation_number_outlined,
+                          title: _s.redeemCodeTitle,
+                          subtitle: _s.redeemCodeSubtitle,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _askRedeemCode();
+                          },
+                        ),
                       ],
                     ],
                   ),
@@ -3417,6 +3429,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (mounted) setState(() {});
+  }
+
+  /// Ввод кода пополнения из телеграм-бота.
+  Future<void> _askRedeemCode() async {
+    final ctrl = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _t.cardSurface,
+        title: Text(_s.redeemCodeTitle,
+            style: TextStyle(color: _t.textPrimary, fontWeight: FontWeight.w800)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_s.redeemCodeHint,
+                style: TextStyle(fontSize: 14, color: _t.textSecondary)),
+            const SizedBox(height: 14),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              style: TextStyle(color: _t.textPrimary, letterSpacing: 1.5),
+              decoration: InputDecoration(
+                hintText: 'TG-XXXX-XXXX',
+                hintStyle: TextStyle(color: _t.textMuted, letterSpacing: 1.5),
+                filled: true,
+                fillColor: _t.surfaceMuted,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_s.cancel, style: TextStyle(color: _t.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: Text(_s.redeemCodeApply),
+          ),
+        ],
+      ),
+    );
+    if (code == null || code.trim().isEmpty || !mounted) return;
+
+    final awarded = await widget.userData.redeemCode(code.trim());
+    if (!mounted) return;
+    final text = awarded == null
+        ? _s.redeemCodeFailed
+        : (awarded > 0 ? _s.redeemCodeDone(awarded) : _s.redeemCodeAlready);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<void> _restorePurchases() async {

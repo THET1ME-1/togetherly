@@ -374,6 +374,16 @@ class UserData extends ChangeNotifier {
   /// Покупает одноразовую разблокировку фичи за коины. Возвращает true при успехе.
   /// Списание монет и запись в ownedFeatures делает Cloud Function `purchaseFeature`
   /// (защищено от обхода цены/двойного списания).
+  /// Гасит код пополнения. Возвращает начисленные монеты, либо null при
+  /// ошибке (неверный код, уже погашен, нет связи).
+  Future<int?> redeemCode(String code) async {
+    final r = await PbCoinsService().redeem(code);
+    if (r == null || r['ok'] != true) return null;
+    _applyServerResult(r);
+    final awarded = (r['awarded'] as num?)?.toInt() ?? 0;
+    return awarded;
+  }
+
   Future<bool> purchaseFeature(String featureId) async {
     if (_ownedFeatures.contains(featureId)) return true; // уже куплена
     final r = await PbCoinsService().purchaseFeature(featureId);

@@ -1556,6 +1556,78 @@
       "createRule": null,
       "updateRule": null,
       "deleteRule": null
+    },
+    {
+      "name": "redeem_codes",
+      "type": "base",
+      "fields": [
+        {
+          "name": "code",
+          "type": "text",
+          "required": true,
+          "max": 32
+        },
+        {
+          "name": "coins",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "sku",
+          "type": "text",
+          "required": false,
+          "max": 40
+        },
+        {
+          "name": "buyer_email",
+          "type": "text",
+          "required": false,
+          "max": 120
+        },
+        {
+          "name": "used_by",
+          "type": "text",
+          "required": false,
+          "max": 40
+        },
+        {
+          "name": "given_to",
+          "type": "text",
+          "required": false,
+          "max": 40
+        },
+        {
+          "name": "given_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "used_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_redeem_codes_code` ON `redeem_codes` (`code`)",
+        "CREATE INDEX `idx_redeem_codes_used_by` ON `redeem_codes` (`used_by`)"
+      ],
+      "listRule": null,
+      "viewRule": null,
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null
     }
   ],
   "deleteMissing": false

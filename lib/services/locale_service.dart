@@ -1334,6 +1334,13 @@ abstract class AppStrings {
   String get giftWishEmpty;
   String giftMutualBonus(int coins);
   String giftSunriseGreeting(String name);
+  String get redeemCodeTitle;
+  String get redeemCodeSubtitle;
+  String get redeemCodeHint;
+  String get redeemCodeApply;
+  String redeemCodeDone(int coins);
+  String get redeemCodeAlready;
+  String get redeemCodeFailed;
   String get giftAccept;
   String get giftDecline;
   String get giftFlipCoin;
@@ -3982,6 +3989,21 @@ class _RuStrings extends AppStrings {
   @override
   String giftSunriseGreeting(String name) => 'Доброе утро! $name подарил тебе рассвет';
   @override
+  String get redeemCodeTitle => 'У меня есть код';
+  @override
+  String get redeemCodeSubtitle => 'Пополнение через телеграм-бота';
+  @override
+  String get redeemCodeHint =>
+      'Код приходит в боте после оплаты. Введите его целиком — пробелы и регистр не важны.';
+  @override
+  String get redeemCodeApply => 'Применить';
+  @override
+  String redeemCodeDone(int coins) => 'Зачислено $coins монет';
+  @override
+  String get redeemCodeAlready => 'Этот код уже был применён';
+  @override
+  String get redeemCodeFailed => 'Код не подошёл. Проверьте и попробуйте снова';
+  @override
   String get giftAccept => 'Принимаю';
   @override
   String get giftDecline => 'Не сейчас';
@@ -6624,6 +6646,21 @@ class _EnStrings extends AppStrings {
   String giftMutualBonus(int coins) => 'Right on time: $coins each';
   @override
   String giftSunriseGreeting(String name) => 'Good morning! $name sent you a sunrise';
+  @override
+  String get redeemCodeTitle => 'I have a code';
+  @override
+  String get redeemCodeSubtitle => 'Top up via Telegram bot';
+  @override
+  String get redeemCodeHint =>
+      'The bot sends the code after payment. Spaces and case do not matter.';
+  @override
+  String get redeemCodeApply => 'Apply';
+  @override
+  String redeemCodeDone(int coins) => '$coins coins added';
+  @override
+  String get redeemCodeAlready => 'This code was already used';
+  @override
+  String get redeemCodeFailed => 'Code did not work. Check it and try again';
   @override
   String get giftAccept => 'Accept';
   @override

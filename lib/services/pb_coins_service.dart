@@ -98,6 +98,10 @@ class PbCoinsService {
       _call('purchase-icon', {'iconId': iconId});
   Future<Map<String, dynamic>?> purchaseFeature(String featureId) =>
       _call('purchase-feature', {'featureId': featureId});
+  /// Погашение кода пополнения из телеграм-бота (покупка мимо магазинов).
+  Future<Map<String, dynamic>?> redeem(String code) =>
+      _call('redeem', {'code': code});
+
   Future<Map<String, dynamic>?> spend(String actionId) =>
       _call('spend', {'actionId': actionId});
 
