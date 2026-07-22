@@ -974,6 +974,11 @@
           "name": "last_vibe_text",
           "type": "text",
           "required": false
+        },
+        {
+          "name": "by_weekday",
+          "type": "text",
+          "required": false
         }
       ],
       "indexes": [

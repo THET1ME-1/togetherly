@@ -226,8 +226,20 @@ routerAdd("POST", "/api/group/miss-you", (e) => {
         rec = txApp.findFirstRecordByFilter(
           "miss_you", "group_id = {:g} && user_uid = {:u}", { g: groupId, u: uid });
       } catch (_) { rec = null; }
+      // День недели присылает клиент (1=пн … 7=вс): считать на сервере нельзя,
+      // он живёт в UTC, и ночные нажатия попадали бы во вчера. Копится карта
+      // «день → сколько раз» — этого хватает для статистики и не растит базу.
+      let weekday = parseInt(body.weekday, 10);
+      if (!(weekday >= 1 && weekday <= 7)) {
+        const d = new Date().getUTCDay(); // 0=вс
+        weekday = d === 0 ? 7 : d;
+      }
       if (rec) {
         const next = (rec.getInt("count") || 0) + 1;
+        let week = {};
+        try { week = JSON.parse(rec.getString("by_weekday") || "{}") || {}; } catch (_) { week = {}; }
+        week[weekday] = (parseInt(week[weekday], 10) || 0) + 1;
+        rec.set("by_weekday", JSON.stringify(week));
         rec.set("count", next);
         rec.set("updated_at", nowIso);
         rec.set("last_vibe", vibe);
@@ -240,6 +252,7 @@ routerAdd("POST", "/api/group/miss-you", (e) => {
         r.set("group_id", groupId);
         r.set("user_uid", uid);
         r.set("count", 1);
+        r.set("by_weekday", JSON.stringify({ [weekday]: 1 }));
         r.set("updated_at", nowIso);
         r.set("last_vibe", vibe);
         r.set("last_vibe_text", text);

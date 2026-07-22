@@ -1320,6 +1320,18 @@ abstract class AppStrings {
   String get unitHourShort;
   String get unitDayShort;
 
+  // Профиль партнёра
+  String get partnerGiftsTitle;
+  String get partnerGiftsEmpty;
+  String get partnerMissTitle;
+  String get partnerMissEmpty;
+  String partnerGiftsChip(int count);
+  String partnerMissChip(int count);
+  String partnerDaysTogether(int days);
+  String partnerMissPeak(String weekday);
+  String weekdayShort(int weekday);
+  String weekdayLong(int weekday);
+
   // Подарки
   String giftPushBody(String giftName);
   String get giftShopTitle;
@@ -3921,6 +3933,53 @@ class _RuStrings extends AppStrings {
   @override
   String get unitDayShort => 'д';
 
+  // Профиль партнёра
+  @override
+  String get partnerGiftsTitle => 'Что дарили';
+  @override
+  String get partnerGiftsEmpty => 'Пока ничего не дарили. Самое время.';
+  @override
+  String get partnerMissTitle => 'Скучает по дням';
+  @override
+  String get partnerMissEmpty =>
+      'Статистика копится с этого обновления — загляните через недельку.';
+  @override
+  String partnerGiftsChip(int count) => '🎁 $count';
+  @override
+  String partnerMissChip(int count) => '💌 $count';
+  @override
+  String partnerDaysTogether(int days) => 'вместе $days ${_daysWord(days)}';
+  @override
+  String partnerMissPeak(String weekday) => 'Чаще всего — $weekday';
+  @override
+  String weekdayShort(int weekday) =>
+      const ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][weekday - 1];
+  @override
+  String weekdayLong(int weekday) => const [
+        'по понедельникам',
+        'по вторникам',
+        'по средам',
+        'по четвергам',
+        'по пятницам',
+        'по субботам',
+        'по воскресеньям',
+      ][weekday - 1];
+
+  String _daysWord(int n) {
+    final t = n % 100;
+    if (t >= 11 && t <= 14) return 'дней';
+    switch (n % 10) {
+      case 1:
+        return 'день';
+      case 2:
+      case 3:
+      case 4:
+        return 'дня';
+      default:
+        return 'дней';
+    }
+  }
+
   // Подарки
   @override
   String giftPushBody(String giftName) => 'Прислал подарок: $giftName';
@@ -6477,6 +6536,39 @@ class _EnStrings extends AppStrings {
   String get unitHourShort => 'h';
   @override
   String get unitDayShort => 'd';
+
+  // Partner profile
+  @override
+  String get partnerGiftsTitle => 'Gifts received';
+  @override
+  String get partnerGiftsEmpty => 'No gifts yet. Good moment to start.';
+  @override
+  String get partnerMissTitle => 'Misses you on';
+  @override
+  String get partnerMissEmpty =>
+      'Stats start with this update — come back in a week.';
+  @override
+  String partnerGiftsChip(int count) => '🎁 $count';
+  @override
+  String partnerMissChip(int count) => '💌 $count';
+  @override
+  String partnerDaysTogether(int days) =>
+      days == 1 ? 'together 1 day' : 'together $days days';
+  @override
+  String partnerMissPeak(String weekday) => 'Most often on $weekday';
+  @override
+  String weekdayShort(int weekday) =>
+      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][weekday - 1];
+  @override
+  String weekdayLong(int weekday) => const [
+        'Mondays',
+        'Tuesdays',
+        'Wednesdays',
+        'Thursdays',
+        'Fridays',
+        'Saturdays',
+        'Sundays',
+      ][weekday - 1];
 
   // Gifts
   @override

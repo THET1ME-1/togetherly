@@ -75,7 +75,14 @@ routerAdd("POST", "/api/gifts/send", (e) => {
       }
 
       const group = txApp.findRecordById("groups", groupId);
-      const members = group.get("members") || [];
+      // members хранится JSON-строкой: get() отдаёт не JS-массив, и перебор
+      // молча даёт ноль участников. Так же читают groups.pb.js и coins.pb.js.
+      let members = [];
+      try {
+        members = JSON.parse(group.getString("members") || "[]") || [];
+      } catch (_) {
+        members = [];
+      }
       let isMember = false;
       let partner = "";
       for (let i = 0; i < members.length; i++) {

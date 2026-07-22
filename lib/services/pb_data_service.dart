@@ -1814,8 +1814,15 @@ class PbDataService {
   }) async {
     if (groupId.isEmpty || uid.isEmpty) return false;
     // DATA-8: атомарный серверный инкремент; при недоступности — локальный RMW.
-    final r = await _callGroupRoute('miss-you',
-        {'groupId': groupId, 'uid': uid, 'vibe': vibe, 'text': text ?? ''});
+    // weekday шлём свой: сервер живёт в UTC, и вечерние нажатия у нас попадали
+    // бы в следующий день недели.
+    final r = await _callGroupRoute('miss-you', {
+      'groupId': groupId,
+      'uid': uid,
+      'vibe': vibe,
+      'text': text ?? '',
+      'weekday': DateTime.now().weekday, // 1 = понедельник
+    });
     if (r == _GroupRouteResult.ok) return true;
     if (r == _GroupRouteResult.backpressure) return false;
     return _incrementMissYouLocal(groupId, uid, vibe: vibe, text: text);
@@ -2169,6 +2176,47 @@ class PbDataService {
     } catch (e) {
       debugPrint('PbData.fetchMinSupportedBuild failed: $e');
       return 0;
+    }
+  }
+
+  /// Подарки, полученные участником [uid] в группе [groupId] — новые сверху.
+  ///
+  /// Возвращает сырые записи: полку из них собирает `tallyGifts`
+  /// (`lib/models/partner_profile.dart`). Пустой список при любой ошибке —
+  /// профиль партнёра не та страница, ради которой стоит показывать сбой.
+  Future<List<Map<String, dynamic>>> fetchGiftsFor({
+    required String groupId,
+    required String uid,
+    int limit = 200,
+  }) async {
+    if (groupId.isEmpty || uid.isEmpty) return const [];
+    try {
+      final res = await _pb.collection('gifts').getList(
+            perPage: limit,
+            filter: 'group_id = "$groupId" && recipient_uid = "$uid"',
+            sort: '-created',
+          );
+      return res.items.map((r) => Map<String, dynamic>.from(r.data)).toList();
+    } catch (e) {
+      debugPrint('PbData.fetchGiftsFor failed: $e');
+      return const [];
+    }
+  }
+
+  /// Запись «скучаю» участника [uid]: счётчик и карта дней недели.
+  Future<Map<String, dynamic>?> fetchMissYouFor({
+    required String groupId,
+    required String uid,
+  }) async {
+    if (groupId.isEmpty || uid.isEmpty) return null;
+    try {
+      final rec = await _pb.collection('miss_you').getFirstListItem(
+            'group_id = "$groupId" && user_uid = "$uid"',
+          );
+      return Map<String, dynamic>.from(rec.data);
+    } catch (e) {
+      debugPrint('PbData.fetchMissYouFor failed: $e');
+      return null;
     }
   }
 

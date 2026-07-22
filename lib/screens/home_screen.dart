@@ -21,6 +21,7 @@ import '../models/gift.dart';
 import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
 import 'gifts/gift_shop_screen.dart';
+import 'gifts/partner_profile_screen.dart';
 import '../services/achievement_service.dart';
 import '../widgets/achievement_unlock_overlay.dart';
 import '../models/pair_data.dart';
@@ -1276,11 +1277,16 @@ class _HomeScreenState extends State<HomeScreen> {
               delay: const Duration(milliseconds: 460),
               child: _achievementsEntry(),
             ),
-          if (_pairData.isPaired && _giftsEnabled)
+          if (_pairData.isPaired && _giftsEnabled) ...[
+            AnimatedSlideIn(
+              delay: const Duration(milliseconds: 465),
+              child: _partnerEntry(),
+            ),
             AnimatedSlideIn(
               delay: const Duration(milliseconds: 470),
               child: _giftsEntry(),
             ),
+          ],
           AnimatedSlideIn(
             delay: const Duration(milliseconds: 500),
             child: MemoryLanePreview(
@@ -1760,6 +1766,82 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final on = await PbDataService().fetchGiftsEnabled();
     if (mounted && on != _giftsEnabled) setState(() => _giftsEnabled = on);
+  }
+
+  /// Карточка-вход в профиль партнёра: что ему дарили и когда он скучает.
+  Widget _partnerEntry() {
+    final name = _pairData.partnerDisplayName;
+    final avatar = _pairData.partnerAvatarUrl;
+    final start = _pairData.startDate;
+    final days = start == null
+        ? null
+        : DateTime.now().difference(start).inDays;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PartnerProfileScreen(
+              theme: _t,
+              groupId: _pairData.pairId,
+              partnerUid: _pairData.partnerUid,
+              partnerName: name,
+              partnerAvatarUrl: avatar,
+              daysTogether: days,
+            ),
+            settings: const RouteSettings(name: '/partner'),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _t.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _t.divider, width: 0.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _t.primary.withValues(alpha: 0.10),
+                  image: avatar.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(avatar), fit: BoxFit.cover)
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: avatar.isEmpty
+                    ? Text(
+                        name.isEmpty ? '💛' : name.characters.first.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: _t.primary,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name.isEmpty ? LocaleService.current.partnerGiftsTitle : name,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _t.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: _t.textMuted, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Карточка-вход «Подарки». Показывается только когда раздел включён на
