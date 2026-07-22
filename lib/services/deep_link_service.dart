@@ -77,7 +77,8 @@ class DeepLinkService {
       // togetherly.duckdns.org — живой PocketBase-VPS (обслуживает инвайт-лендинг
       // после гашения Firebase Hosting). togetherly.app — будущий домен.
       final isMainHost = uri.host == 'togetherly.app' ||
-          uri.host == 'togetherly.duckdns.org';
+          uri.host == 'togetherly.duckdns.org' ||
+          uri.host == 'togetherly.day';
       final isInvitePath = uri.pathSegments.isNotEmpty &&
           uri.pathSegments.first == 'invite';
 

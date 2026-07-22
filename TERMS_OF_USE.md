@@ -15,7 +15,7 @@ This document contains the terms of use for the Togetherly mobile application in
 
 Togetherly — приложение для пар и близких людей, которое позволяет вести общие воспоминания, обмениваться сообщениями, фотографиями, видео, музыкой, рисунками, статусами настроения, геолокацией и данными виджетов внутри общего пространства.
 
-Создавая учетную запись или используя Приложение, вы подтверждаете, что прочитали, поняли и приняли настоящие Условия, а также [Политику конфиденциальности](https://togetherly.duckdns.org/privacy-policy). Если вы не согласны с Условиями, не используйте Приложение.
+Создавая учетную запись или используя Приложение, вы подтверждаете, что прочитали, поняли и приняли настоящие Условия, а также [Политику конфиденциальности](https://togetherly.day/privacy-policy). Если вы не согласны с Условиями, не используйте Приложение.
 
 ### 2. Кто может пользоваться Приложением
 
@@ -49,7 +49,7 @@ Togetherly — приложение для пар и близких людей, 
 3. Груминг, склонение несовершеннолетних к сексуальным действиям, а также любые действия, ставящие детей под угрозу.
 4. Ссылки на ресурсы, распространяющие подобные материалы.
 
-Такой контент удаляется немедленно, учетная запись блокируется без предупреждения, а информация передается в компетентные органы, включая Национальный центр по делам пропавших и эксплуатируемых детей (NCMEC) и правоохранительные органы. Подробнее — в [Политике детской безопасности](https://togetherly.duckdns.org/child-safety).
+Такой контент удаляется немедленно, учетная запись блокируется без предупреждения, а информация передается в компетентные органы, включая Национальный центр по делам пропавших и эксплуатируемых детей (NCMEC) и правоохранительные органы. Подробнее — в [Политике детской безопасности](https://togetherly.day/child-safety).
 
 **5.2. Сексуальный и откровенный контент**
 
@@ -89,13 +89,13 @@ Togetherly — приложение для пар и близких людей, 
 
 ### 6. Модерация, жалобы и блокировка
 
-1. Вы можете сообщить о нарушении через встроенные средства Приложения (там, где они доступны) или письмом на адрес stgroup.dev@gmail.com. В обращении укажите, что именно нарушает Условия, и приложите подтверждения.
+1. Вы можете сообщить о нарушении через встроенные средства Приложения (там, где они доступны) или письмом на адрес support@togetherly.day. В обращении укажите, что именно нарушает Условия, и приложите подтверждения.
 2. Обращения, связанные с безопасностью детей, рассматриваются в приоритетном порядке и немедленно.
 3. Мы вправе, но не обязаны, просматривать пользовательский контент. Отсутствие реакции на конкретный контент не означает его одобрения.
 4. При нарушении настоящих Условий мы вправе без предварительного уведомления: удалить контент; ограничить доступ к отдельным функциям; заблокировать учетную запись; удалить учетную запись и связанные данные; внести адрес электронной почты в черный список, запрещающий повторную регистрацию.
 5. Мера воздействия определяется с учетом характера нарушения. Грубые нарушения (раздел 5.1) влекут немедленную и бессрочную блокировку.
 6. При блокировке за нарушение Условий уплаченные средства и накопленные коины не возвращаются и не компенсируются.
-7. Если вы считаете блокировку ошибочной, вы можете обжаловать ее письмом на адрес stgroup.dev@gmail.com.
+7. Если вы считаете блокировку ошибочной, вы можете обжаловать ее письмом на адрес support@togetherly.day.
 
 ### 7. Виртуальная валюта, покупки и реклама
 
@@ -128,8 +128,8 @@ Togetherly — приложение для пар и близких людей, 
 
 ### 11. Прекращение использования
 
-1. Вы можете в любой момент прекратить использование Приложения и удалить учетную запись — через настройки Приложения или через страницу [удаления аккаунта](https://togetherly.duckdns.org/delete-account).
-2. При удалении учетной записи связанные с ней данные удаляются в порядке, описанном в [Политике конфиденциальности](https://togetherly.duckdns.org/privacy-policy). Часть общего контента может сохраниться у вашего партнера, если она создавалась совместно.
+1. Вы можете в любой момент прекратить использование Приложения и удалить учетную запись — через настройки Приложения или через страницу [удаления аккаунта](https://togetherly.day/delete-account).
+2. При удалении учетной записи связанные с ней данные удаляются в порядке, описанном в [Политике конфиденциальности](https://togetherly.day/privacy-policy). Часть общего контента может сохраниться у вашего партнера, если она создавалась совместно.
 3. Мы вправе прекратить предоставление доступа при нарушении настоящих Условий в соответствии с разделом 6.
 
 ### 12. Изменения Условий
@@ -141,7 +141,7 @@ Togetherly — приложение для пар и близких людей, 
 ### 13. Применимое право и контакты
 
 1. К настоящим Условиям применяется законодательство Российской Федерации, если иное не следует из императивных норм законодательства страны вашего проживания.
-2. По любым вопросам, связанным с настоящими Условиями, жалобами и обжалованием блокировок, обращайтесь: stgroup.dev@gmail.com.
+2. По любым вопросам, связанным с настоящими Условиями, жалобами и обжалованием блокировок, обращайтесь: support@togetherly.day.
 
 ---
 
@@ -153,7 +153,7 @@ These Terms of Use (the "Terms") govern your use of the Togetherly mobile applic
 
 Togetherly is an application for couples and close ones that allows users to keep shared memories and exchange messages, photos, videos, music, drawings, mood statuses, location, and widget data within a shared space.
 
-By creating an account or using the App, you confirm that you have read, understood, and accepted these Terms and the [Privacy Policy](https://togetherly.duckdns.org/privacy-policy). If you do not agree with these Terms, do not use the App.
+By creating an account or using the App, you confirm that you have read, understood, and accepted these Terms and the [Privacy Policy](https://togetherly.day/privacy-policy). If you do not agree with these Terms, do not use the App.
 
 ### 2. Who May Use the App
 
@@ -187,7 +187,7 @@ You may not create, upload, store, transmit, or distribute the following content
 3. Grooming, soliciting minors for sexual purposes, or any conduct that endangers children.
 4. Links to resources that distribute such material.
 
-Such content is removed immediately, the account is suspended without warning, and the information is reported to the competent authorities, including the National Center for Missing & Exploited Children (NCMEC) and law enforcement. See our [Child Safety Policy](https://togetherly.duckdns.org/child-safety) for details.
+Such content is removed immediately, the account is suspended without warning, and the information is reported to the competent authorities, including the National Center for Missing & Exploited Children (NCMEC) and law enforcement. See our [Child Safety Policy](https://togetherly.day/child-safety) for details.
 
 **5.2. Sexual and Explicit Content**
 
@@ -227,13 +227,13 @@ Such content is removed immediately, the account is suspended without warning, a
 
 ### 6. Moderation, Reports, and Suspension
 
-1. You may report a violation using the in-app reporting tools (where available) or by writing to stgroup.dev@gmail.com. Please state what breaches the Terms and attach evidence.
+1. You may report a violation using the in-app reporting tools (where available) or by writing to support@togetherly.day. Please state what breaches the Terms and attach evidence.
 2. Reports concerning child safety are treated as the highest priority and reviewed immediately.
 3. We may, but are not obliged to, review user content. Not acting on a particular piece of content does not mean we endorse it.
 4. If these Terms are breached, we may, without prior notice: remove content; restrict access to certain features; suspend the account; delete the account and associated data; add the email address to a blocklist preventing re-registration.
 5. The measure applied depends on the nature of the breach. Severe violations (section 5.1) result in immediate and permanent suspension.
 6. Where an account is suspended for breaching the Terms, payments made and coins accumulated are neither refunded nor compensated.
-7. If you believe a suspension is mistaken, you may appeal by writing to stgroup.dev@gmail.com.
+7. If you believe a suspension is mistaken, you may appeal by writing to support@togetherly.day.
 
 ### 7. Virtual Currency, Purchases, and Advertising
 
@@ -266,8 +266,8 @@ Such content is removed immediately, the account is suspended without warning, a
 
 ### 11. Termination
 
-1. You may stop using the App and delete your account at any time — through the App settings or via the [account deletion page](https://togetherly.duckdns.org/delete-account).
-2. When an account is deleted, the associated data is removed as described in the [Privacy Policy](https://togetherly.duckdns.org/privacy-policy). Some shared content may remain with your partner if it was created jointly.
+1. You may stop using the App and delete your account at any time — through the App settings or via the [account deletion page](https://togetherly.day/delete-account).
+2. When an account is deleted, the associated data is removed as described in the [Privacy Policy](https://togetherly.day/privacy-policy). Some shared content may remain with your partner if it was created jointly.
 3. We may terminate access in the event of a breach of these Terms in accordance with section 6.
 
 ### 12. Changes to These Terms
@@ -279,4 +279,4 @@ Such content is removed immediately, the account is suspended without warning, a
 ### 13. Governing Law and Contact
 
 1. These Terms are governed by the law of the Russian Federation, unless mandatory rules of the country of your residence provide otherwise.
-2. For any questions regarding these Terms, reports, or suspension appeals, contact: stgroup.dev@gmail.com.
+2. For any questions regarding these Terms, reports, or suspension appeals, contact: support@togetherly.day.

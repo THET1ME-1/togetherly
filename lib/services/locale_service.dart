@@ -1334,6 +1334,8 @@ abstract class AppStrings {
   String get giftWishEmpty;
   String giftMutualBonus(int coins);
   String giftSunriseGreeting(String name);
+  String get supportTitle;
+  String supportCopied(String email);
   String get redeemCodeTitle;
   String get redeemCodeSubtitle;
   String get redeemCodeHint;
@@ -3988,6 +3990,10 @@ class _RuStrings extends AppStrings {
   String giftMutualBonus(int coins) => 'Успели вовремя: обоим по $coins';
   @override
   String giftSunriseGreeting(String name) => 'Доброе утро! $name подарил тебе рассвет';
+  @override
+  String get supportTitle => 'Написать в поддержку';
+  @override
+  String supportCopied(String email) => 'Почта скопирована: $email';
   @override
   String get redeemCodeTitle => 'У меня есть код';
   @override
@@ -6646,6 +6652,10 @@ class _EnStrings extends AppStrings {
   String giftMutualBonus(int coins) => 'Right on time: $coins each';
   @override
   String giftSunriseGreeting(String name) => 'Good morning! $name sent you a sunrise';
+  @override
+  String get supportTitle => 'Contact support';
+  @override
+  String supportCopied(String email) => 'Address copied: $email';
   @override
   String get redeemCodeTitle => 'I have a code';
   @override

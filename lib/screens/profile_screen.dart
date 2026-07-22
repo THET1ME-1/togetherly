@@ -78,16 +78,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // с проектом). Раздаются из pb_public, исходники — PRIVACY_POLICY.md и
   // TERMS_OF_USE.md в репо (регенерация: tool/gen_legal_html.py).
   static final Uri _privacyPolicyUri = Uri.parse(
-    'https://togetherly.duckdns.org/privacy-policy',
+    'https://togetherly.day/privacy-policy',
   );
   static final Uri _termsUri = Uri.parse(
-    'https://togetherly.duckdns.org/terms',
+    'https://togetherly.day/terms',
   );
   // Лендинг тоже переехал с Firebase Hosting на VPS (pb_public).
   static final Uri _aboutAppUri = Uri.parse(
-    'https://togetherly.duckdns.org/#download',
+    'https://togetherly.day/#download',
   );
   static final Uri _boostyUri = Uri.parse('https://boosty.to/sntcompany');
+
+  /// Почта поддержки. Письмо уходит с темой и версией приложения — иначе
+  /// разбирать обращения приходится вслепую.
+  static const String supportEmail = 'support@togetherly.day';
 
   Color get _accent => widget.userData.themeAccent;
   Color get _accentLight => widget.userData.themeAccentLight;
@@ -295,6 +299,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _openTerms() async {
     await _openExternalUri(_termsUri);
+  }
+
+  /// Письмо в поддержку: тема и версия подставляются сами, человеку остаётся
+  /// описать проблему. Почтовика нет — показываем адрес и кладём в буфер.
+  Future<void> _openSupportMail() async {
+    final info = await PackageInfo.fromPlatform();
+    final subject = Uri.encodeComponent(
+        'Togetherly ${info.version} (${info.buildNumber})');
+    final uri = Uri.parse('mailto:$supportEmail?subject=$subject');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      return;
+    }
+    await Clipboard.setData(const ClipboardData(text: supportEmail));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_s.supportCopied(supportEmail))),
+    );
   }
 
   Future<void> _openAboutApp() async {
@@ -2412,6 +2434,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.replay_rounded,
             label: _s.resetMissYouCount,
             onTap: () => _handleResetMissYouCount(context),
+          ),
+          _divider(),
+          _settingsTile(
+            icon: Icons.mail_outline_rounded,
+            label: _s.supportTitle,
+            onTap: _openSupportMail,
           ),
           _divider(),
           _settingsTile(

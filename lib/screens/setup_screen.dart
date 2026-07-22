@@ -44,9 +44,9 @@ class _SetupScreenState extends State<SetupScreen>
   bool _agreeToTerms = false;
 
   // Ссылки на юридические документы (раздаются с нашего сервера, pb_public).
-  static final Uri _termsUri = Uri.parse('https://togetherly.duckdns.org/terms');
+  static final Uri _termsUri = Uri.parse('https://togetherly.day/terms');
   static final Uri _privacyUri =
-      Uri.parse('https://togetherly.duckdns.org/privacy-policy');
+      Uri.parse('https://togetherly.day/privacy-policy');
   final _termsRecognizer = TapGestureRecognizer();
   final _privacyRecognizer = TapGestureRecognizer();
 

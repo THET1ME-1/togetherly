@@ -5,7 +5,7 @@
 Togetherly stores private data for couples (memories, photos, locations). If you
 find a vulnerability, **please report it privately** — do not open a public issue.
 
-- Email: **badzoff@gmail.com** (subject: `Togetherly security`)
+- Email: **support@togetherly.day** (subject: `Togetherly security`)
 - Or use GitHub → **Security** → **Report a vulnerability** (private advisory).
 
 Please include: what you found, steps to reproduce, and the impact. We aim to
@@ -40,7 +40,7 @@ tokens) are **never** committed — they live in CI secrets / server env only.
 Togetherly хранит приватные данные пар (воспоминания, фото, геолокацию). Нашли
 уязвимость — **сообщите приватно**, не открывайте публичный issue.
 
-- Почта: **badzoff@gmail.com** (тема: `Togetherly security`)
+- Почта: **support@togetherly.day** (тема: `Togetherly security`)
 - Или GitHub → **Security** → **Report a vulnerability** (приватный advisory).
 
 Опишите находку, шаги воспроизведения и последствия. Не трогайте чужие данные во

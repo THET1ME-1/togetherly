@@ -42,7 +42,7 @@ class CentrifugoService {
   /// Переопределяется: `--dart-define=CENTRIFUGO_WS=wss://.../connection/websocket`
   static const String _wsUrl = String.fromEnvironment(
     'CENTRIFUGO_WS',
-    defaultValue: 'wss://togetherly.duckdns.org:8443/connection/websocket',
+    defaultValue: 'wss://togetherly.day/connection/websocket',
   );
 
   centrifuge.Client? _client;

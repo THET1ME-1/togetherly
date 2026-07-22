@@ -23,7 +23,7 @@ class PocketBaseService {
   /// По умолчанию — прод-инстанс автора.
   static const String baseUrl = String.fromEnvironment(
     'PB_URL',
-    defaultValue: 'https://togetherly.duckdns.org',
+    defaultValue: 'https://togetherly.day',
   );
 
   /// Ключ хранения сериализованной auth-сессии.
