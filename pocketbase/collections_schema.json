@@ -1602,6 +1602,12 @@
           "required": false
         },
         {
+          "name": "order_key",
+          "type": "text",
+          "required": false,
+          "max": 40
+        },
+        {
           "name": "used_at",
           "type": "number",
           "required": false
@@ -1621,7 +1627,8 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_redeem_codes_code` ON `redeem_codes` (`code`)",
-        "CREATE INDEX `idx_redeem_codes_used_by` ON `redeem_codes` (`used_by`)"
+        "CREATE INDEX `idx_redeem_codes_used_by` ON `redeem_codes` (`used_by`)",
+        "CREATE INDEX `idx_redeem_codes_order_key` ON `redeem_codes` (`order_key`)"
       ],
       "listRule": null,
       "viewRule": null,
