@@ -1,0 +1,307 @@
+/* Сайт совместного просмотра.
+ *
+ * Формы и цвета — по М3-ДНК проекта: пилюли высотой 56, карточки 28, поля 18,
+ * роли схемы от акцента приложения (#FF7E8B). Шрифты те же: Unbounded для
+ * заголовков, Onest для текста.
+ */
+
+@font-face {
+  font-family: 'Unbounded';
+  src: url('fonts/Unbounded.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Onest';
+  src: url('fonts/Onest.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --surface: #FFF8F7;
+  --surface-low: #FFF1F0;
+  --surface-c: #FBEAE9;
+  --surface-high: #F6E4E3;
+  --surface-highest: #F0DEDD;
+  --primary: #B3213A;
+  --on-primary: #FFFFFF;
+  --primary-container: #FFD9DE;
+  --on-primary-container: #40000F;
+  --secondary-container: #FFDCE0;
+  --on-surface: #201A1B;
+  --on-surface-var: #534345;
+  --outline-var: #D8C1C3;
+  --accent: #FF7E8B;
+  --shadow: 0 1px 2px rgba(64, 0, 15, .06), 0 12px 32px -20px rgba(64, 0, 15, .30);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #191113;
+    --surface-low: #201719;
+    --surface-c: #251D1E;
+    --surface-high: #302729;
+    --surface-highest: #3B3133;
+    --primary: #FFB2BC;
+    --on-primary: #66022A;
+    --primary-container: #8C2A3F;
+    --on-primary-container: #FFD9DE;
+    --secondary-container: #5A3D40;
+    --on-surface: #F0DEDF;
+    --on-surface-var: #D8C1C3;
+    --outline-var: #534345;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 14px 34px -22px rgba(0, 0, 0, .9);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--on-surface);
+  font: 400 16px/1.55 'Onest', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: 'Unbounded', system-ui, sans-serif;
+  letter-spacing: -.5px;
+  margin: 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font: 600 12.5px/1 'Onest';
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* ── кнопки и поля (ДНК: пилюли 56, поля 18) ─────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 56px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 999px;
+  font: 700 16px/1 'Onest';
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.2, 0, 0, 1), filter .18s;
+}
+.btn:active { transform: scale(.96); }
+.btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.btn--filled { background: var(--primary); color: var(--on-primary); }
+.btn--tonal { background: var(--primary-container); color: var(--on-primary-container); }
+.btn--small { min-height: 46px; padding: 0 22px; font-size: 15px; }
+.btn--icon { min-height: 48px; width: 48px; padding: 0; }
+
+.input {
+  min-height: 56px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font: 400 15.5px 'Onest';
+  outline: none;
+}
+.input::placeholder { color: var(--on-surface-var); }
+.input:focus { box-shadow: inset 0 0 0 2px var(--primary); }
+
+/* ── стартовый экран ─────────────────────────────────────────────────────── */
+
+.start {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px 64px;
+  background:
+    radial-gradient(120% 120% at 10% 0%, var(--primary-container) 0%, transparent 55%),
+    radial-gradient(90% 110% at 96% 12%, var(--secondary-container) 0%, transparent 52%),
+    var(--surface);
+}
+.start__inner { width: min(760px, 100%); }
+.start h1 {
+  font-size: clamp(32px, 7vw, 54px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -1px;
+  margin: 16px 0 14px;
+  text-wrap: balance;
+}
+.lead { margin: 0 0 28px; color: var(--on-surface-var); font-size: 17px; max-width: 48ch; }
+
+.cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.join { display: flex; gap: 10px; }
+.join .input { min-width: 170px; }
+
+.platforms { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.platforms--small { margin-top: 4px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px 9px 12px;
+  border: 1px solid var(--outline-var);
+  border-radius: 999px;
+  background: var(--surface-c);
+  font: 600 14px/1 'Onest';
+}
+
+.steps { list-style: none; margin: 34px 0 0; padding: 0; display: grid; gap: 12px; }
+.steps li {
+  background: var(--surface-high);
+  border-radius: 28px;
+  padding: 20px 22px;
+  color: var(--on-surface-var);
+  font-size: 14.5px;
+}
+.steps b {
+  display: block;
+  font: 600 17px/1.2 'Unbounded', sans-serif;
+  letter-spacing: -.3px;
+  color: var(--on-surface);
+  margin: 12px 0 5px;
+}
+.steps__num {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font: 700 17px 'Unbounded', sans-serif;
+}
+.fine { margin: 26px 0 0; color: var(--on-surface-var); font-size: 13.5px; max-width: 56ch; }
+
+/* ── комната ─────────────────────────────────────────────────────────────── */
+
+.room {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'bar bar' 'stage side';
+}
+
+.bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--surface-c);
+  border-bottom: 1px solid var(--outline-var);
+}
+.bar__left, .bar__right { display: flex; align-items: center; gap: 12px; }
+.bar__code { font-size: 14.5px; color: var(--on-surface-var); }
+.bar__code b { color: var(--on-surface); font-family: 'Unbounded', sans-serif; letter-spacing: .5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.viewers { font-size: 13.5px; color: var(--on-surface-var); }
+
+.stage { grid-area: stage; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.player {
+  aspect-ratio: 16 / 9;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(150deg, #2A1418, #4A2028 55%, #7A2E3C);
+  display: grid;
+  place-items: center;
+}
+.player iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player__empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, .82);
+  font: 600 15px 'Onest';
+}
+
+.source { display: flex; gap: 10px; }
+.source__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font: 400 15px 'Onest';
+  outline: none;
+}
+.source__input:focus { box-shadow: inset 0 0 0 2px var(--primary); }
+.status { margin: 0; color: var(--on-surface-var); font-size: 13.5px; min-height: 20px; }
+
+.side {
+  grid-area: side;
+  background: var(--surface-c);
+  border-left: 1px solid var(--outline-var);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.side__head { padding: 18px 20px 10px; }
+.side__head h2 { font-size: 17px; font-weight: 600; }
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--surface-high);
+  font-size: 14.5px;
+  word-break: break-word;
+}
+.msg--mine {
+  align-self: flex-end;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+.msg__who { display: block; font: 600 11.5px 'Onest'; opacity: .7; margin-bottom: 2px; }
+.composer { display: flex; gap: 8px; padding: 12px 16px 16px; }
+.composer .input { flex: 1; min-height: 48px; }
+
+/* ── телефон ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .room {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'bar' 'stage' 'side';
+  }
+  .side {
+    border-left: 0;
+    border-top: 1px solid var(--outline-var);
+    min-height: 46dvh;
+  }
+  .stage { padding: 12px; }
+  .player { border-radius: 20px; }
+  .source { flex-direction: column; }
+  .source .btn { width: 100%; }
+  .start { padding: 28px 18px 48px; }
+  .cta, .join { width: 100%; }
+  .cta .btn--filled, .join .input { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+}

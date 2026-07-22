@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Смотреть вместе — Togetherly</title>
+<meta name="description" content="Комната на двоих: одно видео, один тайм-код. YouTube, VK, Rutube и Vimeo синхронно, с чатом. Ничего не сохраняется.">
+<meta name="theme-color" content="#FFF8F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191113" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Стартовый экран: пока в ссылке нет кода комнаты -->
+<main id="start" class="start">
+  <div class="start__inner">
+    <span class="tag">Togetherly</span>
+    <h1>Смотрите вместе,<br>даже если врозь</h1>
+    <p class="lead">Создайте комнату и отправьте ссылку. Видео пойдёт синхронно
+      у обоих: паузы, перемотки и чат в одном месте.</p>
+
+    <div class="cta">
+      <button class="btn btn--filled" id="create">Создать комнату</button>
+      <div class="join">
+        <input id="joinCode" class="input" placeholder="Код комнаты" maxlength="12"
+               autocomplete="off" spellcheck="false">
+        <button class="btn btn--tonal" id="join">Войти</button>
+      </div>
+    </div>
+
+    <div class="platforms" id="platforms"></div>
+
+    <ul class="steps">
+      <li><span class="steps__num">1</span><b>Создайте</b>Комната появляется сразу, без регистрации.</li>
+      <li><span class="steps__num">2</span><b>Позовите</b>Одна ссылка, и партнёр рядом.</li>
+      <li><span class="steps__num">3</span><b>Смотрите</b>Поставил паузу один, встала у обоих.</li>
+    </ul>
+
+    <p class="fine">Ничего не сохраняется: комната живёт, пока в ней есть люди.
+      Ссылка на видео и переписка исчезают вместе с ней.</p>
+  </div>
+</main>
+
+<!-- Комната -->
+<main id="room" class="room" hidden>
+  <header class="bar">
+    <div class="bar__left">
+      <span class="dot"></span>
+      <span class="bar__code">Комната <b id="code">—</b></span>
+    </div>
+    <div class="bar__right">
+      <span class="viewers" id="viewers">вы один</span>
+      <button class="btn btn--tonal btn--small" id="copy">Позвать</button>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="player" id="player">
+      <div class="player__empty">
+        <svg viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+        <span>Вставьте ссылку на видео</span>
+      </div>
+    </div>
+
+    <div class="source">
+      <input id="link" class="source__input" placeholder="Ссылка на YouTube, VK, Rutube или Vimeo"
+             autocomplete="off" spellcheck="false">
+      <button class="btn btn--filled btn--small" id="apply">Включить</button>
+    </div>
+
+    <div class="platforms platforms--small" id="platforms2"></div>
+    <p class="status" id="status">Подключаюсь…</p>
+  </section>
+
+  <aside class="side">
+    <div class="side__head"><h2>Чат</h2></div>
+    <div class="chat" id="chat"></div>
+    <div class="composer">
+      <input id="message" class="input" placeholder="Написать…" autocomplete="off">
+      <button class="btn btn--filled btn--icon" id="send" aria-label="Отправить">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
+      </button>
+    </div>
+  </aside>
+</main>
+
+<script src="vendor/centrifuge.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="app.js"></script>
+</body>
+</html>
