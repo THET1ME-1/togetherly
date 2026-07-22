@@ -1445,6 +1445,66 @@
       "createRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
       "updateRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id",
       "deleteRule": "@request.auth.id != \"\" && owner_uid = @request.auth.id"
+    },
+    {
+      "name": "gifts",
+      "type": "base",
+      "fields": [
+        {
+          "name": "group_id",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "sender_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "recipient_uid",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "gift_key",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "refund",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "reacted_at",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "expires_at",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX `idx_gifts_group_id_updated` ON `gifts` (`group_id`, `updated`)",
+        "CREATE INDEX `idx_gifts_group_id_state` ON `gifts` (`group_id`, `state`)"
+      ],
+      "listRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.group_ids.id ?= group_id",
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null
     }
   ],
   "deleteMissing": false
