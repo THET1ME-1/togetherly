@@ -17,7 +17,10 @@ import '../utils/safe_pick.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/memory.dart';
 import '../models/pair_achievement.dart';
+import '../models/gift.dart';
+import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
+import 'gifts/gift_shop_screen.dart';
 import '../services/achievement_service.dart';
 import '../widgets/achievement_unlock_overlay.dart';
 import '../models/pair_data.dart';
@@ -134,6 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _userLat;
   double? _userLng;
   bool _wasPaired = false;
+
+  /// Раздел подарков включён на сервере. По умолчанию выключен: если конфиг не
+  /// прочитался, лучше не показывать кнопку, чем показать неработающую.
+  bool _giftsEnabled = false;
   String _lastPairId = '';
   int _pairChangedGeneration = 0;
 
@@ -168,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _timerService.init();
     _initPairData();
     _loadSideActionPref();
+    _loadGiftsFlag();
 
     // Онлайн-презенс: heartbeat в PocketBase, пока приложение активно.
     PresenceService().start();
@@ -1268,6 +1276,11 @@ class _HomeScreenState extends State<HomeScreen> {
               delay: const Duration(milliseconds: 460),
               child: _achievementsEntry(),
             ),
+          if (_pairData.isPaired && _giftsEnabled)
+            AnimatedSlideIn(
+              delay: const Duration(milliseconds: 470),
+              child: _giftsEntry(),
+            ),
           AnimatedSlideIn(
             delay: const Duration(milliseconds: 500),
             child: MemoryLanePreview(
@@ -1732,6 +1745,67 @@ class _HomeScreenState extends State<HomeScreen> {
       widgetService: _widgetService,
       primary: primary,
       navActiveIcon: _t.navActiveIcon, // добавлено
+    );
+  }
+
+  Future<void> _loadGiftsFlag() async {
+    final on = await PbDataService().fetchGiftsEnabled();
+    if (mounted && on != _giftsEnabled) setState(() => _giftsEnabled = on);
+  }
+
+  /// Карточка-вход «Подарки». Показывается только когда раздел включён на
+  /// сервере (`app_config.gifts_enabled`) — флаг гасит его без релиза.
+  Widget _giftsEntry() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GiftShopScreen(
+              theme: _t,
+              groupId: _pairData.pairId,
+              coins: widget.userData.coins,
+            ),
+            settings: const RouteSettings(name: '/gifts'),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _t.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _t.divider, width: 0.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _t.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Image.asset(GiftCatalog.all.first.asset,
+                    width: 26, height: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  LocaleService.current.giftShopTitle,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _t.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: _t.textMuted, size: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
