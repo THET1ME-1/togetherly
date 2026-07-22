@@ -174,13 +174,21 @@ class _GiftShopScreenState extends State<GiftShopScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 18),
             child: Center(
-              child: Text(
-                '$_coins',
-                style: TextStyle(
-                  color: t.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/icons/coin.webp',
+                      width: 18, height: 18),
+                  const SizedBox(width: 5),
+                  Text(
+                    '$_coins',
+                    style: TextStyle(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -256,13 +264,22 @@ class _GiftCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                '${gift.price}',
-                style: TextStyle(
-                  color: theme.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12.5,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/icons/coin.webp',
+                      width: 14, height: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${gift.price}',
+                    style: TextStyle(
+                      color: theme.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
               SizedBox(
