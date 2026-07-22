@@ -22,6 +22,7 @@ import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
 import 'gifts/gift_shop_screen.dart';
 import 'gifts/partner_profile_screen.dart';
+import '../widgets/avatar_widget.dart';
 import '../services/achievement_service.dart';
 import '../widgets/achievement_unlock_overlay.dart';
 import '../models/pair_data.dart';
@@ -1802,28 +1803,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _t.primary.withValues(alpha: 0.10),
-                  image: avatar.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(avatar), fit: BoxFit.cover)
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: avatar.isEmpty
-                    ? Text(
-                        name.isEmpty ? '💛' : name.characters.first.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: _t.primary,
-                        ),
-                      )
-                    : null,
+              AvatarWidget(
+                uid: _pairData.partnerUid,
+                liveUrl: avatar,
+                name: name,
+                size: 44,
+                primary: _t.primary,
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/partner_profile.dart';
+import '../../widgets/avatar_widget.dart';
 import '../../services/locale_service.dart';
 import '../../services/pb_data_service.dart';
 import '../../theme/app_theme.dart';
@@ -81,6 +82,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                 children: [
                   _Hero(
                     theme: t,
+                    uid: widget.partnerUid,
                     name: widget.partnerName,
                     avatarUrl: widget.partnerAvatarUrl,
                     daysTogether: widget.daysTogether,
@@ -114,6 +116,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
 class _Hero extends StatelessWidget {
   const _Hero({
     required this.theme,
+    required this.uid,
     required this.name,
     required this.avatarUrl,
     required this.daysTogether,
@@ -122,6 +125,7 @@ class _Hero extends StatelessWidget {
   });
 
   final AppTheme theme;
+  final String uid;
   final String name;
   final String? avatarUrl;
   final int? daysTogether;
@@ -146,29 +150,21 @@ class _Hero extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // AvatarWidget сам разбирается с форматом ссылки и кэшем: свой
+          // NetworkImage показывал пустой круг на аватарах из группы.
           Container(
-            width: 88,
-            height: 88,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: theme.cardSurface,
-              border: Border.all(color: theme.cardSurface, width: 3),
-              image: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                  ? DecorationImage(
-                      image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
-                  : null,
             ),
-            alignment: Alignment.center,
-            child: (avatarUrl == null || avatarUrl!.isEmpty)
-                ? Text(
-                    name.isEmpty ? '💛' : name.characters.first.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: theme.primary,
-                    ),
-                  )
-                : null,
+            child: AvatarWidget(
+              uid: uid,
+              liveUrl: avatarUrl,
+              name: name,
+              size: 82,
+              primary: theme.primary,
+            ),
           ),
           const SizedBox(height: 10),
           Text(name,
