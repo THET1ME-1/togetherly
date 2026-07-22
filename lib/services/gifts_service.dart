@@ -89,10 +89,11 @@ class GiftsService {
       );
       GiftTelemetry.step(giftId, '$step:refused',
           data: {'error': parsed.error?.name, 'status': e.statusCode});
-      // Отказ по бизнес-правилу (нет монет, не участник) — штатный ответ, а не
-      // сбой: в панель шлём только то, что объяснить нечем.
-      if (parsed.error == GiftError.server ||
-          parsed.error == GiftError.network) {
+      // Нехватка монет — единственный отказ, который человек создаёт сам.
+      // Всё остальное (не участник, нет подарка, молчание сервера) означает
+      // поломку и обязано быть видно в панели: без этого отказ выглядит как
+      // «просто не работает» и чинить нечего.
+      if (parsed.error != GiftError.insufficient) {
         GiftTelemetry.failure(e, st,
             giftId: giftId, giftKey: giftKey, step: step, code: parsed.error);
       }

@@ -32,6 +32,9 @@ class GiftShopScreen extends StatefulWidget {
 }
 
 class _GiftShopScreenState extends State<GiftShopScreen> {
+  /// Тестовая сборка (`--dart-define=GIFTS_FORCE=true`) показывает код отказа.
+  static const bool _diagnostics = bool.fromEnvironment('GIFTS_FORCE');
+
   late int _coins = widget.coins;
   String? _sending;
 
@@ -43,13 +46,18 @@ class _GiftShopScreenState extends State<GiftShopScreen> {
     if (!mounted) return;
 
     final s = LocaleService.current;
-    final text = res.ok
+    var text = res.ok
         ? s.giftSent
         : switch (res.error) {
             GiftError.insufficient => s.giftNotEnoughCoins,
             GiftError.network => s.giftNoConnection,
             _ => s.giftFailed,
           };
+    // В тестовой сборке показываем код причины: без него отказ выглядит как
+    // «просто не работает», и чинить нечего.
+    if (!res.ok && _diagnostics && res.error != null) {
+      text = '$text (${res.error!.name})';
+    }
     setState(() {
       _sending = null;
       if (res.coins != null) _coins = res.coins!;
@@ -147,13 +155,24 @@ class _GiftCard extends StatelessWidget {
                 opacity: affordable ? 1 : 0.4,
                 child: Image.asset(gift.asset, width: 84, height: 84),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
-                '${gift.price}',
+                gift.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: affordable ? theme.textPrimary : theme.textSecondary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  fontSize: 13.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${gift.price}',
+                style: TextStyle(
+                  color: theme.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5,
                 ),
               ),
               const SizedBox(height: 6),

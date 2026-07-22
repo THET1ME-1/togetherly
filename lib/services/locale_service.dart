@@ -1327,11 +1327,6 @@ abstract class AppStrings {
   String get giftNotEnoughCoins;
   String get giftNoConnection;
   String get giftFailed;
-  String get giftHeart;
-  String get giftHug;
-  String get giftStar;
-  String get giftSalute;
-  String get giftRocket;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3939,16 +3934,6 @@ class _RuStrings extends AppStrings {
   String get giftNoConnection => 'Нет связи';
   @override
   String get giftFailed => 'Не получилось отправить';
-  @override
-  String get giftHeart => 'Сердце';
-  @override
-  String get giftHug => 'Обнимашка';
-  @override
-  String get giftStar => 'Звезда';
-  @override
-  String get giftSalute => 'Салют';
-  @override
-  String get giftRocket => 'Ракета';
 }
 
 class _EnStrings extends AppStrings {
@@ -6506,14 +6491,4 @@ class _EnStrings extends AppStrings {
   String get giftNoConnection => 'No connection';
   @override
   String get giftFailed => 'Could not send';
-  @override
-  String get giftHeart => 'Heart';
-  @override
-  String get giftHug => 'Hug';
-  @override
-  String get giftStar => 'Star';
-  @override
-  String get giftSalute => 'Fireworks';
-  @override
-  String get giftRocket => 'Rocket';
 }

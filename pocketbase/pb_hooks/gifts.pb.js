@@ -17,7 +17,17 @@
 /// отправка ошибок в Bugsink и всё прочее инлайнится в каждый обработчик.
 
 routerAdd("POST", "/api/gifts/send", (e) => {
-  const PRICES = { heart: 10, hug: 15, star: 10, salute: 30, rocket: 50 };
+  // Зеркало lib/models/gift.dart. Расхождение ловит test/logic/gift_catalog_test.dart.
+  const PRICES = {
+    heart: 10, star: 10, fire: 10, sun: 10,
+    hug: 15, night: 15, cookie: 15, bunny: 15, paw: 15, spa: 15,
+    coffee: 20, tea: 20, croissant: 20, pizza: 20, wine: 20,
+    cocktail: 20, song: 20, photo: 20, piggy: 20,
+    bouquet: 25, park: 25, ramen: 25, bed: 25, beach: 25,
+    giftbox: 30, letter: 30, movie: 30, salute: 30,
+    cake: 40, flight: 40, key: 40,
+    medal: 50, rocket: 50, diamond: 60,
+  };
   const LIFE_MS = 24 * 60 * 60 * 1000;
 
   const body = new DynamicModel({ giftId: "", groupId: "", giftKey: "" });

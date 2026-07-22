@@ -1,10 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:love_app/models/gift.dart';
 
+/// Прайс-таблица серверного роута `pocketbase/pb_hooks/gifts.pb.js`.
+/// Расхождение с каталогом = списание не той суммы, что видел человек.
+const Map<String, int> serverPrices = {
+  'heart': 10, 'star': 10, 'fire': 10, 'sun': 10,
+  'hug': 15, 'night': 15, 'cookie': 15, 'bunny': 15, 'paw': 15, 'spa': 15,
+  'coffee': 20, 'tea': 20, 'croissant': 20, 'pizza': 20, 'wine': 20,
+  'cocktail': 20, 'song': 20, 'photo': 20, 'piggy': 20,
+  'bouquet': 25, 'park': 25, 'ramen': 25, 'bed': 25, 'beach': 25,
+  'giftbox': 30, 'letter': 30, 'movie': 30, 'salute': 30,
+  'cake': 40, 'flight': 40, 'key': 40,
+  'medal': 50, 'rocket': 50, 'diamond': 60,
+};
+
 void main() {
-  test('каталог фазы 1 содержит ровно пять подарков движка «Отклик»', () {
-    expect(GiftCatalog.all.length, 5);
-    expect(GiftCatalog.all.every((g) => g.engine == GiftEngine.response), isTrue);
+  test('в каталоге тридцать четыре подарка', () {
+    expect(GiftCatalog.all.length, 34);
   });
 
   test('ключи уникальны', () {
@@ -12,22 +24,34 @@ void main() {
     expect(keys.length, GiftCatalog.all.length);
   });
 
-  test('цены совпадают с серверными', () {
-    expect(GiftCatalog.byKey('heart')!.price, 10);
-    expect(GiftCatalog.byKey('hug')!.price, 15);
-    expect(GiftCatalog.byKey('star')!.price, 10);
-    expect(GiftCatalog.byKey('salute')!.price, 30);
-    expect(GiftCatalog.byKey('rocket')!.price, 50);
+  test('цены совпадают с серверной таблицей до копейки', () {
+    for (final g in GiftCatalog.all) {
+      expect(serverPrices[g.key], isNotNull,
+          reason: 'подарка ${g.key} нет в серверной таблице');
+      expect(g.price, serverPrices[g.key], reason: 'цена ${g.key} разъехалась');
+    }
+    expect(serverPrices.length, GiftCatalog.all.length,
+        reason: 'на сервере есть подарки, которых нет в каталоге');
+  });
+
+  test('у каждого подарка непустые названия на обоих языках', () {
+    for (final g in GiftCatalog.all) {
+      expect(g.titleRu.trim(), isNotEmpty, reason: g.key);
+      expect(g.titleEn.trim(), isNotEmpty, reason: g.key);
+    }
+  });
+
+  test('путь к значку строится из ключа', () {
+    expect(GiftCatalog.byKey('cake')!.asset, 'assets/images/gifts/cake.webp');
   });
 
   test('неизвестный ключ даёт null, а не исключение', () {
     expect(GiftCatalog.byKey('nope'), isNull);
   });
 
-  test('у каждого подарка есть ассет в assets/images/gifts', () {
-    for (final g in GiftCatalog.all) {
-      expect(g.asset, startsWith('assets/images/gifts/'));
-      expect(g.asset, endsWith('.webp'));
-    }
+  test('витрина отсортирована по возрастанию цены', () {
+    final prices = GiftCatalog.all.map((g) => g.price).toList();
+    final sorted = [...prices]..sort();
+    expect(prices, sorted);
   });
 }

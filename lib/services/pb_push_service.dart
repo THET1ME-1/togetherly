@@ -200,7 +200,7 @@ class PbPushService {
         final gift = GiftCatalog.byKey((r.data['gift_key'] ?? '').toString());
         if (gift == null) return; // подарок из будущей версии приложения
         _notify(('gift${r.id}').hashCode, partnerName,
-            LocaleService.current.giftPushBody(_giftTitle(gift.key)));
+            LocaleService.current.giftPushBody(gift.title));
       } catch (err) {
         debugPrint('PbPush gift callback error: $err');
       }
@@ -209,24 +209,6 @@ class PbPushService {
     debugPrint('PbPush: подписки запущены (group=$groupId, partner=$partnerUid)');
   }
 
-  /// Ключ подарка → название на языке получателя.
-  String _giftTitle(String key) {
-    final s = LocaleService.current;
-    switch (key) {
-      case 'heart':
-        return s.giftHeart;
-      case 'hug':
-        return s.giftHug;
-      case 'star':
-        return s.giftStar;
-      case 'salute':
-        return s.giftSalute;
-      case 'rocket':
-        return s.giftRocket;
-      default:
-        return key;
-    }
-  }
 
   /// Тело уведомления по типу вайба (зеркало Cloud Functions buildVibePayload).
   String _vibeBody(String vibe, String text) {
