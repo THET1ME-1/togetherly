@@ -46,6 +46,8 @@ dependencies:
   flutter_image_compress: ^2.3.0
   video_compress: ^3.1.2
   flutter_animate: ^4.5.0
+  material3_expressive_loading_indicator: ^0.1.2 # M3 Expressive морфинг-лоадер (кнопка нового кода)
+  material_new_shapes: ^1.0.0 # аутентичные формы M3 (RoundedPolygon.toPath → клипперы/бордеры)
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   exif: ^3.3.0
@@ -59,6 +61,8 @@ dependencies:
   device_info_plus: ^11.1.0
   gal: ^2.3.0
   video_player: ^2.9.2
+  # Экраны на 90 и 120 Гц: Android по умолчанию отдаёт приложению 60.
+  flutter_displaymode: ^0.6.0
   in_app_update: ^4.2.3
   google_mobile_ads: ^5.2.0
   yandex_mobileads: ^7.6.0
@@ -112,3 +116,13 @@ flutter:
     # из ассетов вместо загрузки с fonts.gstatic.com (офлайн, мгновенно, без
     # сетевых ошибок). Имена файлов соответствуют конвенции пакета (Rubik-<Вес>).
     - google_fonts/
+
+  # Unbounded (заголовки/числа) + Onest (текст) — шрифты M3-экрана «Профиль»
+  # в стиле Kadr. Веса задаются через FontWeight поверх одного начертания.
+  fonts:
+    - family: Unbounded
+      fonts:
+        - asset: assets/fonts/Unbounded.ttf
+    - family: Onest
+      fonts:
+        - asset: assets/fonts/Onest.ttf

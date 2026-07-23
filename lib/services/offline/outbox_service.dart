@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:sembast/sembast_io.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../pb_data_service.dart';
 import '../pb_media_service.dart';
@@ -41,6 +42,11 @@ class OutboxService {
   bool _flushing = false;
   int _retryAttempt = 0;
   Timer? _retryTimer;
+
+  /// Когда очередь впервые перестала пустеть — чтобы отличить долгую отправку
+  /// от залипания и один раз рассказать о нём в Bugsink.
+  DateTime? _busySince;
+  bool _stuckReported = false;
   StreamSubscription<bool>? _connSub;
 
   /// Число операций в очереди (для индикатора «ожидает синхронизации»).
@@ -236,6 +242,44 @@ class OutboxService {
     return false;
   }
 
+  /// Очередь, которая не пустеет минутами, — это дефект, а не «медленная сеть»:
+  /// человек видит вечную плашку «Синхронизация…». Один раз сообщаем, что
+  /// именно висит, иначе причину не найти.
+  Future<void> _reportIfStuck() async {
+    final active = activeCount.value;
+    if (active == 0) {
+      _busySince = null;
+      _stuckReported = false;
+      return;
+    }
+    _busySince ??= DateTime.now();
+    if (_stuckReported) return;
+    if (DateTime.now().difference(_busySince!) < const Duration(minutes: 2)) {
+      return;
+    }
+    _stuckReported = true;
+
+    final types = <String, int>{};
+    try {
+      final db = await LocalStore.instance.database();
+      if (db == null) return;
+      for (final snap in await _store.find(db)) {
+        final t = (snap.value['type'] ?? '?').toString();
+        types[t] = (types[t] ?? 0) + 1;
+      }
+    } catch (_) {}
+
+    unawaited(Sentry.captureMessage(
+      'outbox stuck: $active операций не уходят',
+      withScope: (scope) {
+        scope.level = SentryLevel.warning;
+        scope.setExtra('active', active.toString());
+        scope.setExtra('poison', poisonCount.value.toString());
+        scope.setExtra('types', types.toString());
+      },
+    ));
+  }
+
   /// Запись (collection:id), которую затрагивает операция — для сохранения
   /// порядка правок одной записи при не-блокирующем сливе. null → операция ни с
   /// чем не конфликтует по порядку (можно слать независимо).
@@ -321,6 +365,7 @@ class OutboxService {
       if (((s.value['attempts'] as num?)?.toInt() ?? 0) == 0) active++;
     }
     activeCount.value = active;
+    unawaited(_reportIfStuck());
     poisonCount.value = await _poison.count(db);
     // Пересчитываем «грязные» ключи: записи с неотправленными правками, которые
     // кэш-слой не должен перезатирать серверным стейлом. Разбор защищён

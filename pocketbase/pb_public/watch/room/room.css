@@ -1,11 +1,31 @@
-/* Страница комнаты: ожидание партнёра и сам просмотр.
+/* Страница комнаты: плеер и чат на весь экран, без прокрутки.
  * Базовые токены и кнопки берутся из ../landing.css.
+ *
+ * Экран ожидания партнёра убран намеренно: комната открывается сразу рабочей,
+ * ссылку зовущий копирует кнопкой в шапке.
  */
 
-.room-body { min-height: 100dvh; display: flex; flex-direction: column; }
+.room-body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-.top--room { gap: 16px; }
-.room-code { margin-left: auto; text-align: right; line-height: 1.15; }
+/* ── шапка ───────────────────────────────────────────────────────────────── */
+
+.top--room {
+  position: static;
+  gap: 14px;
+  padding: 12px var(--pad);
+  flex: none;
+}
+.top--room .brand { margin-right: auto; min-width: 0; overflow: hidden; }
+.top--room .room-code, .top--room .btn, .top--room .theme-btn { flex: none; }
+.top--room .btn--compact, .top--room .theme-btn { min-height: 44px; height: 44px; }
+.top--room .theme-btn { width: 44px; }
+
+.room-code { text-align: right; line-height: 1.15; }
 .room-code__cap {
   display: block;
   font: 600 10.5px/1 'Onest';
@@ -17,105 +37,98 @@
   font: 800 17px/1 'Unbounded', sans-serif;
   letter-spacing: .06em;
 }
-
-/* ── ожидание ────────────────────────────────────────────────────────────── */
-
-.waiting {
-  flex: 1;
-  display: grid;
-  place-items: center;
-  padding: clamp(28px, 6vw, 72px) clamp(16px, 4vw, 48px) 64px;
-  position: relative;
+.status-line {
+  min-width: 0;
   overflow: hidden;
-}
-.waiting::before {
-  content: '';
-  position: absolute;
-  inset: -20% -10% auto -10%;
-  height: 70vmax;
-  background: radial-gradient(50% 50% at 50% 40%, var(--accent-soft), transparent 70%);
-  pointer-events: none;
-}
-.waiting__inner { position: relative; width: min(560px, 100%); text-align: center; }
-
-.pulse { display: grid; place-items: center; height: 116px; margin-bottom: 26px; }
-.pulse span {
-  position: absolute;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  opacity: 0;
-  animation: pulse 2.6s cubic-bezier(.2, 0, 0, 1) infinite;
-}
-.pulse span:nth-child(2) { animation-delay: .85s; }
-.pulse span:nth-child(3) { animation-delay: 1.7s; }
-@keyframes pulse {
-  0% { transform: scale(.55); opacity: .75; }
-  70% { opacity: .12; }
-  100% { transform: scale(1.9); opacity: 0; }
-}
-.pulse::after {
-  content: '♥';
-  font-size: 36px;
-  color: var(--accent-deep);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
 
-.waiting h1 {
-  font-size: clamp(28px, 5.5vw, 44px);
-  font-weight: 800;
-  margin: 0 0 12px;
-}
-.waiting__text { margin: 0 0 26px; color: var(--ink-soft); font-size: 16px; }
-
-.waiting__link {
-  display: block;
-  padding: 16px 20px;
-  border: 1px dashed var(--line);
-  border-radius: 20px;
-  background: var(--card);
-  font: 600 14.5px/1.4 'Onest';
-  word-break: break-all;
-  margin-bottom: 20px;
-}
-.waiting__cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.waiting__hint { margin: 22px 0 0; font-size: 13.5px; color: var(--ink-soft); }
-
-/* ── просмотр ────────────────────────────────────────────────────────────── */
-
+/* ── сетка комнаты ───────────────────────────────────────────────────────── */
+/*
+ * Две колонки и две строки: кадр и чат равной высоты, под ними одной линией
+ * строка со ссылкой и поле сообщения. Поэтому «Включить» и кнопка отправки
+ * стоят на одном уровне, а чат кончается там же, где кадр.
+ */
 .stage-wrap {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  min-height: 0;
-}
-.stage {
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    'player chat'
+    'manual chat'
+    'source composer';
+  align-content: center;
+  gap: 12px 16px;
   padding: clamp(12px, 2vw, 22px);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 1720px;
+  margin: 0 auto;
 }
+
 .player {
+  grid-area: player;
   aspect-ratio: 16 / 9;
+  /* Кадр 16:9 во всю ширину не помещается по высоте на широком мониторе:
+     ширину задаёт то, что осталось под видео на экране. */
+  width: min(100%, calc((100dvh - 210px) * 16 / 9));
+  margin-inline: auto;
   border-radius: var(--radius);
   overflow: hidden;
   background: linear-gradient(150deg, #2A1418, #4A2028 55%, #7A2E3C);
   display: grid;
   place-items: center;
 }
-.player iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player iframe, .player__video { width: 100%; height: 100%; border: 0; display: block; }
+.player__video { background: #000; object-fit: contain; }
 .player__empty {
   display: grid;
   place-items: center;
-  gap: 10px;
+  gap: 14px;
   color: rgba(255, 255, 255, .8);
   font: 600 15px 'Onest';
+  text-align: center;
+  padding: 0 24px;
 }
 
-.source { display: flex; gap: 10px; }
+/* ── пульт для плееров, которые не принимают команды ─────────────────────── */
+
+.manual {
+  grid-area: manual;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.manual__note { flex: 1; min-width: 180px; font-size: 13px; color: var(--ink-soft); }
+
+.player { position: relative; }
+.countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 800 clamp(64px, 12vw, 160px)/1 'Unbounded', sans-serif;
+  color: #fff;
+  background: rgba(21, 13, 15, .72);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+.countdown--pause { font-size: clamp(36px, 7vw, 88px); }
+
+/* ── строка источника и поле сообщения ───────────────────────────────────── */
+
+.source { grid-area: source; display: flex; gap: 10px; min-width: 0; }
 .source__input {
+  /* width: 0 обязателен: у поля есть собственная ширина в 20 знаков, и без
+     обнуления она распирает колонку шире экрана телефона. */
   flex: 1;
+  width: 0;
   min-width: 0;
   min-height: 52px;
   padding: 0 20px;
@@ -127,34 +140,53 @@
   outline: none;
 }
 .source__input:focus { border-color: var(--accent-deep); }
-.btn--compact { min-height: 52px; padding: 0 24px; font-size: 15px; }
-.btn--icon { min-height: 48px; width: 48px; padding: 0; }
 
-.stage__meta { display: flex; gap: 14px; align-items: center; font-size: 13.5px; color: var(--ink-soft); }
-.viewers { font-weight: 600; }
+.composer { grid-area: composer; display: flex; gap: 8px; min-width: 0; }
+.input--flat { flex: 1; width: 0; min-width: 0; min-height: 52px; }
+
+.btn--compact { min-height: 52px; padding: 0 24px; font-size: 15px; gap: 9px; }
+.btn--icon { min-height: 52px; width: 52px; padding: 0; flex: none; }
+#copy svg { flex: none; }
+
+/* ── чат ─────────────────────────────────────────────────────────────────── */
 
 .side {
+  grid-area: chat;
+  min-width: 0;
+  min-height: 0;
   background: var(--bg-warm);
-  border-left: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 .side__head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding: 16px 18px 10px;
+  padding: 16px 18px 8px;
 }
 .side__head h2 { font-size: 16px; font-weight: 700; }
+.viewers { font: 600 12.5px 'Onest'; color: var(--ink-soft); }
+
 .chat {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 16px;
+  padding: 6px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+/* Пустой чат объясняет, что делать, вместо того чтобы молчать. */
+.chat:empty::before {
+  content: attr(data-empty);
+  margin: auto;
+  max-width: 22ch;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--ink-soft);
 }
 .msg {
   max-width: 88%;
@@ -179,22 +211,32 @@
   font-size: 13px;
 }
 .msg__who { display: block; font: 600 11.5px 'Onest'; opacity: .65; margin-bottom: 2px; }
-.composer { display: flex; gap: 8px; padding: 12px 16px 16px; }
-.input--flat { flex: 1; min-height: 48px; width: auto; }
+
+/* ── телефон ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .stage-wrap { grid-template-columns: 1fr; }
-  .side {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-    min-height: 44dvh;
-  }
-  .source { flex-wrap: wrap; }
-  .source .btn { flex: 1; }
-  .player { border-radius: 22px; }
-  .side__head .btn { display: none; }
-}
+  .top--room { padding: 10px 12px; gap: 8px; }
+  .room-code__cap, .status-line { display: none; }
+  .room-code b { font-size: 15px; }
+  /* На телефоне в шапке место только под значок: слово «Togetherly» уступает
+     место коду комнаты, знак и приписка остаются. */
+  #copy { width: 46px; padding: 0; }
+  #copy span { display: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  .pulse span { animation: none; opacity: .3; }
+  .stage-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'player'
+      'manual'
+      'source'
+      'chat'
+      'composer';
+    align-content: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+  .player { width: 100%; border-radius: 18px; }
+  .side { border-radius: 22px; }
+  .composer { padding-bottom: env(safe-area-inset-bottom); }
 }

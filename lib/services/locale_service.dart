@@ -379,6 +379,7 @@ abstract class AppStrings {
   String get privacy;
   String get aboutApp;
   String get supportAuthors;
+  String get supportIntro;
   String get logout;
   String get logoutQuestion;
   String get logoutConfirm;
@@ -390,6 +391,18 @@ abstract class AppStrings {
   String get deleteAccountReauth;
   String get deleteAccountError;
   String get chooseColorTheme;
+  String get appearanceTitle;
+  String get paletteLabel;
+  String get themeModeLabel;
+  String get themeStyleLabel;
+  String get themeModeLight;
+  String get themeModeDark;
+  String get themeModeSystem;
+  String get themeFlavorSoft;
+  String get themeFlavorJuicy;
+  String get themeFlavorExact;
+  String get amoledLabel;
+  String get levelTasksGroup;
   String get themeNamePink;
   String get themeNamePurple;
   String get themeNameBlue;
@@ -1219,6 +1232,22 @@ abstract class AppStrings {
   String distanceLabel(double meters);
   String get appNotInstalled;
   String get watchTogether;
+  String watchWithPartner(String name);
+  String get watchRoomOpensForBoth;
+  String get watchAfterShortAd;
+  String get watchOpenOnSite;
+  String get watchOnSiteHint;
+  String get watchPartnerInBrowser;
+  String get watchRecent;
+  String get watchOurVideos;
+  String get watchVideoAdd;
+  String get watchVideoUploading;
+  String get watchVideoTooBig;
+  String get watchPickFileAgain;
+  String get watchHeroTitle;
+  String get watchHeroText;
+  String get linkCopied;
+  String get copyLink;
 
   // ── Watch Together ──
   String get watchTogetherAdPrompt;
@@ -1354,6 +1383,13 @@ abstract class AppStrings {
   String get partnerGiftsEmpty;
   String get partnerMissTitle;
   String get partnerMissEmpty;
+
+  /// Заголовки тех же блоков в личном профиле («вам дарили», «вы скучаете»).
+  String get selfGiftsTitle;
+  String get selfMissTitle;
+
+  /// Подпись карточки-входа в профиль партнёра на странице «Профиль».
+  String get openPartnerProfile;
   String partnerGiftsChip(int count);
   String partnerMissChip(int count);
   String partnerDaysTogether(int days);
@@ -1977,6 +2013,10 @@ class _RuStrings extends AppStrings {
   @override
   String get supportAuthors => 'Поддержать авторов';
   @override
+  String get supportIntro =>
+      'Togetherly — бесплатное приложение с открытым кодом. '
+      'Любой донат помогает развивать проект.';
+  @override
   String get logout => 'Выйти из аккаунта';
   @override
   String get logoutQuestion => 'Выйти?';
@@ -2002,6 +2042,30 @@ class _RuStrings extends AppStrings {
       'Не удалось удалить аккаунт. Попробуйте ещё раз.';
   @override
   String get chooseColorTheme => 'Выбери цветовую тему';
+  @override
+  String get appearanceTitle => 'Оформление';
+  @override
+  String get paletteLabel => 'Палитра';
+  @override
+  String get themeModeLabel => 'Режим';
+  @override
+  String get themeStyleLabel => 'Сочность';
+  @override
+  String get themeModeLight => 'Светлая';
+  @override
+  String get themeModeDark => 'Тёмная';
+  @override
+  String get themeModeSystem => 'Система';
+  @override
+  String get themeFlavorSoft => 'Мягко';
+  @override
+  String get themeFlavorJuicy => 'Сочно';
+  @override
+  String get themeFlavorExact => 'Точно';
+  @override
+  String get amoledLabel => 'AMOLED-чёрный';
+  @override
+  String get levelTasksGroup => 'Уровень и задания';
   @override
   String get themeNamePink => 'Розовая';
   @override
@@ -3779,6 +3843,38 @@ class _RuStrings extends AppStrings {
   @override
   String get watchTogether => 'Смотреть вместе';
   @override
+  String watchWithPartner(String name) => 'Смотреть с $name';
+  @override
+  String get watchRoomOpensForBoth => 'Комната откроется у вас обоих';
+  @override
+  String get watchAfterShortAd => 'после короткой рекламы';
+  @override
+  String get watchOpenOnSite => 'Открыть на сайте';
+  @override
+  String get watchOnSiteHint => 'Если удобнее смотреть на компьютере';
+  @override
+  String get watchPartnerInBrowser => 'Партнёр смотрит в браузере?';
+  @override
+  String get watchRecent => 'НЕДАВНЕЕ';
+  @override
+  String get watchOurVideos => 'НАШИ ВИДЕО';
+  @override
+  String get watchVideoAdd => 'Загрузить до 100 МБ';
+  @override
+  String get watchVideoUploading => 'Загружаю…';
+  @override
+  String get watchVideoTooBig => 'Видео больше 100 МБ: сожмите его или выберите короче';
+  @override
+  String get watchPickFileAgain => 'Это ваш файл с телефона: выберите его в комнате';
+  @override
+  String get watchHeroTitle => 'Одно кино на двоих';
+  @override
+  String get watchHeroText => 'Пауза у одного, пауза у обоих. Чат рядом.';
+  @override
+  String get linkCopied => 'Ссылка скопирована';
+  @override
+  String get copyLink => 'Скопировать ссылку';
+  @override
   String get watchTogetherAdPrompt =>
       'Чтобы открыть совместный просмотр, посмотри короткую рекламу — '
       'поддержишь приложение и получишь коины 🪙';
@@ -4030,6 +4126,12 @@ class _RuStrings extends AppStrings {
   @override
   String get partnerMissEmpty =>
       'Статистика копится с этого обновления — загляните через недельку.';
+  @override
+  String get selfGiftsTitle => 'Что вам дарили';
+  @override
+  String get selfMissTitle => 'Когда вы скучаете';
+  @override
+  String get openPartnerProfile => 'Открыть профиль партнёра';
   @override
   String partnerGiftsChip(int count) => '🎁 $count';
   @override
@@ -4683,6 +4785,10 @@ class _EnStrings extends AppStrings {
   @override
   String get supportAuthors => 'Support the Authors';
   @override
+  String get supportIntro =>
+      'Togetherly is a free, open-source app. '
+      'Any donation helps the project grow.';
+  @override
   String get logout => 'Sign Out';
   @override
   String get logoutQuestion => 'Sign Out?';
@@ -4708,6 +4814,30 @@ class _EnStrings extends AppStrings {
       'Could not delete the account. Please try again.';
   @override
   String get chooseColorTheme => 'Choose color theme';
+  @override
+  String get appearanceTitle => 'Appearance';
+  @override
+  String get paletteLabel => 'Palette';
+  @override
+  String get themeModeLabel => 'Mode';
+  @override
+  String get themeStyleLabel => 'Vibrancy';
+  @override
+  String get themeModeLight => 'Light';
+  @override
+  String get themeModeDark => 'Dark';
+  @override
+  String get themeModeSystem => 'System';
+  @override
+  String get themeFlavorSoft => 'Soft';
+  @override
+  String get themeFlavorJuicy => 'Juicy';
+  @override
+  String get themeFlavorExact => 'Exact';
+  @override
+  String get amoledLabel => 'AMOLED black';
+  @override
+  String get levelTasksGroup => 'Level & tasks';
   @override
   String get themeNamePink => 'Pink';
   @override
@@ -6447,6 +6577,38 @@ class _EnStrings extends AppStrings {
   @override
   String get watchTogether => 'Watch together';
   @override
+  String watchWithPartner(String name) => 'Watch with $name';
+  @override
+  String get watchRoomOpensForBoth => 'The room opens for both of you';
+  @override
+  String get watchAfterShortAd => 'after a short ad';
+  @override
+  String get watchOpenOnSite => 'Open on the website';
+  @override
+  String get watchOnSiteHint => 'If a computer is more convenient';
+  @override
+  String get watchPartnerInBrowser => 'Partner watching in a browser?';
+  @override
+  String get watchRecent => 'RECENT';
+  @override
+  String get watchOurVideos => 'OUR VIDEOS';
+  @override
+  String get watchVideoAdd => 'Upload up to 100 MB';
+  @override
+  String get watchVideoUploading => 'Uploading…';
+  @override
+  String get watchVideoTooBig => 'The video is over 100 MB: compress it or pick a shorter one';
+  @override
+  String get watchPickFileAgain => 'That is a file from your phone: pick it inside the room';
+  @override
+  String get watchHeroTitle => 'One movie for two';
+  @override
+  String get watchHeroText => 'One pauses, it pauses for both. Chat alongside.';
+  @override
+  String get linkCopied => 'Link copied';
+  @override
+  String get copyLink => 'Copy link';
+  @override
   String get watchTogetherAdPrompt =>
       'To open watch together, watch a short ad — '
       'support the app and earn coins 🪙';
@@ -6692,6 +6854,12 @@ class _EnStrings extends AppStrings {
   @override
   String get partnerMissEmpty =>
       'Stats start with this update — come back in a week.';
+  @override
+  String get selfGiftsTitle => 'Gifts you received';
+  @override
+  String get selfMissTitle => 'When you miss them';
+  @override
+  String get openPartnerProfile => "Open partner's profile";
   @override
   String partnerGiftsChip(int count) => '🎁 $count';
   @override

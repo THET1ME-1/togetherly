@@ -22,9 +22,7 @@ import '../models/gift_effect.dart';
 import '../services/pb_data_service.dart';
 import 'achievements_screen.dart';
 import 'gifts/gift_shop_screen.dart';
-import 'gifts/partner_profile_screen.dart';
 import 'gifts/gift_receive_sheet.dart';
-import '../widgets/avatar_widget.dart';
 import '../services/achievement_service.dart';
 import '../widgets/achievement_unlock_overlay.dart';
 import '../models/pair_data.dart';
@@ -40,6 +38,7 @@ import '../services/widget_background_refresh_service.dart';
 import '../services/background_reliability_service.dart';
 import '../services/pb_auth_service.dart';
 import '../services/presence_service.dart';
+import '../services/centrifugo_service.dart';
 import '../services/locale_service.dart';
 import '../services/rate_limiter_service.dart';
 import '../services/ui_prefs.dart';
@@ -56,12 +55,14 @@ import 'home/home_action_buttons.dart';
 import 'home/home_memory_preview.dart';
 import 'home/home_bottom_nav.dart';
 import 'connect_partner_screen.dart';
+import 'together/watch_home_screen.dart';
 import 'expandable_timer_card.dart';
 import 'memory_lane_screen.dart';
 import 'together/together_launcher.dart';
 import 'mini_mood_calendar.dart';
 import 'mood_calendar_screen.dart';
 import 'profile_screen.dart';
+import '../theme/profile_theme.dart';
 import '../services/home_widget_service.dart';
 import '../services/mood_service.dart';
 import '../services/timer_service.dart';
@@ -148,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Подарки, которые ждут моего действия: задутой свечи, открытой коробки.
   List<Map<String, dynamic>> _incomingGifts = const [];
+  RtUnsub? _giftsUnsub;
 
   /// Подарок «Солнце»: утро встречает рассветом и строчкой от партнёра.
   bool get _sunriseOn => isEffectActive(
@@ -194,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadSideActionPref();
     _loadGiftsFlag();
     _loadIncomingGifts();
+    _listenGifts();
 
     // Онлайн-презенс: heartbeat в PocketBase, пока приложение активно.
     PresenceService().start();
@@ -270,6 +273,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    final giftsOff = _giftsUnsub;
+    _giftsUnsub = null;
+    if (giftsOff != null) unawaited(giftsOff());
     _dismissSideHint();
     _syncWidgetsDebounce?.cancel();
     _syncMoodWidgetDebounce?.cancel();
@@ -413,6 +419,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (groupChanged || _wasPaired != isPaired) {
       _startMemoryListener();
       _updatePartnerPush(isPaired);
+      // Подписка на подарки живёт по тем же правилам, что и пуши: пара
+      // грузится асинхронно, и на момент initState её ещё нет. Если не
+      // переподнять здесь, подарок доезжает только пушем — без анимации
+      // получения. Плюс перечитываем входящие: базовый список для сравнения
+      // «пришло ли новое» в _onGiftEvent должен быть уже актуальным.
+      unawaited(_listenGifts());
+      unawaited(_loadIncomingGifts());
     }
 
     // isPaired check does NOT require startDate — mood/widget services bind
@@ -537,13 +550,10 @@ class _HomeScreenState extends State<HomeScreen> {
       unawaited(_tryClaimPartnerInviteReward());
     }
 
-    if (mounted) {
-      setState(() {
-        if (justPaired && _selectedNavIndex == 2) {
-          _selectedNavIndex = 0;
-        }
-      });
-    }
+    // Авто-прыжок на главную при появлении пары убран: он срабатывал и при
+    // переключении карусели групп (тап по подключённой связи/аватарке кидал на
+    // главную). Остаёмся на экране «Подключение» — там красивый connected-вид.
+    if (mounted) setState(() {});
   }
 
   void _bindMascotService(String groupId) {
@@ -938,9 +948,12 @@ class _HomeScreenState extends State<HomeScreen> {
           pairData: _pairData,
           theme: _t,
           userData: widget.userData,
+          timerService: _timerService,
         );
       case 3:
         return _buildProfileTab();
+      case 4:
+        return WatchHomeScreen(pairData: _pairData, theme: _t);
       default:
         return _buildHomeTab();
     }
@@ -1182,16 +1195,9 @@ class _HomeScreenState extends State<HomeScreen> {
               emoji: '🎂',
               color: const Color(0xFFFF6B35),
             ),
-          // ── Приглашение «смотрим вместе» от партнёра (0 новых чтений:
-          //    реюзает hub-листенер group-doc) ──
-          if (_pairData.isPaired)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: TogetherInviteBanner(
-                pairId: _pairData.pairId,
-                partnerUid: _pairData.partnerUid,
-              ),
-            ),
+          // Баннер-приглашение убран вместе с сеансами на Firebase RTDB:
+          // комната у пары одна, звать в неё больше не нужно — вкладка
+          // «Смотрим» открывает её обоим.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -1305,10 +1311,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 delay: const Duration(milliseconds: 460),
                 child: _incomingGiftEntry(),
               ),
-            AnimatedSlideIn(
-              delay: const Duration(milliseconds: 465),
-              child: _partnerEntry(),
-            ),
+            // Вход в профиль партнёра переехал на страницу «Профиль»
+            // (личный профиль + карточка партнёра), с главной убран.
             AnimatedSlideIn(
               delay: const Duration(milliseconds: 470),
               child: _giftsEntry(),
@@ -1384,6 +1388,7 @@ class _HomeScreenState extends State<HomeScreen> {
       pairData: _pairData,
       timerService: _timerService,
       widgetService: _widgetService,
+      giftsEnabled: _giftsEnabled,
       onSwitchToHome: () => setState(() => _selectedNavIndex = 0),
     );
   }
@@ -1786,6 +1791,40 @@ class _HomeScreenState extends State<HomeScreen> {
   /// погонять вживую, не открывая их всем парам сразу.
   static const bool _giftsForced = bool.fromEnvironment('GIFTS_FORCE');
 
+  /// Подписка на подарки пары. Раньше входящие грузились только при запуске
+  /// экрана, поэтому подарок доезжал пушем, а в приложении появлялся лишь
+  /// после перезапуска — отсюда и ощущение, что «получение не работает».
+  Future<void> _listenGifts() async {
+    // Метод переустанавливаемый: сперва снимаем прежнюю подписку, чтобы при
+    // смене пары не копить дубли и не держать канал ушедшей группы.
+    final old = _giftsUnsub;
+    _giftsUnsub = null;
+    if (old != null) unawaited(old());
+
+    if (!_pairData.isPaired) return;
+    final channel = 'pair:${_pairData.pairId}';
+    final unsub = await CentrifugoService.instance.subscribeDelta(
+      channel,
+      'gifts',
+      (_) => unawaited(_onGiftEvent()),
+    );
+    // Пока ждали подписку, экран мог уйти — не держим висячий канал.
+    if (!mounted) {
+      unawaited(unsub());
+      return;
+    }
+    _giftsUnsub = unsub;
+  }
+
+  /// Пришёл новый подарок — сразу показываем его, с анимацией открытия.
+  Future<void> _onGiftEvent() async {
+    final before = _incomingGifts.length;
+    await _loadIncomingGifts();
+    if (!mounted || _incomingGifts.length <= before) return;
+    // Подарок показываем на любой вкладке — это событие, его ждут.
+    await _openIncomingGift(_incomingGifts.first);
+  }
+
   Future<void> _loadIncomingGifts() async {
     if (!_pairData.isPaired) return;
     final list = await PbDataService().fetchIncomingGifts(
@@ -1880,6 +1919,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final gift = GiftCatalog.byKey((raw['gift_key'] ?? '').toString());
     if (gift == null) return const SizedBox.shrink();
     final s = LocaleService.current;
+    final cs = ProfileTheme.themeFor(_t).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
       child: GestureDetector(
@@ -1887,10 +1927,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: _t.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: _t.primary.withValues(alpha: 0.35), width: 1),
+            color: cs.primaryContainer,
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
             children: [
@@ -1902,77 +1940,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(s.giftIncomingTitle,
                         style: TextStyle(
+                            fontFamily: ProfileTheme.displayFont,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: _t.textPrimary)),
+                            color: cs.onPrimaryContainer)),
                     const SizedBox(height: 2),
                     Text(s.giftIncomingCount(_incomingGifts.length),
-                        style:
-                            TextStyle(fontSize: 12.5, color: _t.textSecondary)),
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            color:
+                                cs.onPrimaryContainer.withValues(alpha: 0.75))),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: _t.primary, size: 22),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Карточка-вход в профиль партнёра: что ему дарили и когда он скучает.
-  Widget _partnerEntry() {
-    final name = _pairData.partnerDisplayName;
-    final avatar = _pairData.partnerAvatarUrl;
-    final start = _pairData.startDate;
-    final days = start == null
-        ? null
-        : DateTime.now().difference(start).inDays;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PartnerProfileScreen(
-              theme: _t,
-              groupId: _pairData.pairId,
-              partnerUid: _pairData.partnerUid,
-              partnerName: name,
-              partnerAvatarUrl: avatar,
-              daysTogether: days,
-            ),
-            settings: const RouteSettings(name: '/partner'),
-          ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: _t.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _t.divider, width: 0.5),
-          ),
-          child: Row(
-            children: [
-              AvatarWidget(
-                uid: _pairData.partnerUid,
-                liveUrl: avatar,
-                name: name,
-                size: 44,
-                primary: _t.primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  name.isEmpty ? LocaleService.current.partnerGiftsTitle : name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _t.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right, color: _t.textMuted, size: 20),
+              Icon(Icons.chevron_right_rounded,
+                  color: cs.onPrimaryContainer, size: 22),
             ],
           ),
         ),

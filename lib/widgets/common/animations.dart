@@ -276,8 +276,10 @@ class _NavBarItemState extends State<NavBarItem>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
+          // Пунктов пять, а панель узкая: на экране 360 dp прежние отступы
+          // (18/12) не помещались.
           padding: EdgeInsets.symmetric(
-            horizontal: widget.isActive ? 18 : 12,
+            horizontal: widget.isActive ? 14 : 9,
             vertical: 8,
           ),
           decoration: BoxDecoration(

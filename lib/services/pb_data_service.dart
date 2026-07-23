@@ -2061,6 +2061,7 @@ class PbDataService {
       'displayName': d['display_name'],
       'email': d['email'],
       'avatarUrl': d['avatar_url'],
+      'bannerUrl': d['banner_url'],
       'gender': d['gender'],
       'badge': d['badge'],
       'coins': d['coins'],
@@ -2112,6 +2113,7 @@ class PbDataService {
 
     put('displayName', 'display_name');
     put('avatarUrl', 'avatar_url');
+    put('bannerUrl', 'banner_url');
     put('gender', 'gender');
     put('birthDate', 'birth_date', ts: true);
     // ЭКОНОМИКА НЕ ПИШЕТСЯ КЛИЕНТОМ: coins/owned_themes/owned_icons/

@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'profile/profile_banner.dart';
+import 'profile/profile_hero.dart';
+import 'profile/miss_you_week_chart.dart';
+import '../models/partner_profile.dart';
 import 'package:flutter/services.dart';
 import '../utils/safe_text.dart';
 import '../widgets/common/app_dialog.dart';
@@ -14,7 +18,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, File;
 import '../services/media_service.dart';
 import '../services/pocketbase_service.dart';
 import '../services/pb_data_service.dart';
@@ -26,10 +30,16 @@ import '../models/profile_icon.dart';
 import '../services/locale_service.dart';
 import '../services/ui_prefs.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palettes.dart';
 import '../theme/theme_scope.dart';
+import '../theme/profile_theme.dart';
 import '../widgets/common/coin_reward_toast.dart';
 import '../widgets/common/m3_loading.dart';
 import 'welcome_screen.dart';
+import 'gifts/gift_profile_body.dart';
+import 'gifts/partner_profile_screen.dart';
+import '../widgets/avatar_widget.dart';
+import '../widgets/seed_swatch.dart';
 import '../utils/share_origin.dart';
 import '../services/export_service.dart';
 import '../services/timer_service.dart';
@@ -54,6 +64,11 @@ class ProfileScreen extends StatefulWidget {
   final TimerService timerService;
   final WidgetService widgetService;
   final VoidCallback? onSwitchToHome;
+
+  /// Раздел подарков включён на сервере (`app_config.gifts_enabled`). Личный
+  /// профиль-«Открытка» и вход в профиль партнёра показываются только при нём —
+  /// иначе не «протечём» фичу тем, у кого она выключена.
+  final bool giftsEnabled;
   const ProfileScreen({
     super.key,
     required this.userData,
@@ -61,6 +76,7 @@ class ProfileScreen extends StatefulWidget {
     required this.timerService,
     required this.widgetService,
     this.onSwitchToHome,
+    this.giftsEnabled = false,
   });
 
   @override
@@ -89,6 +105,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
   static final Uri _boostyUri = Uri.parse('https://boosty.to/sntcompany');
 
+  /// Разовый донат картой или СБП.
+  static final Uri _donationAlertsUri = Uri.parse(
+    'https://www.donationalerts.com/r/thet1me',
+  );
+
+  /// Lava.top — приём платежей внутри страны.
+  static final Uri _lavaUri = Uri.parse(
+    'https://app.lava.top/togetherly-store?tabId=donate',
+  );
+
   /// Почта поддержки. Письмо уходит с темой и версией приложения — иначе
   /// разбирать обращения приходится вслепую.
   static const String supportEmail = 'support@togetherly.day';
@@ -99,6 +125,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Активная тема из контекста (семантические токены для тёмной темы).
   AppTheme get _t => context.appTheme;
+
+  /// M3-схема экрана, выведенная из [AppTheme.primary] темы как seed
+  /// (вибрант, как в Kadr). Кэшируется по идентичности темы, чтобы не гонять
+  /// `fromSeed` на каждый вызов примитива.
+  Object? _csSig;
+  ColorScheme? _csCache;
+
+  /// Свёрнутость секций «Оформление»-стиля (по ключу секции).
+  final Map<String, bool> _expanded = {};
+
+  /// Локальный путь к фото-баннеру профиля (пока без синка на сервер).
+  String? _bannerPath;
+  WeekStats? _ownWeek; // мои «Я скучаю» по дням недели
+
+  ColorScheme get _cs {
+    // Схема профиля совпадает с темой приложения: тот же сырой акцент палитры,
+    // тот же вариант (Мягко/Сочно/Точь-в-точь) и та же яркость.
+    final ud = widget.userData;
+    final seed = paletteByIndex(ud.previewThemeId ?? ud.themeId).accent;
+    final b = _t.brightness;
+    final flavor = ud.themeFlavor;
+    final sig = Object.hash(seed.toARGB32(), b, flavor);
+    if (_csSig != sig || _csCache == null) {
+      _csSig = sig;
+      _csCache = ColorScheme.fromSeed(
+        seedColor: seed,
+        brightness: b,
+        dynamicSchemeVariant: flavor.variant,
+      );
+    }
+    return _csCache!;
+  }
 
   /// UID of the partner selected in the profile (null = first from active group)
   String? _selectedPartnerUid;
@@ -156,6 +214,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _selectedPartnerUid = widget.pairData.manager.preferredPartnerUid;
     widget.pairData.addListener(_onPairDataChanged);
+    SharedPreferences.getInstance().then((p) {
+      final b = p.getString('profileBannerPath');
+      if (b != null && b.isNotEmpty && File(b).existsSync() && mounted) {
+        setState(() => _bannerPath = b);
+      }
+    });
     // Refresh every hour so the day count updates when crossing midnight
     _dayTimer = Timer.periodic(const Duration(hours: 1), (_) {
       if (mounted) setState(() {});
@@ -266,6 +330,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     });
 
+    // Мои столбики «Я скучаю» по дням недели.
+    final myUid = PocketBaseService().userId ?? '';
+    if (myUid.isNotEmpty) {
+      PbDataService()
+          .fetchMissYouFor(groupId: gid, uid: myUid)
+          .then((miss) {
+        if (!mounted || _lastLoadedGroupId != gid) return;
+        setState(
+            () => _ownWeek = parseWeekdays(miss?['by_weekday'] as String?));
+      });
+    }
+
     // Live-счётчик «Я скучаю» (сумма по паре) из PB.
     _missYouSub = MissYouRepository().watchCounts(gid).listen((counts) {
       if (mounted && _lastLoadedGroupId == gid) {
@@ -327,6 +403,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await _openExternalUri(_boostyUri);
   }
 
+  Future<void> _openDonationAlerts() async {
+    await _openExternalUri(_donationAlertsUri);
+  }
+
+  Future<void> _openLava() async {
+    await _openExternalUri(_lavaUri);
+  }
+
   Future<void> _openExternalUri(Uri uri) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -348,45 +432,1056 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        MediaQuery.of(context).padding.bottom + 110,
+    // Экран профиля живёт в своей M3-теме (Kadr-стиль): схема из seed темы,
+    // шрифты Unbounded/Onest, тональные поверхности, кнопки-пилюли.
+    final paired = widget.pairData.isPaired && widget.giftsEnabled;
+    return Theme(
+      data: ProfileTheme.data(_cs),
+      child: Builder(
+        builder: (context) => ColoredBox(
+          color: _cs.surface,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 110,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Шапка во всю ширину: баннер + свисающий аватар.
+                _m3Header(context),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildFriendsGroup(context),
+                      _m3Group('stats', _s.relationshipStats,
+                          Icons.insights_rounded,
+                          child: _m3Stats(context)),
+                      _m3Group('missweek', _s.selfMissTitle,
+                          Icons.calendar_view_week_rounded,
+                          child: _m3Card([
+                            Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: _missYouWeek())
+                          ])),
+                      if (paired)
+                        _m3Group('pair', _s.relationships,
+                            Icons.favorite_rounded,
+                            child: _buildPairGroup(context)),
+                      _m3Group('coins', _s.coinShopTitle,
+                          Icons.monetization_on_rounded,
+                          child: _buildCoinsGroup(context)),
+                      _m3Group('appearance', _s.appearanceTitle,
+                          Icons.palette_rounded,
+                          child: _buildAppearanceCard(context)),
+                      _m3Group('notif', _s.notifications,
+                          Icons.notifications_rounded,
+                          initiallyExpanded: false,
+                          child: _buildNotifGroup(context)),
+                      _m3Group('data', _s.privacy, Icons.shield_outlined,
+                          initiallyExpanded: false,
+                          child: _buildDataGroup(context)),
+                      _m3Group('lang', _s.language, Icons.language_rounded,
+                          initiallyExpanded: false,
+                          child: _buildLangGroup(context)),
+                      const SizedBox(height: 22),
+                      _buildDonationCard(context),
+                      _m3Group('about', _s.aboutApp, Icons.info_outline_rounded,
+                          initiallyExpanded: false,
+                          child: _buildAboutGroup(context)),
+                      const SizedBox(height: 16),
+                      _buildDangerZone(context),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Секция как в Kadr: заголовок СНАРУЖИ карточки — иконка + акцентный текст +
+  /// сворачивание. Содержимое [child] обычно [_m3Card] (плоская карточка).
+  Widget _m3Group(
+    String key,
+    String title,
+    IconData icon, {
+    bool initiallyExpanded = true,
+    required Widget child,
+  }) {
+    final cs = _cs;
+    final expanded = _expanded[key] ?? initiallyExpanded;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _expanded[key] = !expanded);
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 18, 6, 10),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: cs.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: ProfileTheme.displayFont,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      letterSpacing: 0.2,
+                      color: cs.primary,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(Icons.expand_more_rounded,
+                      color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: child,
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+
+  /// Плоская M3-карточка: тональная поверхность, без тени/бордера/градиента.
+  Widget _m3Card(List<Widget> children) => Container(
+        decoration: BoxDecoration(
+          color: _cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      );
+
+  /// Строка-тайл «иконка + текст + trailing».
+  Widget _m3Tile({
+    IconData? icon,
+    Widget? leadingWidget,
+    required String label,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final cs = _cs;
+    return ListTile(
+      onTap: onTap,
+      leading: leadingWidget ?? Icon(icon, color: cs.onSurfaceVariant),
+      title: Text(label,
+          style: TextStyle(
+            fontFamily: ProfileTheme.bodyFont,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: cs.onSurface,
+          )),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle,
+              style: TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
+                fontSize: 13,
+                color: cs.onSurfaceVariant,
+              )),
+      trailing: trailing ??
+          Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+    );
+  }
+
+  Widget _m3Divider() =>
+      Divider(height: 1, indent: 16, endIndent: 16, color: _cs.outlineVariant);
+
+  /// Шапка: широкий баннер-градиент со скруглённым низом и круглым аватаром,
+  /// свисающим в кольце цвета поверхности (приём Kadr). Тап по аватару и по
+  /// иконке карандаша ведёт в редактирование профиля.
+  /// Сменить фото-баннер профиля: камера или галерея, кроп 16:9. Пока хранится
+  /// локально на устройстве (синк на сервер — отдельной задачей).
+  Future<void> _pickBanner(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: _cs.surfaceContainerHigh,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.photo_camera_rounded,
+                  color: _cs.onSurfaceVariant),
+              title: Text(_s.photoFromCamera,
+                  style: TextStyle(
+                      fontFamily: ProfileTheme.bodyFont,
+                      fontWeight: FontWeight.w600,
+                      color: _cs.onSurface)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_rounded,
+                  color: _cs.onSurfaceVariant),
+              title: Text(_s.photoFromGallery,
+                  style: TextStyle(
+                      fontFamily: ProfileTheme.bodyFont,
+                      fontWeight: FontWeight.w600,
+                      color: _cs.onSurface)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+    final picker = ImagePicker();
+    final image = await safePick(
+      () => picker.pickImage(
+          source: source, imageQuality: 90, maxWidth: 1600, maxHeight: 1000),
+    );
+    if (image == null || !mounted) return;
+    CroppedFile? cropped;
+    try {
+      cropped = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        compressQuality: 90,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: _s.appearanceTitle,
+            toolbarColor: const Color(0xFF1A1A2E),
+            toolbarWidgetColor: Colors.white,
+            activeControlsWidgetColor: _accent,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(title: _s.appearanceTitle, aspectRatioLockEnabled: true),
+        ],
+      );
+    } catch (e) {
+      debugPrint('_pickBanner: crop failed: $e');
+      cropped = null;
+    }
+    if (cropped == null || !mounted) return;
+    // Грузим на сервер → banner_url (виден партнёру), как аватар.
+    final userId = PocketBaseService().userId ?? '';
+    if (userId.isEmpty) {
+      if (mounted) _showError(_s.userNotAuthorized);
+      return;
+    }
+    final ext = cropped.path.split('.').last;
+    final url = await MediaService()
+        .uploadFile(cropped.path, 'banners/$userId/profile.$ext');
+    if (url == null) {
+      if (mounted) _showError(_s.failedUploadImage);
+      return;
+    }
+    await widget.userData.updateProfile(bannerUrl: url);
+    if (mounted) setState(() => _bannerPath = null);
+  }
+
+  Widget _m3Header(BuildContext context) {
+    final cs = _cs;
+    final start = widget.pairData.startDate;
+    final days = start == null ? null : DateTime.now().difference(start).inDays;
+    final partnerName = widget.pairData.partnerDisplayName;
+    final chipText = (days != null && partnerName.isNotEmpty)
+        ? _s.partnerDaysTogether(days)
+        : widget.userData.email;
+    return ProfileHero(
+      cs: cs,
+      uid: widget.userData.uid,
+      avatarUrl: widget.userData.avatarUrl,
+      name: widget.userData.displayName,
+      bannerUrl: widget.userData.bannerUrl,
+      localBannerPath: _bannerPath,
+      subtitle: chipText,
+      onEdit: () => _editProfile(context),
+      onPickBanner: () => _pickBanner(context),
+      onTapAvatar: () => _editProfile(context),
+    );
+  }
+
+  /// Статистика в духе Kadr: hero-градиент с крупным числом дней и ряд плиток
+  /// на тональных контейнерах.
+  Widget _missYouWeek() {
+    final w = _ownWeek;
+    if (w == null || w.byDay.every((d) => d == 0)) {
+      return Text(_s.partnerMissEmpty,
+          style: TextStyle(
+              fontFamily: ProfileTheme.bodyFont,
+              fontSize: 13,
+              color: _cs.onSurfaceVariant));
+    }
+    return MissYouWeekChart(theme: _t, week: w);
+  }
+
+  Widget _m3Stats(BuildContext context) {
+    final days = _calculateDaysTogether(widget.pairData.startDate);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _m3StatHero(value: '$days', label: _s.daysTogetherStat),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _m3StatTile(
+                icon: Icons.photo_library_rounded,
+                value: _memoriesCount,
+                label: _s.memoriesStat,
+                variant: 0,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _m3StatTile(
+                icon: Icons.brush_rounded,
+                value: _drawingsCount,
+                label: _s.drawingsStat,
+                variant: 1,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _m3StatTile(
+                icon: Icons.favorite_rounded,
+                value: _missYouCount,
+                label: _s.missYousStat,
+                variant: 2,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _m3StatHero({required String value, required String label}) {
+    final cs = _cs;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: cs.primaryContainer,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontFamily: ProfileTheme.bodyFont,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.5,
+              letterSpacing: 2,
+              color: cs.onPrimaryContainer.withValues(alpha: 0.85),
+            ),
+          ),
           const SizedBox(height: 8),
-          // ═══ Avatar + Name ═══
-          _buildProfileHeader(context),
-          const SizedBox(height: 28),
-          // ═══ Info Card ═══
-          _buildInfoCard(context),
-          const SizedBox(height: 20),
-          // ═══ Coin Shop ═══
-          _buildCoinShopCard(context),
-          const SizedBox(height: 20),
-          // ═══ Level & Tasks ═══
-          _buildLevelTasksCard(context),
-          const SizedBox(height: 20),
-          // ═══ Relationship Status Card ═══
-          _buildRelationshipCard(context),
-          const SizedBox(height: 20),
-          // ═══ Relationship Stats Card ═══
-          _buildStatsCard(context),
-          const SizedBox(height: 20),
-          // ═══ Settings List ═══
-          _buildSettingsCard(context),
-          const SizedBox(height: 20),
-          // ═══ Support Authors ═══
-          _buildSupportCard(context),
-          const SizedBox(height: 20),
-          // ═══ Danger Zone ═══
-          _buildDangerZone(context),
-          const SizedBox(height: 40),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontFamily: ProfileTheme.displayFont,
+                fontWeight: FontWeight.w800,
+                fontSize: 48,
+                height: 1,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _m3StatTile({
+    required IconData icon,
+    required int? value,
+    required String label,
+    required int variant,
+  }) {
+    final cs = _cs;
+    final bg = [
+      cs.primaryContainer,
+      cs.secondaryContainer,
+      cs.tertiaryContainer,
+    ][variant % 3];
+    final fg = [
+      cs.onPrimaryContainer,
+      cs.onSecondaryContainer,
+      cs.onTertiaryContainer,
+    ][variant % 3];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: fg),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value?.toString() ?? '…',
+              style: TextStyle(
+                fontFamily: ProfileTheme.displayFont,
+                fontWeight: FontWeight.w800,
+                fontSize: 24,
+                height: 1,
+                color: fg,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: ProfileTheme.bodyFont,
+              fontSize: 11,
+              color: fg.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Старый метод-обёртка оставлен неиспользуемым намеренно на время рефактора;
+  /// M3-верх собирается в [build] через [_m3Header]/[_m3Stats].
+  // ignore: unused_element
+  Widget _buildProfilePresentation(BuildContext context) {
+    if (!widget.pairData.isPaired || !widget.giftsEnabled) {
+      return _buildProfileHeader(context);
+    }
+    final myUid = widget.userData.uid.isNotEmpty
+        ? widget.userData.uid
+        : (PocketBaseService().userId ?? '');
+    final start = widget.pairData.startDate;
+    final days = start == null ? null : DateTime.now().difference(start).inDays;
+    return Column(
+      children: [
+        GiftProfileBody(
+          theme: _t,
+          groupId: widget.pairData.pairId,
+          uid: myUid,
+          name: widget.userData.displayName,
+          avatarUrl: widget.userData.avatarUrl,
+          daysTogether: days,
+          isSelf: true,
+          onAvatarTap: () => _editProfile(context),
+        ),
+        const SizedBox(height: 16),
+        _buildPartnerTile(context),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  ОФОРМЛЕНИЕ: палитра × режим × вариант × AMOLED
+  // ═══════════════════════════════════════════════════
+
+  /// Секция «Оформление»: лента палитр (выбор/покупка) + тумблеры режима
+  /// (свет/тьма/система — бесплатно), сочности и AMOLED.
+  Widget _buildAppearanceCard(BuildContext context) {
+    final cs = _cs;
+    final ud = widget.userData;
+    Widget caption(String t) => Padding(
+          padding: const EdgeInsets.only(bottom: 8, left: 2),
+          child: Text(t,
+              style: TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurfaceVariant,
+              )),
+        );
+    return _m3Card([
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            caption(_s.paletteLabel),
+            SizedBox(
+              height: 62,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: kPalettes.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) => _paletteSwatch(context, i),
+              ),
+            ),
+            const SizedBox(height: 18),
+            caption(_s.themeModeLabel),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<AppThemeMode>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                      value: AppThemeMode.light,
+                      icon: const Icon(Icons.light_mode_rounded),
+                      tooltip: _s.themeModeLight),
+                  ButtonSegment(
+                      value: AppThemeMode.dark,
+                      icon: const Icon(Icons.dark_mode_rounded),
+                      tooltip: _s.themeModeDark),
+                  ButtonSegment(
+                      value: AppThemeMode.system,
+                      icon: const Icon(Icons.brightness_auto_rounded),
+                      tooltip: _s.themeModeSystem),
+                ],
+                selected: {ud.themeMode},
+                onSelectionChanged: (s) => ud.setThemeMode(s.first),
+              ),
+            ),
+            const SizedBox(height: 18),
+            caption(_s.themeStyleLabel),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<SchemeFlavor>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                      value: SchemeFlavor.soft, label: Text(_s.themeFlavorSoft)),
+                  ButtonSegment(
+                      value: SchemeFlavor.juicy,
+                      label: Text(_s.themeFlavorJuicy)),
+                  ButtonSegment(
+                      value: SchemeFlavor.exact,
+                      label: Text(_s.themeFlavorExact)),
+                ],
+                selected: {ud.themeFlavor},
+                onSelectionChanged: (s) => ud.setThemeFlavor(s.first),
+              ),
+            ),
+          ],
+        ),
+      ),
+      _m3Divider(),
+      SwitchListTile(
+        title: Text(_s.amoledLabel,
+            style: TextStyle(
+              fontFamily: ProfileTheme.bodyFont,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            )),
+        secondary: Icon(Icons.contrast_rounded, color: cs.onSurfaceVariant),
+        value: ud.amoled,
+        onChanged: (v) => ud.setAmoled(v),
+      ),
+    ]);
+  }
+
+  /// Один кружок палитры в ленте: акцент, галочка у выбранной, ценник у платной.
+  Widget _paletteSwatch(BuildContext context, int i) {
+    final cs = _cs;
+    final ud = widget.userData;
+    final p = kPalettes[i];
+    final selected = ud.themeId == i;
+    final locked = p.isPremium && !ud.hasTheme(i);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SeedSwatch(
+          seed: p.accent,
+          selected: selected,
+          size: 46,
+          flavor: ud.themeFlavor,
+          onTap: () => _onPaletteTap(context, i),
+        ),
+        if (locked)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/icons/coin.webp',
+                    width: 11, height: 11),
+                const SizedBox(width: 2),
+                Text('${p.price}',
+                    style: TextStyle(
+                      fontFamily: ProfileTheme.bodyFont,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurfaceVariant,
+                    )),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _onPaletteTap(BuildContext context, int i) async {
+    final ud = widget.userData;
+    final p = kPalettes[i];
+    final locked = p.isPremium && !ud.hasTheme(i);
+    if (locked) {
+      final t = buildAppTheme(p, _t.brightness,
+          flavor: ud.themeFlavor, amoled: ud.amoled);
+      final result = await _confirmPurchaseTheme(context, t);
+      if (result == false) return; // отмена
+      if (result == null) {
+        // Предпросмотр без покупки.
+        ud.setPreviewTheme(i);
+        return;
+      }
+      // result == true → палитра куплена
+    }
+    await ud.setThemeId(i);
+    if (mounted) setState(() {});
+  }
+
+  // ── Группы настроек (плоские M3-карточки, заголовок даёт _m3Group) ──
+
+  Widget _buildNotifGroup(BuildContext context) {
+    final cs = _cs;
+    return _m3Card([
+      _m3Tile(
+        icon: Icons.notifications_outlined,
+        label: _s.notifications,
+        onTap: () => _showNotificationSettings(context),
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.lock_clock_outlined,
+        label: _s.lockScreenMoodToggle,
+        trailing: Switch(
+          value: _lockScreenMood,
+          onChanged: (v) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool(_kLockScreenMood, v);
+            if (mounted) setState(() => _lockScreenMood = v);
+          },
+        ),
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.touch_app_outlined,
+        label: _s.sideActionTitle,
+        onTap: _toggleSideAction,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _sideActionIsArrow ? _s.sideActionOpenFeed : _s.sideActionCreatePin,
+              style: TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.swap_horiz_rounded, color: cs.onSurfaceVariant, size: 20),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  Widget _buildDataGroup(BuildContext context) {
+    return _m3Card([
+      _m3Tile(
+        icon: Icons.lock_outline_rounded,
+        label: _s.privacy,
+        onTap: _openPrivacyPolicy,
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.archive_outlined,
+        label: _s.exportMemories,
+        onTap: () => _handleExportConfig(context),
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.replay_rounded,
+        label: _s.resetMissYouCount,
+        onTap: () => _handleResetMissYouCount(context),
+      ),
+    ]);
+  }
+
+  Widget _buildLangGroup(BuildContext context) {
+    final cs = _cs;
+    return _m3Card([
+      _m3Tile(
+        icon: Icons.language_rounded,
+        label: _s.language,
+        onTap: () => _showLanguagePicker(context),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              LocaleService.instance.language == AppLanguage.ru ? 'RU' : 'EN',
+              style: TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded,
+                color: cs.onSurfaceVariant, size: 20),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  Widget _buildAboutGroup(BuildContext context) {
+    return _m3Card([
+      _m3Tile(
+        icon: Icons.description_outlined,
+        label: _s.termsOfUse,
+        onTap: _openTerms,
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.mail_outline_rounded,
+        label: _s.supportTitle,
+        onTap: _openSupportMail,
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.info_outline_rounded,
+        label: _s.aboutApp,
+        onTap: _openAboutApp,
+      ),
+    ]);
+  }
+
+  // ── Друзья / партнёры (все группы) ──
+
+  List<_PartnerEntry> _allPartnerEntries() {
+    final entries = <_PartnerEntry>[];
+    for (final conn in widget.pairData.manager.connections) {
+      if (conn.isPaired) {
+        for (final m in conn.partners) {
+          entries.add(_PartnerEntry(member: m, connection: conn));
+        }
+      }
+    }
+    return entries;
+  }
+
+  void _openPartnerProfile(BuildContext context, _PartnerEntry e) {
+    final start = e.connection.startDate;
+    final days = start == null ? null : DateTime.now().difference(start).inDays;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PartnerProfileScreen(
+          theme: _t,
+          groupId: e.connection.pairId,
+          partnerUid: e.member.uid,
+          partnerName: e.member.name,
+          partnerAvatarUrl: e.member.avatar,
+          daysTogether: days,
+        ),
+        settings: const RouteSettings(name: '/partner'),
+      ),
+    );
+  }
+
+  /// Друзья/партнёры в ряд — как в Kadr: аватар (или буква на цветном круге) +
+  /// имя. Много групп и партнёров — все здесь.
+  Widget _buildFriendsGroup(BuildContext context) {
+    final entries = _allPartnerEntries();
+    if (entries.isEmpty) return const SizedBox.shrink();
+    return _m3Group('friends', _s.friends, Icons.group_rounded,
+        child: _m3Card([
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: SizedBox(
+              height: 86,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: entries.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (c, i) {
+                  final m = entries[i].member;
+                  return GestureDetector(
+                    onTap: () => _openPartnerProfile(context, entries[i]),
+                    child: SizedBox(
+                      width: 62,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AvatarWidget(
+                            uid: m.uid,
+                            liveUrl: m.avatar,
+                            name: m.name,
+                            size: 56,
+                            primary: _cs.primary,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            m.name.isEmpty ? '—' : m.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: ProfileTheme.bodyFont,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: _cs.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ]));
+  }
+
+  /// «Отношения»: статус и даты (открывается в шите; партнёры — в «Друзьях»).
+  Widget _buildPairGroup(BuildContext context) {
+    return _m3Card([
+      _m3Tile(
+        icon: Icons.favorite_border_rounded,
+        label: _s.relationshipStatus,
+        subtitle: _s.anniversaryDate,
+        onTap: () => _openCardSheet(context, _buildRelationshipCard(context)),
+      ),
+    ]);
+  }
+
+  /// «Монеты»: магазин (баланс, тап → шит) + уровень (тап → экран).
+  Widget _buildCoinsGroup(BuildContext context) {
+    final cs = _cs;
+    return _m3Card([
+      _m3Tile(
+        leadingWidget:
+            Image.asset('assets/images/icons/coin.webp', width: 26, height: 26),
+        label: _s.coinShopTitle,
+        subtitle: _s.coinShopSubtitle,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/icons/coin.webp', width: 16, height: 16),
+            const SizedBox(width: 4),
+            Text('${widget.userData.coins}',
+                style: TextStyle(
+                    fontFamily: ProfileTheme.bodyFont,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: cs.onSurface)),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+          ],
+        ),
+        onTap: () => _openCardSheet(context, _buildCoinShopCard(context)),
+      ),
+      _m3Divider(),
+      _m3Tile(
+        icon: Icons.emoji_events_outlined,
+        label: _s.levelTasksGroup,
+        subtitle: 'Ур. ${LevelService.instance.level}',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                LevelTasksScreen(accent: _accent, accentLight: _accentLight),
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  /// Заметная карточка доната (как в Kadr): заголовок + текст + три кнопки.
+  /// Не сворачивается, стоит отдельным блоком над «О приложении».
+  Widget _buildDonationCard(BuildContext context) {
+    final cs = _cs;
+    TextStyle btn() => const TextStyle(
+        fontFamily: ProfileTheme.displayFont,
+        fontWeight: FontWeight.w700,
+        fontSize: 15);
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.volunteer_activism_rounded,
+                  color: cs.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(_s.supportAuthors,
+                    style: TextStyle(
+                        fontFamily: ProfileTheme.displayFont,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: cs.onSurface)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(_s.supportIntro,
+              style: TextStyle(
+                  fontFamily: ProfileTheme.bodyFont,
+                  fontSize: 13.5,
+                  height: 1.35,
+                  color: cs.onSurfaceVariant)),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _openBoosty,
+            icon: const Icon(Icons.favorite_rounded, size: 19),
+            label: Text('Boosty', style: btn()),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            onPressed: _openDonationAlerts,
+            icon: const Icon(Icons.card_giftcard_rounded, size: 19),
+            label: Text('DonationAlerts', style: btn()),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            onPressed: _openLava,
+            icon: const Icon(Icons.water_drop_rounded, size: 19),
+            label: Text('Lava.top', style: btn()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Открывает сложный виджет (магазин, отношения) в нижнем шите — чтобы на
+  /// самом профиле остались только чистые тайлы.
+  Future<void> _openCardSheet(BuildContext context, Widget child) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _cs.surface,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (ctx, sc) => SingleChildScrollView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  ВЕРХ СТРАНИЦЫ: ЛИЧНЫЙ ПРОФИЛЬ + ПАРТНЁР (M3 — см. _m3Header/_m3Stats)
+  // ═══════════════════════════════════════════════════
+
+  /// Карточка-вход в профиль партнёра прямо со страницы «Профиль».
+  Widget _buildPartnerTile(BuildContext context) {
+    final t = _t;
+    final name = widget.pairData.partnerDisplayName;
+    final avatar = widget.pairData.partnerAvatarUrl;
+    final start = widget.pairData.startDate;
+    final days = start == null ? null : DateTime.now().difference(start).inDays;
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PartnerProfileScreen(
+            theme: t,
+            groupId: widget.pairData.pairId,
+            partnerUid: widget.pairData.partnerUid,
+            partnerName: name,
+            partnerAvatarUrl: avatar,
+            daysTogether: days,
+          ),
+          settings: const RouteSettings(name: '/partner'),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: t.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: t.divider, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            AvatarWidget(
+              uid: widget.pairData.partnerUid,
+              liveUrl: avatar,
+              name: name,
+              size: 44,
+              primary: t.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isEmpty ? _s.partnerGiftsTitle : name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: t.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _s.openPartnerProfile,
+                    style: TextStyle(fontSize: 12.5, color: t.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: t.textMuted, size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -2231,6 +3326,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ═══════════════════════════════════════════════════
   //  SUPPORT AUTHORS CARD
   // ═══════════════════════════════════════════════════
+  /// Блок доната: заголовок, короткий текст и три кнопки во всю ширину —
+  /// Boosty (подписка), DonationAlerts и Lava.top (разовый перевод).
   Widget _buildSupportCard(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -2246,69 +3343,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
           offset: const Offset(0, 4),
         ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _openBoosty,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: _accent.withAlpha(30),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.favorite_rounded,
-                    color: _accent,
-                    size: 22,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.volunteer_activism_rounded,
+                color: _accent,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _s.supportAuthors,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _t.textPrimary,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _s.supportAuthors,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: _accent.withAlpha(200),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Boosty',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _accent.withAlpha(130),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _accent.withAlpha(30),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    color: _accent,
-                    size: 18,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _s.supportIntro,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: _t.textMuted,
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+          _supportButton(
+            label: 'Boosty',
+            icon: Icons.favorite_rounded,
+            onPressed: _openBoosty,
+            filled: true,
+          ),
+          const SizedBox(height: 10),
+          _supportButton(
+            label: 'DonationAlerts',
+            icon: Icons.card_giftcard_rounded,
+            onPressed: _openDonationAlerts,
+          ),
+          const SizedBox(height: 10),
+          _supportButton(
+            label: 'Lava.top',
+            icon: Icons.bolt_rounded,
+            onPressed: _openLava,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _supportButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool filled = false,
+  }) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: filled ? _accent : _accent.withAlpha(38),
+        foregroundColor: filled ? Colors.white : _accent,
+        padding: EdgeInsets.symmetric(vertical: filled ? 14 : 13),
+        elevation: 0,
+      ),
+      icon: Icon(icon, size: 19),
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -2465,22 +3573,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: _t.textSecondary, size: 20),
+            Icon(icon, color: _cs.onSurfaceVariant, size: 22),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
+                  fontFamily: ProfileTheme.bodyFont,
                   fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: _t.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  color: _cs.onSurface,
                 ),
               ),
             ),
             trailing ??
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: _t.textMuted,
+                  color: _cs.onSurfaceVariant,
                   size: 20,
                 ),
           ],
@@ -2993,27 +4102,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   //  HELPERS
   // ═══════════════════════════════════════════════════
   Widget _glassCard({required Widget child}) {
+    // M3 Expressive (как Kadr): тональная поверхность surfaceContainerHigh,
+    // радиус 22, без рамки и тени — глубина передаётся тоном, не тенью.
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _t.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _t.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: _cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(22),
       ),
       child: child,
     );
   }
 
   Widget _divider() {
-    return Divider(color: _t.divider, height: 1, thickness: 1);
+    return Divider(color: _cs.outlineVariant, height: 1, thickness: 1);
   }
 
   Widget _buildLevelTasksCard(BuildContext context) {

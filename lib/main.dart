@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -15,6 +16,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'models/user_data.dart';
 import 'theme/app_theme.dart';
+import 'theme/app_palettes.dart';
+import 'theme/profile_theme.dart';
 import 'theme/theme_scope.dart';
 import 'services/analytics_service.dart';
 import 'services/deep_link_service.dart';
@@ -210,6 +213,12 @@ bool _isForegroundServiceRestriction(Object error) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Android отдаёт приложению 60 Гц, даже когда экран умеет 120: анимации и
+  // перемотка видео на глаз становятся ступенчатыми. Просим максимум.
+  if (Platform.isAndroid) {
+    unawaited(FlutterDisplayMode.setHighRefreshRate());
+  }
 
   // iOS: home_widget работает поверх общего App Group контейнера. Любой вызов
   // saveWidgetData/updateWidget/clearWidget ДО setAppGroupId падает с
@@ -413,13 +422,19 @@ void main() async {
 }
 
 class LoveApp extends StatefulWidget {
+  /// Навигатор всего приложения. Нужен там, где экран открывают после
+  /// полноэкранной рекламы: она пересобирает дерево, и локальный контекст к
+  /// этому моменту уже мёртв.
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   const LoveApp({super.key});
 
   @override
   State<LoveApp> createState() => _LoveAppState();
 }
 
-class _LoveAppState extends State<LoveApp> {
+class _LoveAppState extends State<LoveApp> with WidgetsBindingObserver {
   final UserData _userData = UserData();
   bool _loading = true;
   // Установленная сборка ниже минимально поддерживаемой (PocketBase
@@ -431,20 +446,24 @@ class _LoveAppState extends State<LoveApp> {
   // Тема пересобирается при смене темы приложения (акцент берётся из активной
   // AppTheme). Кэшируем по акценту, чтобы не пересоздавать на каждый
   // notifyListeners() UserData (монеты, присутствие и т.п.).
-  int? _lastThemeIndex;
+  Object? _lastThemeSig;
   ThemeData? _lastTheme;
 
   ThemeData _themeFor(AppTheme appTheme) {
-    if (_lastTheme == null || _lastThemeIndex != appTheme.index) {
-      _lastThemeIndex = appTheme.index;
-      _lastTheme = _buildTheme(appTheme);
+    // Кэш по подписи, а не по индексу: режим/вариант/AMOLED меняют тему при том
+    // же индексе, иначе меню осталось бы в старом стиле.
+    final sig = Object.hash(appTheme.index, appTheme.brightness,
+        appTheme.primary, appTheme.cardSurface);
+    if (_lastTheme == null || _lastThemeSig != sig) {
+      _lastThemeSig = sig;
+      _lastTheme = _buildTheme(appTheme, _userData.themeFlavor);
     }
     return _lastTheme!;
   }
 
   /// Единый стиль для всех меню (диалоги, bottom-sheet, snackbar, popup-меню).
   /// Цвета — от акцента активной темы, форма/скругления — из общих токенов.
-  static ThemeData _buildTheme(AppTheme appTheme) {
+  static ThemeData _buildTheme(AppTheme appTheme, SchemeFlavor flavor) {
     final accent = appTheme.primary;
     final brightness = appTheme.brightness;
     final isDark = brightness == Brightness.dark;
@@ -452,6 +471,7 @@ class _LoveAppState extends State<LoveApp> {
     final scheme = ColorScheme.fromSeed(
       seedColor: accent,
       brightness: brightness,
+      dynamicSchemeVariant: flavor.variant,
     ).copyWith(primary: accent);
 
     // Поверхности меню (диалоги/шиты/попапы) и цвета текста — из токенов активной
@@ -463,62 +483,52 @@ class _LoveAppState extends State<LoveApp> {
     final scaffoldBg =
         isDark ? appTheme.bgGradient.last : const Color(0xFFF7F3F0);
 
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      // Базовый textTheme нужной яркости → дефолтный цвет текста Material-виджетов
-      // (не переопределённый явно) читаем на тёмном фоне.
-      textTheme: GoogleFonts.rubikTextTheme(
-        isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
-      ),
+    // База — M3-тема профиля (шрифты Unbounded/Onest, кнопки-пилюли, тональные
+    // карточки радиусом 22) на всё приложение. Поверх — меню/диалоги/шиты в тех
+    // же токенах. Вёрстку экранов это не трогает: виджеты берут цвета из
+    // context.appTheme, а тут задаётся стиль Material-компонентов и шрифт.
+    return ProfileTheme.data(scheme).copyWith(
       scaffoldBackgroundColor: scaffoldBg,
-
-      // ── Диалоги ────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         backgroundColor: menuSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        titleTextStyle: GoogleFonts.rubik(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        titleTextStyle: TextStyle(
+          fontFamily: ProfileTheme.displayFont,
           fontSize: 19,
           fontWeight: FontWeight.w700,
           color: titleColor,
         ),
-        contentTextStyle: GoogleFonts.rubik(
+        contentTextStyle: TextStyle(
+          fontFamily: ProfileTheme.bodyFont,
           fontSize: 15,
           height: 1.4,
           color: bodyColor,
         ),
       ),
-
-      // ── Bottom-sheet ───────────────────────────────────────────────────
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: menuSurface,
         modalBackgroundColor: menuSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 12,
         modalElevation: 12,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
-
-      // ── SnackBar ───────────────────────────────────────────────────────
-      // Тёмная нейтральная подложка — единая и читаемая на всех 20 темах;
-      // акцент темы выводим в цвете кнопки действия.
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: const Color(0xFF2E2A2C),
-        contentTextStyle: GoogleFonts.rubik(
+        contentTextStyle: const TextStyle(
+          fontFamily: ProfileTheme.bodyFont,
           color: Colors.white,
           fontSize: 14,
         ),
         actionTextColor: scheme.inversePrimary,
         elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-
-      // ── Popup-меню ─────────────────────────────────────────────────────
       popupMenuTheme: PopupMenuThemeData(
         color: menuSurface,
         surfaceTintColor: Colors.transparent,
@@ -531,6 +541,8 @@ class _LoveAppState extends State<LoveApp> {
   @override
   void initState() {
     super.initState();
+    // Наблюдатель ОС-яркости: в режиме «система» тема идёт за темой телефона.
+    WidgetsBinding.instance.addObserver(this);
     _init();
     // Отслеживаем жизненный цикл приложения для обновления статуса присутствия
     _lifecycleListener = AppLifecycleListener(
@@ -554,7 +566,16 @@ class _LoveAppState extends State<LoveApp> {
   }
 
   @override
+  void didChangePlatformBrightness() {
+    // Сменилась тема ОС — в режиме «система» пересобираем свою.
+    if (mounted && _userData.themeMode == AppThemeMode.system) {
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lifecycleListener?.dispose();
     super.dispose();
   }
@@ -674,6 +695,7 @@ class _LoveAppState extends State<LoveApp> {
       builder: (context, _) => MaterialApp(
         title: 'Togetherly',
         debugShowCheckedModeBanner: false,
+        navigatorKey: LoveApp.rootNavigatorKey,
         theme: _themeFor(_userData.theme),
         navigatorObservers: [AnalyticsService.instance.observer],
         // Глобальная плашка «офлайн / ожидает синхронизации» поверх любого экрана.

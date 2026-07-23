@@ -23,8 +23,15 @@ class ThemeScope extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(ThemeScope oldWidget) =>
-      theme.index != oldWidget.theme.index;
+  bool updateShouldNotify(ThemeScope oldWidget) {
+    // Тема меняется не только сменой палитры (index), но и режимом свет/тьма,
+    // вариантом и AMOLED при том же index — сравниваем подпись из ключевых полей.
+    final a = theme, b = oldWidget.theme;
+    return a.index != b.index ||
+        a.brightness != b.brightness ||
+        a.primary != b.primary ||
+        a.cardSurface != b.cardSurface;
+  }
 }
 
 /// Синтаксический сахар: `context.appTheme.textPrimary`.

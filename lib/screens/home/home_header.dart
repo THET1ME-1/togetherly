@@ -6,6 +6,7 @@ import '../../models/pair_data.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/animations.dart';
 import '../miss_you_button.dart';
+import 'widgets/relationship_type_dialog.dart';
 
 /// Шапка главного экрана: аватары, бейдж статуса, кнопка «Скучаю».
 class HomeHeader extends StatelessWidget {
@@ -105,20 +106,14 @@ class HomeHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (statusBadgeEmoji.isNotEmpty) ...[
-                      Text(
-                        statusBadgeEmoji,
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      const SizedBox(width: 4),
-                    ] else ...[
-                      Icon(
-                        Icons.favorite_border,
-                        color: theme.textMuted,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
+                    Icon(
+                      statusBadgeEmoji.isNotEmpty
+                          ? relIconForEmoji(statusBadgeEmoji)
+                          : Icons.favorite_border,
+                      color: isPaired ? primary : theme.textMuted,
+                      size: 15,
+                    ),
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         statusBadgeText,

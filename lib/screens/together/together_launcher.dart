@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import '../../services/level_service.dart';
+import '../../main.dart';
 import '../../services/locale_service.dart';
 import '../../services/pocketbase_service.dart';
 import '../../services/rewarded_ad_service.dart';
-import '../../services/together_invite_repository.dart';
-import 'watch_together_screen.dart';
+import '../../services/watch_room_service.dart';
+import 'watch_room_screen.dart';
 
-/// Точки входа в совместный просмотр: запуск хостом и баннер-приглашение гостю.
+/// Вход в совместный просмотр.
+///
+/// Комната одна на пару: её код выдаёт сервер, поэтому ни хоста, ни приглашений
+/// больше нет — оба просто заходят. Внутри работает тот же движок, что на сайте
+/// (Centrifugo), а прежняя синхронизация на Firebase RTDB убрана вместе с
+/// экраном `watch_together_screen.dart`.
 class TogetherLauncher {
   // Rewarded на старте показываем ТОЛЬКО хосту и один раз за запуск сеанса.
   // Гость заходит без рекламы (иначе старт рассинхронится). Просмотр ролика
@@ -26,42 +30,91 @@ class TogetherLauncher {
   /// «Смотреть» (явное согласие, требование политик). Водопад показа — Яндекс
   /// (основная сеть) → AdMob (резерв). Единственное исключение: если рекламы нет
   /// вообще (оффлайн / no-fill даже после ожидания) — фичу НЕ запираем намертво.
-  static Future<void> _requireStartAd(BuildContext context) async {
-    // Обычно ролик предзагружен (preloadStartAd при открытии экрана). Если ещё
-    // не готов — ждём загрузку под спиннером (Яндекс → AdMob).
+  /// Показывает нижний лист с предложением посмотреть рекламу.
+  ///
+  /// Возвращает true, если в комнату можно: человек досмотрел ролик, либо
+  /// рекламы нет вовсе (оффлайн, no-fill) — тогда фичу не запираем. Лист
+  /// закрывается свайпом и кнопкой «назад»: закрыл — значит передумал, и
+  /// комната не открывается.
+  static Future<bool> _requireStartAd(BuildContext context) async {
     if (!_ads.isReady) {
       await _waitForAd(context);
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
     }
-    // Рекламы так и нет (оффлайн / no-fill) — не блокируем совместный просмотр.
     if (!_ads.isReady) {
       _ads.load(); // на следующий раз
-      return;
+      return true; // рекламы нет — не запираем просмотр
     }
 
-    final watch = await showDialog<bool>(
+    final s = LocaleService.current;
+    final cs = Theme.of(context).colorScheme;
+
+    final agreed = await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false, // нельзя закрыть тапом мимо
-      builder: (ctx) => PopScope(
-        canPop: false, // и системной кнопкой «назад» тоже
-        child: AlertDialog(
-          title: Text(LocaleService.current.watchTogether),
-          content: Text(LocaleService.current.watchTogetherAdPrompt),
-          actions: [
-            FilledButton.icon(
-              onPressed: () => Navigator.pop(ctx, true),
-              icon: const Icon(Icons.play_circle_outline_rounded),
-              label: Text(LocaleService.current.watchAction),
-            ),
-          ],
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: cs.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_circle_outline_rounded,
+                  color: cs.onPrimaryContainer,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(s.watchTogether, style: Theme.of(ctx).textTheme.headlineSmall),
+              const SizedBox(height: 8),
+              Text(
+                s.watchTogetherAdPrompt,
+                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(s.watchAction),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(s.cancel),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
-    if (watch == true) {
-      final uid = PocketBaseService().userId ?? '';
-      await _ads.show(uid: uid);
-      unawaited(_ads.load()); // грузим следующий
-    }
+
+    if (agreed != true) return false;
+
+    final uid = PocketBaseService().userId ?? '';
+    await _ads.show(uid: uid);
+    unawaited(_ads.load()); // грузим следующий
+    return true;
   }
 
   /// Ждёт готовности rewarded под неотменяемым спиннером (макс ~8с),
@@ -88,194 +141,50 @@ class TogetherLauncher {
     if (dctx != null && dctx.mounted) Navigator.of(dctx).pop(); // закрыть спиннер
   }
 
-  /// Показать диалог вставки YouTube-ссылки и запустить совместный просмотр
-  /// как хост.
-  static Future<void> startWatchTogether(
+  /// Открыть комнату пары. [videoUrl] — ссылка из карточки воспоминания,
+  /// её подставят в комнату сразу после открытия.
+  static Future<void> open(
     BuildContext context, {
     required String pairId,
-    required String partnerUid,
+    String? videoUrl,
   }) async {
-    final controller = TextEditingController();
-    final url = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(LocaleService.current.watchTogether),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: LocaleService.current.youtubeLinkHint,
-            prefixIcon: const Icon(Icons.link),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(LocaleService.current.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(LocaleService.current.startAction),
-          ),
-        ],
-      ),
-    );
-    if (url == null || url.isEmpty || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final s = LocaleService.current;
 
-    final videoId = YoutubePlayer.convertUrlToId(url);
-    if (videoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(LocaleService.current.youtubeLinkInvalid)),
+    final room = await WatchRoomService.roomCode(pairId);
+    if (room.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(s.error), behavior: SnackBarBehavior.floating),
       );
       return;
     }
+    if (!context.mounted) return;
 
-    // Навигатор захватываем ДО рекламы. Полноэкранный rewarded пересобирает
-    // ленту, и context КАРТОЧКИ видео к возврату часто уже размонтирован —
-    // тогда переход на просмотр тихо не происходил (юзер «застревал» в ленте).
-    // NavigatorState экрана выше по дереву и переживает показ рекламы.
-    final navigator = Navigator.of(context);
+    // Полноэкранная реклама пересобирает дерево, поэтому локальный контекст
+    // после неё мёртв — открываем комнату корневым навигатором приложения.
+    final allowed = await _requireStartAd(context);
+    if (!allowed) return;
 
-    // Rewarded на старте ОБЯЗАТЕЛЕН (только хост); фейл-опен лишь при no-fill.
-    await _requireStartAd(context);
-    if (!navigator.mounted) return;
+    final navigator = LoveApp.rootNavigatorKey.currentState;
+    if (navigator == null) return;
 
-    unawaited(LevelService.instance.award(XpAction.watchTogether));
-    navigator.push(
-      MaterialPageRoute(
-        builder: (_) => WatchTogetherScreen(
+    await navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => WatchRoomScreen(
+          room: room,
           pairId: pairId,
-          partnerUid: partnerUid,
-          videoId: videoId,
-          isHost: true,
+          videoUrl: videoUrl,
         ),
       ),
     );
   }
 
-  /// Запустить совместный просмотр конкретного видео как хост (URL уже известен,
-  /// диалог не нужен) — напр. из карточки видео-воспоминания.
+  /// Старое имя точки входа: ленту воспоминаний переучивать не нужно.
   static Future<void> hostVideo(
     BuildContext context, {
     required String pairId,
     required String partnerUid,
     required String videoUrl,
-  }) async {
-    final videoId = YoutubePlayer.convertUrlToId(videoUrl);
-    if (videoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(LocaleService.current.youtubeLinkInvalid)),
-      );
-      return;
-    }
-
-    // Навигатор захватываем ДО рекламы. Полноэкранный rewarded пересобирает
-    // ленту, и context КАРТОЧКИ видео к возврату часто уже размонтирован —
-    // тогда переход на просмотр тихо не происходил (юзер «застревал» в ленте).
-    // NavigatorState экрана выше по дереву и переживает показ рекламы.
-    final navigator = Navigator.of(context);
-
-    // Rewarded на старте ОБЯЗАТЕЛЕН (только хост); фейл-опен лишь при no-fill.
-    await _requireStartAd(context);
-    if (!navigator.mounted) return;
-
-    unawaited(LevelService.instance.award(XpAction.watchTogether));
-    navigator.push(
-      MaterialPageRoute(
-        builder: (_) => WatchTogetherScreen(
-          pairId: pairId,
-          partnerUid: partnerUid,
-          videoId: videoId,
-          isHost: true,
-        ),
-      ),
-    );
-  }
-
-  /// Присоединиться к сеансу, который начал партнёр.
-  static void joinSession(
-    BuildContext context, {
-    required String pairId,
-    required String partnerUid,
-    required String videoId,
-  }) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => WatchTogetherScreen(
-          pairId: pairId,
-          partnerUid: partnerUid,
-          videoId: videoId,
-          isHost: false,
-        ),
-      ),
-    );
-  }
-}
-
-/// Баннер-приглашение. Слушает activeSessionStream (реюзает hub-листенер
-/// group-doc → 0 новых Firestore-чтений) и показывает кнопку «Присоединиться»,
-/// когда партнёр начал совместный сеанс.
-class TogetherInviteBanner extends StatelessWidget {
-  final String pairId;
-  final String partnerUid;
-
-  const TogetherInviteBanner({
-    super.key,
-    required this.pairId,
-    required this.partnerUid,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (pairId.isEmpty) return const SizedBox.shrink();
-    final myUid = PocketBaseService().userId;
-
-    return StreamBuilder<Map<String, dynamic>?>(
-      stream: TogetherInviteRepository().watch(pairId),
-      builder: (context, snap) {
-        final session = snap.data;
-        if (session == null) return const SizedBox.shrink();
-
-        final hostUid = session['hostUid'] as String?;
-        // Не показываем баннер хосту — он уже в сеансе.
-        if (hostUid == null || hostUid == myUid) return const SizedBox.shrink();
-
-        final mediaId = (session['mediaId'] as String?) ?? '';
-        if (mediaId.isEmpty) return const SizedBox.shrink();
-        final hostName =
-            (session['hostName'] as String?) ?? LocaleService.current.partnerFallback;
-
-        return Material(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => TogetherLauncher.joinSession(
-              context,
-              pairId: pairId,
-              partnerUid: partnerUid,
-              videoId: mediaId,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.smart_display, color: Colors.red),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      LocaleService.current.invitesToWatchTogether(hostName),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Text(LocaleService.current.joinAction),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  }) =>
+      open(context, pairId: pairId, videoUrl: videoUrl);
 }

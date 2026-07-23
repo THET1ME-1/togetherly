@@ -28,10 +28,47 @@
   --accent-deep: #B3213A;
   --accent-soft: #FFE1E4;
   --dark: #241416;
+  /* Что писать поверх заливок: акцентной и чернильной. */
+  --on-accent: #FFFFFF;
+  --on-ink: #FFFFFF;
+  --shadow: 0 24px 60px -40px rgba(36, 20, 22, .5);
   --radius: 28px;
+  /* Содержимое живёт в колонке 1240: на широком мониторе строки иначе
+     растягиваются на весь экран и читать их невозможно. */
+  --pad: max(16px, calc((100vw - 1240px) / 2));
+  color-scheme: light;
+}
+
+/* Тёмная тема. Оттенки тёплые: чёрный уводим в бордовый, чтобы розовый акцент
+   не выглядел на нём чужим. Ставится атрибутом на <html>, скрипт в head
+   выбирает её по системной настройке или по прошлому выбору. */
+:root[data-theme="dark"] {
+  --bg: #150D0F;
+  --bg-warm: #1E1316;
+  --card: #241619;
+  --ink: #FFF1EF;
+  --ink-soft: #BFA0A3;
+  --line: #38242A;
+  --accent: #FF7E8B;
+  --accent-deep: #FF8E9A;
+  --accent-soft: #3B1F26;
+  --dark: #0F090B;
+  --on-accent: #2A1014;
+  --on-ink: #150D0F;
+  --shadow: 0 24px 60px -38px rgba(0, 0, 0, .85);
+  color-scheme: dark;
+}
+
+@media (max-width: 900px) {
+  :root { --pad: 16px; }
 }
 
 * { box-sizing: border-box; }
+
+/* Атрибут hidden обязан побеждать любой display из этих правил: секции комнаты
+   переключаются именно им, и без !important экран ожидания и сцена показывались
+   одновременно. */
+[hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; }
 
@@ -41,7 +78,7 @@ body {
   color: var(--ink);
   font: 400 16px/1.6 'Onest', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-spacing: -.02em; }
@@ -55,19 +92,38 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 16px clamp(16px, 4vw, 48px);
-  background: rgba(255, 246, 244, .86);
+  padding: 16px var(--pad);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
 }
+/* Знак — монограмма «TY» из иконки приложения. Картинка работает маской,
+   поэтому знак красится текущим цветом текста и живёт в обеих темах. */
 .brand {
-  font: 800 15px/1 'Unbounded', sans-serif;
-  letter-spacing: .06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--ink);
   text-decoration: none;
   white-space: nowrap;
 }
-.brand span { color: var(--accent-deep); font-weight: 600; }
+/* На большом экране хватает слова, на телефоне остаётся один знак: вместе
+   они повторяют друг друга. */
+.brand__mark {
+  display: none;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: url('mark.png') center / contain no-repeat;
+  mask: url('mark.png') center / contain no-repeat;
+}
+.brand__name { font: 800 15px/1 'Unbounded', sans-serif; letter-spacing: .06em; }
+.brand__sub {
+  font: 600 13.5px/1 'Onest';
+  letter-spacing: .01em;
+  color: var(--accent-deep);
+}
 
 .menu { display: flex; gap: 26px; margin-left: auto; }
 .menu a {
@@ -93,7 +149,7 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
   cursor: pointer;
   transition: background .18s, color .18s;
 }
-.lang button.is-on { background: var(--ink); color: #fff; }
+.lang button.is-on { background: var(--ink); color: var(--on-ink); }
 
 .icon-btn {
   display: none;
@@ -107,15 +163,19 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
 }
 
 .drawer {
+  /* Меню телефона: на десктопе его нет вовсе, а атрибут hidden сам по себе
+     не сработает — любой display в CSS его перебивает. */
+  display: none;
   position: sticky;
   top: 69px;
   z-index: 19;
-  display: grid;
   gap: 2px;
-  padding: 12px clamp(16px, 4vw, 48px) 18px;
+  padding: 12px var(--pad) 18px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
+.lang--drawer { align-self: start; margin-top: 14px; }
+@media (min-width: 421px) { .lang--drawer { display: none; } }
 .drawer a {
   padding: 14px 0;
   font: 600 15px 'Onest';
@@ -141,10 +201,10 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
 }
 .btn:active { transform: scale(.96); }
 .btn:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 3px; }
-.btn--filled { background: var(--accent-deep); color: #fff; }
-.btn--filled:hover { background: #96162C; }
+.btn--filled { background: var(--accent-deep); color: var(--on-accent); }
+.btn--filled:hover { background: color-mix(in srgb, var(--accent-deep) 86%, var(--ink)); }
 .btn--ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-.btn--light { background: #fff; color: var(--ink); }
+.btn--light { background: var(--card); color: var(--ink); }
 
 .input {
   min-height: 56px;
@@ -163,11 +223,15 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
 
 .hero {
   display: grid;
-  grid-template-columns: 1.25fr .75fr;
+  grid-template-columns: 1.15fr .85fr;
   gap: clamp(28px, 5vw, 72px);
   align-items: center;
-  padding: clamp(44px, 8vw, 104px) clamp(16px, 4vw, 48px) clamp(40px, 6vw, 84px);
+  padding: clamp(44px, 8vw, 104px) var(--pad) clamp(40px, 6vw, 84px);
   position: relative;
+  /* Сердце вылезает наружу по замыслу, но на телефоне оно уносило вправо всю
+     страницу: браузер расширял вьюпорт и обрезал кнопки. clip режет декор,
+     не создавая скролл-контейнера (в отличие от hidden). */
+  overflow: clip;
 }
 .hero::before {
   content: '♥';
@@ -197,71 +261,43 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
   font-style: italic;
   color: var(--accent-deep);
 }
-.hero__lead { margin: 0 0 30px; font-size: 17.5px; color: var(--ink-soft); max-width: 44ch; }
-.hero__cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.join { display: flex; gap: 8px; }
-.hero__note { margin: 16px 0 0; font-size: 13.5px; color: var(--ink-soft); }
+.hero__lead { margin: 0; font-size: 17.5px; color: var(--ink-soft); max-width: 44ch; }
 
-.card-demo {
+/* ── панель входа ────────────────────────────────────────────────────────── */
+
+.start {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 24px 60px -40px rgba(36, 20, 22, .5);
+  padding: 26px;
+  box-shadow: var(--shadow);
 }
-.card-demo__label {
+.start__cap {
   margin: 0 0 18px;
   font: 700 11.5px/1 'Onest';
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.card-demo__row { display: flex; gap: 28px; margin-bottom: 18px; }
-.card-demo__cap {
-  display: block;
-  font: 600 11px/1 'Onest';
-  letter-spacing: .1em;
-  text-transform: uppercase;
+.btn--block { width: 100%; padding: 0 24px; }
+.start__or {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0;
   color: var(--ink-soft);
-  margin-bottom: 6px;
 }
-.card-demo__big {
-  font: 800 30px/1 'Unbounded', sans-serif;
-  letter-spacing: -.02em;
-}
-.card-demo__big--accent { color: var(--accent-deep); }
-.card-demo__bar {
-  height: 8px;
-  border-radius: 999px;
-  background: var(--bg-warm);
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-.card-demo__bar span {
-  display: block;
-  height: 100%;
-  width: 62%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
-}
-.card-demo__chat { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
-.bubble {
-  align-self: flex-start;
-  max-width: 80%;
-  padding: 9px 14px;
-  border-radius: 18px 18px 18px 6px;
-  background: var(--bg-warm);
-  font-size: 14px;
-}
-.bubble--mine {
-  align-self: flex-end;
-  border-radius: 18px 18px 6px 18px;
-  background: var(--accent-soft);
-}
+.start__or::before, .start__or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.start__or span { font: 600 11px/1 'Onest'; letter-spacing: .14em; text-transform: uppercase; }
+.start__field { display: flex; gap: 8px; }
+.start__field .input { flex: 1; width: 0; min-width: 0; font-weight: 600; letter-spacing: .08em; }
+.start__field .input::placeholder { font-weight: 400; letter-spacing: 0; color: var(--ink-soft); }
+.start__field .btn { padding: 0 26px; }
+.start__note { margin: 16px 0 0; font-size: 13px; color: var(--ink-soft); text-align: center; }
 
 /* ── секции ──────────────────────────────────────────────────────────────── */
 
-.section { padding: clamp(40px, 6vw, 88px) clamp(16px, 4vw, 48px); }
+.section { padding: clamp(40px, 6vw, 88px) var(--pad); }
 .kicker {
   margin: 0 0 26px;
   font: 700 12px/1 'Onest';
@@ -332,7 +368,7 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
 /* ── промо приложения ────────────────────────────────────────────────────── */
 
 .promo {
-  margin: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 48px) clamp(40px, 6vw, 80px);
+  margin: clamp(20px, 4vw, 40px) var(--pad) clamp(40px, 6vw, 80px);
   padding: clamp(32px, 5vw, 64px);
   border-radius: 40px;
   background: linear-gradient(140deg, var(--dark), #4A1E27 70%, #7C2A3B);
@@ -351,33 +387,87 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
 /* ── подвал ──────────────────────────────────────────────────────────────── */
 
 .foot {
+  position: relative;
+  padding: clamp(48px, 6vw, 80px) var(--pad) 0;
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+}
+.foot__top {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(140px, .9fr));
+  gap: clamp(28px, 4vw, 64px);
+  padding-bottom: clamp(36px, 4vw, 56px);
+}
+.foot__logo {
+  margin: 0 0 14px;
+  font: 800 15px/1 'Unbounded', sans-serif;
+  letter-spacing: .06em;
+}
+.foot__logo span { font: 600 13.5px 'Onest'; letter-spacing: .01em; color: var(--accent-deep); }
+.foot__text { margin: 0; max-width: 44ch; font-size: 14.5px; color: var(--ink-soft); }
+
+.foot__col { display: flex; flex-direction: column; gap: 12px; }
+.foot__col h3 {
+  margin: 0 0 2px;
+  font: 700 12px/1 'Onest';
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.foot__col a {
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color .18s;
+}
+.foot__col a:hover { color: var(--accent-deep); }
+
+.foot__bottom {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
+  gap: 12px 24px;
   justify-content: space-between;
-  padding: 26px clamp(16px, 4vw, 48px) 40px;
+  padding: 22px 0 clamp(28px, 4vw, 44px);
   border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-soft);
 }
-.foot__brand { font: 800 13px/1 'Unbounded', sans-serif; letter-spacing: .1em; }
-.foot nav { display: flex; flex-wrap: wrap; gap: 20px; }
-.foot a { color: var(--ink-soft); text-decoration: none; font-size: 13.5px; }
-.foot a:hover { color: var(--accent-deep); }
+
+/* Крупное имя внизу: подпись на полях, не заголовок — потому и приглушено. */
+.foot__wordmark {
+  margin: 0;
+  padding-bottom: clamp(8px, 2vw, 24px);
+  /* Слово вписано в колонку содержимого: десять знаков Unbounded 800 занимают
+     8,1 кегля по ширине, делитель взят с запасом. */
+  font: 800 calc((100vw - 2 * var(--pad)) / 8.4)/.8 'Unbounded', sans-serif;
+  letter-spacing: -.04em;
+  text-align: center;
+  color: transparent;
+  background: linear-gradient(180deg, var(--ink) 0%, transparent 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: .12;
+  user-select: none;
+  white-space: nowrap;
+}
 
 /* ── телефон ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
+  .brand__mark { display: block; }
+  .brand__name { display: none; }
+
   .menu { display: none; }
   .icon-btn { display: grid; place-items: center; }
+  .drawer:not([hidden]) { display: grid; }
   .lang { margin-left: auto; }
 
   .hero { grid-template-columns: 1fr; padding-top: 32px; }
-  .hero::before { font-size: 62vw; top: -12vw; right: -14vw; }
-  .hero h1 { font-size: clamp(38px, 13vw, 62px); }
-  .hero__cta { width: 100%; }
-  .hero__cta .btn--filled { flex: 1 1 100%; }
-  .join { flex: 1 1 100%; }
-  .join .input { flex: 1; width: auto; }
+  .hero::before { font-size: 56vw; top: -8vw; right: -8vw; }
+  /* 11vw, а не 13vw: «СМОТРИМ» одним словом должно влезать и на 320 px,
+     иначе строка распирает страницу шире экрана. */
+  .hero h1 { font-size: clamp(34px, 11vw, 62px); }
+  .start { padding: 22px; }
 
   .steps { grid-template-columns: 1fr; }
   .steps article, .steps article + article { padding: 22px 0; }
@@ -387,16 +477,45 @@ h1, h2, h3 { font-family: 'Unbounded', system-ui, sans-serif; margin: 0; letter-
   .tile { min-height: 140px; padding: 18px; }
 
   .section--split { grid-template-columns: 1fr; }
+  .foot__top { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .foot__about { grid-column: 1 / -1; }
   .promo { grid-template-columns: 1fr; border-radius: 32px; }
   .promo__art { justify-content: flex-start; }
 }
 
 @media (max-width: 420px) {
   .tiles { grid-template-columns: 1fr; }
-  .brand span { display: none; }
+  .foot__top { grid-template-columns: 1fr; }
+  .brand__sub { font-size: 13px; }
+  /* На узком экране в шапке остаются бренд, тема и меню: переключатель языка
+     переезжает внутрь выдвижного меню, иначе шапка шире экрана. */
+  .top > .lang { display: none; }
+  .top { gap: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .btn, .tile { transition: none; }
 }
+
+/* ── переключатель темы ──────────────────────────────────────────────────── */
+
+.theme-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .18s, color .18s;
+}
+.theme-btn:hover { border-color: var(--accent-deep); color: var(--accent-deep); }
+.theme-btn:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
+:root[data-theme="dark"] .theme-btn .i-moon,
+:root:not([data-theme="dark"]) .theme-btn .i-sun { display: none; }
+
+:root[data-theme="dark"] .foot__wordmark { opacity: .2; }

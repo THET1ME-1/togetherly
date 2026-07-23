@@ -5,13 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Смотреть вместе — Togetherly</title>
 <meta name="description" content="Комната на двоих: одно видео, один тайм-код. YouTube, VK, Rutube и Vimeo синхронно, с чатом. Ничего не сохраняется.">
-<meta name="theme-color" content="#FFF6F4">
+<meta name="theme-color" content="#FFF6F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#150D0F" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="landing.css">
+<script>
+/* Тема ставится до первой отрисовки, иначе тёмный экран моргает светлым. */
+(function () {
+  try {
+    var saved = localStorage.getItem('watch-theme');
+    document.documentElement.dataset.theme = saved
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  } catch (e) { /* приватный режим */ }
+})();
+</script>
 </head>
 <body>
 
 <header class="top">
-  <a class="brand" href="/watch/">TOGETHERLY <span>// ВМЕСТЕ</span></a>
+  <a class="brand" href="/watch/">
+    <span class="brand__mark" aria-hidden="true"></span>
+    <span class="brand__name">TOGETHERLY</span>
+    <span class="brand__sub">watch</span>
+  </a>
 
   <nav class="menu">
     <a href="#how" data-i18n="nav.how">Как работает</a>
@@ -25,7 +40,12 @@
     <button data-lang-btn="en">EN</button>
   </div>
 
-  <button class="icon-btn" id="burger" aria-label="Menu">
+  <button class="theme-btn" id="theme" data-i18n-aria="nav.theme" aria-pressed="false">
+    <svg class="i-moon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+    <svg class="i-sun" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>
+  </button>
+
+  <button class="icon-btn" id="burger" aria-label="Меню">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
 </header>
@@ -35,6 +55,10 @@
   <a href="#where" data-i18n="nav.where">Площадки</a>
   <a href="#privacy" data-i18n="nav.privacy">Приватность</a>
   <a href="/#download" data-i18n="nav.app">Приложение</a>
+  <div class="lang lang--drawer">
+    <button data-lang-btn="ru">RU</button>
+    <button data-lang-btn="en">EN</button>
+  </div>
 </div>
 
 <main>
@@ -47,36 +71,18 @@
         <span data-i18n="hero.title3">КИНО</span>
       </h1>
       <p class="hero__lead" data-i18n="hero.lead">Один тайм-код на двоих.</p>
-
-      <div class="hero__cta">
-        <button class="btn btn--filled" id="create" data-i18n="hero.create">Создать комнату</button>
-        <div class="join">
-          <input id="joinCode" class="input" maxlength="12" autocomplete="off"
-                 spellcheck="false" data-i18n-ph="hero.code" data-i18n-aria="hero.code">
-          <button class="btn btn--ghost" id="join" data-i18n="hero.join">Войти</button>
-        </div>
-      </div>
-      <p class="hero__note" data-i18n="hero.note">Без регистрации.</p>
     </div>
 
-    <aside class="card-demo" aria-hidden="true">
-      <p class="card-demo__label" data-i18n="demo.label">Пример комнаты</p>
-      <div class="card-demo__row">
-        <div>
-          <span class="card-demo__cap" data-i18n="demo.code">Код</span>
-          <span class="card-demo__big">k7m2p9</span>
-        </div>
-        <div>
-          <span class="card-demo__cap" data-i18n="demo.viewers">Зрителей</span>
-          <span class="card-demo__big card-demo__big--accent">2</span>
-        </div>
+    <aside class="start">
+      <p class="start__cap" data-i18n="start.cap">Комната на двоих</p>
+      <button class="btn btn--filled btn--block" id="create" data-i18n="hero.create">Создать комнату</button>
+      <div class="start__or"><span data-i18n="start.or">или по коду</span></div>
+      <div class="start__field">
+        <input id="joinCode" class="input" maxlength="12" autocomplete="off"
+               spellcheck="false" data-i18n-ph="hero.code" data-i18n-aria="hero.code">
+        <button class="btn btn--ghost" id="join" data-i18n="hero.join">Войти</button>
       </div>
-      <div class="card-demo__bar"><span></span></div>
-      <p class="card-demo__cap" data-i18n="demo.sync">Синхронно</p>
-      <div class="card-demo__chat">
-        <span class="bubble" data-i18n="demo.msg1">уже включила</span>
-        <span class="bubble bubble--mine" data-i18n="demo.msg2">догоняю</span>
-      </div>
+      <p class="start__note" data-i18n="hero.note">Без регистрации.</p>
     </aside>
   </section>
 
@@ -132,15 +138,43 @@
 </main>
 
 <footer class="foot">
-  <span class="foot__brand">TOGETHERLY</span>
-  <nav>
-    <a href="/privacy-policy" data-i18n="foot.privacy">Конфиденциальность</a>
-    <a href="/terms" data-i18n="foot.terms">Условия</a>
-    <a href="mailto:support@togetherly.day">support@togetherly.day</a>
-  </nav>
+  <div class="foot__top">
+    <div class="foot__about">
+      <p class="foot__logo">TOGETHERLY <span>watch</span></p>
+      <p class="foot__text" data-i18n="foot.about">Комната на двоих в браузере: одно видео, один тайм-код, чат рядом. Без регистрации, без истории, без файлов на сервере.</p>
+    </div>
+
+    <nav class="foot__col">
+      <h3 data-i18n="foot.col.watch">Смотреть</h3>
+      <a href="#how" data-i18n="nav.how">Как работает</a>
+      <a href="#where" data-i18n="nav.where">Площадки</a>
+      <a href="#privacy" data-i18n="nav.privacy">Приватность</a>
+    </nav>
+
+    <nav class="foot__col">
+      <h3 data-i18n="foot.col.app">Приложение</h3>
+      <a href="https://play.google.com/store/apps/details?id=com.togetherly.love">Google Play</a>
+      <a href="https://github.com/THET1ME-1/togetherly/releases/latest" data-i18n="foot.github">GitHub Releases</a>
+    </nav>
+
+    <nav class="foot__col">
+      <h3 data-i18n="foot.col.help">Поддержка</h3>
+      <a href="/privacy-policy" data-i18n="foot.privacy">Конфиденциальность</a>
+      <a href="/terms" data-i18n="foot.terms">Условия</a>
+      <a href="mailto:support@togetherly.day">support@togetherly.day</a>
+    </nav>
+  </div>
+
+  <div class="foot__bottom">
+    <span data-i18n="foot.rights">© 2026 Togetherly. Все права защищены.</span>
+    <span class="foot__made" data-i18n="foot.made">Сделано для тех, кто далеко друг от друга.</span>
+  </div>
+
+  <p class="foot__wordmark" aria-hidden="true">TOGETHERLY</p>
 </footer>
 
 <script src="i18n.js"></script>
+<script src="theme.js"></script>
 <script src="landing.js"></script>
 </body>
 </html>

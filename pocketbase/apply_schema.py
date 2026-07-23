@@ -71,7 +71,7 @@ USERS_CUSTOM = [
     number("mute_until"), number("sunrise_until"),
     number("spa_until"), number("streak_shield_until"),
     number("secrets_until"),
-    text("display_name"), text("avatar_url"),
+    text("display_name"), text("avatar_url"), text("banner_url"),
     text("gender"), date("birth_date"), number("coins"),
     jsonf("owned_themes"), jsonf("owned_icons"), jsonf("owned_features"),
     jsonf("granted_badges"), text("badge"), text("pair_id"), jsonf("pair_ids"),

@@ -9,6 +9,7 @@ import '../services/push_background_service.dart';
 import '../services/widget_background_refresh_service.dart';
 import '../services/offline/offline_reset.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palettes.dart';
 import '../utils/safe_text.dart';
 import 'profile_icon.dart';
 
@@ -18,6 +19,7 @@ class UserData extends ChangeNotifier {
   String _displayName = '';
   String _email = '';
   String _avatarUrl = '';
+  String _bannerUrl = '';
   Gender? _gender;
   bool _isRegistered = false;
   bool _hasSeenWelcome = false;
@@ -63,6 +65,7 @@ class UserData extends ChangeNotifier {
   String get displayName => _displayName;
   String get email => _email;
   String get avatarUrl => _avatarUrl;
+  String get bannerUrl => _bannerUrl;
   Gender? get gender => _gender;
   bool get isRegistered => _isRegistered;
   bool get hasSeenWelcome => _hasSeenWelcome;
@@ -84,13 +87,63 @@ class UserData extends ChangeNotifier {
   int? _previewThemeId; // временный оверрайд без сохранения (предпросмотр)
   bool _blobAnimationEnabled = true;
 
+  // Режим (свет/тьма/система), вариант («сочно»/«точь-в-точь»/мягкий) и AMOLED —
+  // девайсовые настройки, хранятся локально и на сервер не синкаются.
+  AppThemeMode _themeMode = AppThemeMode.system;
+  SchemeFlavor _themeFlavor = SchemeFlavor.soft;
+  bool _amoled = false;
+
   int get themeId {
-    if (_themeId >= 0 && _themeId < AppThemes.all.length) return _themeId;
+    if (_themeId >= 0 && _themeId < kPalettes.length) return _themeId;
     return 0; // default = pink
   }
 
-  /// Полный объект активной темы со всеми цветами
-  AppTheme get theme => AppThemes.byIndex(_previewThemeId ?? themeId);
+  AppTheme? _themeCache;
+  Object? _themeCacheSig;
+
+  /// Полный объект активной темы: палитра (акцент) × режим × вариант × AMOLED.
+  /// Для режима «система» яркость берётся из текущей темы ОС. Мемоизировано —
+  /// `fromSeed` пересчитывается только при смене подписи, а не на каждый
+  /// notifyListeners (монеты, присутствие и т.п.).
+  AppTheme get theme {
+    final b = _themeMode.resolve();
+    final idx = _previewThemeId ?? themeId;
+    final sig = Object.hash(idx, b, _themeFlavor, _amoled);
+    if (_themeCache == null || _themeCacheSig != sig) {
+      _themeCacheSig = sig;
+      _themeCache = buildAppTheme(paletteByIndex(idx), b,
+          flavor: _themeFlavor, amoled: _amoled);
+    }
+    return _themeCache!;
+  }
+
+  AppThemeMode get themeMode => _themeMode;
+  SchemeFlavor get themeFlavor => _themeFlavor;
+  bool get amoled => _amoled;
+
+  Future<void> setThemeMode(AppThemeMode m) async {
+    if (m == _themeMode) return;
+    _themeMode = m;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', m.index);
+  }
+
+  Future<void> setThemeFlavor(SchemeFlavor f) async {
+    if (f == _themeFlavor) return;
+    _themeFlavor = f;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeFlavor', f.index);
+  }
+
+  Future<void> setAmoled(bool v) async {
+    if (v == _amoled) return;
+    _amoled = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('amoled', v);
+  }
 
   bool get isPreviewingTheme => _previewThemeId != null;
   int? get previewThemeId => _previewThemeId;
@@ -496,11 +549,27 @@ class UserData extends ChangeNotifier {
       _displayName = prefs.getString('displayName') ?? '';
       _email = prefs.getString('email') ?? '';
       _avatarUrl = prefs.getString('avatarUrl') ?? '';
+      _bannerUrl = prefs.getString('bannerUrl') ?? '';
       _uid = prefs.getString('uid') ?? '';
       final genderStr = prefs.getString('gender');
       if (genderStr == 'male') _gender = Gender.male;
       if (genderStr == 'female') _gender = Gender.female;
       _themeId = prefs.getInt('themeId') ?? -1;
+      final hadThemeMode = prefs.containsKey('themeMode');
+      _themeMode = AppThemeMode.values[
+          (prefs.getInt('themeMode') ?? AppThemeMode.system.index)
+              .clamp(0, AppThemeMode.values.length - 1)];
+      // Миграция на модель «акцент × режим»: старые ТЁМНЫЕ темы (индексы 20–24)
+      // теперь просто акценты. Кто на них сидел и ещё не выбирал режим — остаётся
+      // в тёмном, иначе внезапно уехал бы в системный (часто светлый).
+      if (!hadThemeMode && _themeId >= 20 && _themeId <= 24) {
+        _themeMode = AppThemeMode.dark;
+        await prefs.setInt('themeMode', AppThemeMode.dark.index);
+      }
+      _themeFlavor = SchemeFlavor.values[
+          (prefs.getInt('themeFlavor') ?? SchemeFlavor.soft.index)
+              .clamp(0, SchemeFlavor.values.length - 1)];
+      _amoled = prefs.getBool('amoled') ?? false;
       _blobAnimationEnabled = prefs.getBool('blobAnimationEnabled') ?? true;
       _badge = prefs.getString('badge');
       _coins = prefs.getInt('coins') ?? 0;
@@ -564,6 +633,8 @@ class UserData extends ChangeNotifier {
         // preserve whatever the user set locally in that case.
         final firestoreAvatar = data['avatarUrl'] as String? ?? '';
         if (firestoreAvatar.isNotEmpty) _avatarUrl = firestoreAvatar;
+        final serverBanner = data['bannerUrl'] as String? ?? '';
+        if (serverBanner.isNotEmpty) _bannerUrl = serverBanner;
         final g = data['gender'] as String?;
         if (g == 'male') _gender = Gender.male;
         if (g == 'female') _gender = Gender.female;
@@ -640,6 +711,7 @@ class UserData extends ChangeNotifier {
       await prefs.setString('displayName', _displayName);
       await prefs.setString('email', _email);
       await prefs.setString('avatarUrl', _avatarUrl);
+      await prefs.setString('bannerUrl', _bannerUrl);
       await prefs.setString('uid', _uid);
       await prefs.setString(
         'gender',
@@ -782,21 +854,25 @@ class UserData extends ChangeNotifier {
     String? displayName,
     String? email,
     String? avatarUrl,
+    String? bannerUrl,
     Gender? gender,
   }) async {
     if (displayName != null) _displayName = displayName;
     if (email != null) _email = email;
     if (avatarUrl != null) _avatarUrl = avatarUrl;
+    if (bannerUrl != null) _bannerUrl = bannerUrl;
     if (gender != null) _gender = gender;
     await _saveLocal();
 
     final uid = PocketBaseService().userId ?? '';
     if (PocketBaseService().isLoggedIn && uid.isNotEmpty) {
-      await PbDataService().updateUserProfile(uid, {
+      final update = <String, dynamic>{
         'displayName': _displayName,
         'gender': _gender == Gender.male ? 'male' : 'female',
         'avatarUrl': _avatarUrl,
-      });
+      };
+      if (bannerUrl != null) update['bannerUrl'] = _bannerUrl;
+      await PbDataService().updateUserProfile(uid, update);
       // Propagate name/avatar changes to all groups so partners receive
       // the update via the group real-time listener.
       if (displayName != null) {
@@ -845,6 +921,7 @@ class UserData extends ChangeNotifier {
     _displayName = '';
     _email = '';
     _avatarUrl = '';
+    _bannerUrl = '';
     _gender = null;
     _uid = '';
     await prefs.setBool('isRegistered', false);

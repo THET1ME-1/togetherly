@@ -5,6 +5,7 @@ import '../utils/safe_text.dart';
 import '../widgets/common/app_dialog.dart';
 import '../widgets/storage_image.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:share_plus/share_plus.dart';
@@ -20,18 +21,28 @@ import '../services/pb_auth_service.dart';
 import '../services/presence_service.dart';
 import '../services/locale_service.dart';
 import '../services/nickname_service.dart';
+import '../services/timer_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/profile_theme.dart';
+import '../widgets/connect_expressive.dart';
+import 'package:material3_expressive_loading_indicator/material3_expressive_loading_indicator.dart';
 import 'chat_screen.dart';
+import 'home/widgets/relationship_type_dialog.dart';
 
 class ConnectPartnerScreen extends StatefulWidget {
   final PairData pairData;
   final AppTheme theme;
   final UserData? userData;
+  // Загруженный TimerService из home: «дней вместе» берём из его системного
+  // таймера — тот же источник, что виджет и колесо (TimerService не синглтон,
+  // свой new даёт пустой инстанс → 0/фолбэк).
+  final TimerService? timerService;
   const ConnectPartnerScreen({
     super.key,
     required this.pairData,
     required this.theme,
     this.userData,
+    this.timerService,
   });
 
   @override
@@ -49,6 +60,14 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   // «создать подключение» плодил по несколько пустых подключений (сетевой
   // await генерации кода держал диалог открытым).
   bool _creatingConnection = false;
+  // Идёт генерация нового кода (крутим лоадер + цикл «дешифратора»).
+  bool _generating = false;
+  // Копировать → галочка на ~1.3с.
+  bool _copied = false;
+  // Направление свайпа карусели (для slide-перехода активной группы).
+  int _carDir = 1;
+  // Выбранная форма аватарки на партнёра (локально; тап меняет, морф анимирует).
+  Map<String, int> _shapeIdx = {};
   late AnimationController _pulseController;
   StreamSubscription? _deepLinkSub;
 
@@ -62,6 +81,7 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   @override
   void initState() {
     super.initState();
+    _loadShapes();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -160,16 +180,19 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        _buildGroupTabs(),
-        Expanded(
-          child: pair.isPaired
-              ? _buildConnectedContent()
-              : _buildInviteContent(),
-        ),
-      ],
+    return Theme(
+      data: ProfileTheme.themeFor(widget.theme),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          _buildGroupTabs(),
+          Expanded(
+            child: pair.isPaired
+                ? _buildConnectedContent()
+                : _buildInviteContent(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -177,39 +200,111 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   //  GROUP TABS — horizontal scrollable chips
   // ═══════════════════════════════════════════════════
   Widget _buildGroupTabs() {
-    final connections = pair.manager.connections;
-    final isSoloActive = pair.manager.isSoloMode;
+    final cs = Theme.of(context).colorScheme;
+    final mgr = pair.manager;
+    final conns = mgr.connections.where((c) => !c.isSolo).toList();
+    final isSolo = mgr.isSoloMode;
+    final n = conns.length;
+
+    int activeIdx = -1;
+    if (!isSolo) {
+      for (int i = 0; i < n; i++) {
+        if (mgr.connections.indexOf(conns[i]) == mgr.activeConnectionIndex) {
+          activeIdx = i;
+          break;
+        }
+      }
+    }
+    if (activeIdx < 0 && n > 0) activeIdx = 0;
+
+    final Connection? active = n > 0 ? conns[activeIdx] : null;
+    // Кольцо: при 2+ группах слева и справа ВСЕГДА кто-то есть (по кругу),
+    // крайний слева уходит в центр, последний становится левым соседом.
+    final Connection? prev = n >= 2 ? conns[(activeIdx - 1 + n) % n] : null;
+    final Connection? next = n >= 2 ? conns[(activeIdx + 1) % n] : null;
+
+    Future<void> activate(int rawIdx, int dir) async {
+      if (n == 0) return;
+      final idx = ((rawIdx % n) + n) % n; // круговой индекс (бесконечная прокрутка)
+      if (idx == activeIdx && !isSolo) return;
+      if (mounted) setState(() => _carDir = dir);
+      final mi = mgr.connections.indexOf(conns[idx]);
+      await mgr.switchToConnection(mi);
+      if (!mounted) return;
+      _resetCodeInput();
+      setState(() {});
+    }
+
     return SizedBox(
-      height: 56,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        itemCount: connections.length + 2, // +1 for solo, +1 for add
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          // First item is solo button
-          if (index == 0) {
-            return _buildSoloChip(isActive: isSoloActive);
-          }
-          // Second to second-to-last are connections
-          if (index <= connections.length) {
-            final connIndex = index - 1;
-            if (connIndex >= connections.length) return const SizedBox();
-            final connection = connections[connIndex];
-            // Skip solo connection in the list (it's at index 0 in manager but we handle it separately)
-            if (connection.isSolo) return const SizedBox();
-            // UI index maps directly to manager index (manager has solo at 0, we skip it)
-            final isActive = pair.manager.activeConnectionIndex == connIndex;
-            return _buildGroupChip(connection, connIndex, isActive);
-          }
-          // Last item is add button
-          return _buildAddGroupChip();
-        },
+      height: 64,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Row(
+          children: [
+            _soloBtn(cs, isSolo),
+            const SizedBox(width: 6),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragEnd: (d) {
+                  final v = d.primaryVelocity ?? 0;
+                  if (v < -60) {
+                    activate(activeIdx + 1, 1);
+                  } else if (v > 60) {
+                    activate(activeIdx - 1, -1);
+                  }
+                },
+                child: Row(
+                  children: [
+                    _peekSlot(prev, cs, () => activate(activeIdx - 1, -1)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: isSolo ? () => activate(activeIdx, 1) : null,
+                        onLongPress: () {
+                          if (mgr.connections.length > 1 && active != null) {
+                            _confirmDeleteConnection(active.id);
+                          }
+                        },
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 420),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: _carouselTransition,
+                          child: KeyedSubtree(
+                            key: ValueKey(
+                                'center-$isSolo-${active?.id ?? 'none'}'),
+                            child: _centerPill(active, cs, isSolo),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _peekSlot(next, cs, () => activate(activeIdx + 1, 1)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            _addBtn(cs),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSoloChip({required bool isActive}) {
+  Widget _carouselTransition(Widget child, Animation<double> anim) {
+    final slide = Tween<Offset>(
+      begin: Offset(0.16 * _carDir, 0),
+      end: Offset.zero,
+    ).animate(anim);
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(position: slide, child: child),
+    );
+  }
+
+  Widget _soloBtn(ColorScheme cs, bool active) {
     return GestureDetector(
       onTap: () async {
         await pair.manager.switchToSolo();
@@ -218,132 +313,155 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
         setState(() {});
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 44,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? primary : widget.theme.cardSurface,
-          border: Border.all(
-            color: isActive ? primary : widget.theme.divider,
-            width: isActive ? 2 : 1,
-          ),
-          boxShadow: isActive
-              ? widget.theme.accentGlow(
-                  primary,
-                  opacity: 0.2,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-              : null,
+          color: active ? cs.secondaryContainer : cs.surfaceContainerHigh,
         ),
-        child: Center(
-          child: Icon(
-            Icons.person_outline,
-            color: isActive ? Colors.white : widget.theme.textSecondary,
-            size: 22,
-          ),
-        ),
+        child: Icon(Icons.person_rounded,
+            size: 21,
+            color: active ? cs.onSecondaryContainer : cs.onSurfaceVariant),
       ),
     );
   }
 
-  Widget _buildGroupChip(Connection connection, int index, bool isActive) {
-    final name = connection.isPaired
-        ? (connection.partnerCount > 1
-              ? '${connection.partners.first.name} +${connection.partnerCount - 1}'
-              : connection.partnerName)
-        : LocaleService.current.waiting;
-    return GestureDetector(
-      onTap: () async {
-        await pair.manager.switchToConnection(index);
-        if (!mounted) return;
-        _resetCodeInput();
-        setState(() {});
-      },
-      onLongPress: () {
-        if (pair.manager.connections.length > 1) {
-          _confirmDeleteConnection(connection.id);
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? primary.withOpacity(0.1) : widget.theme.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? primary : widget.theme.divider,
-            width: isActive ? 2 : 1,
-          ),
-          boxShadow: isActive
-              ? widget.theme.accentGlow(
-                  primary,
-                  opacity: 0.1,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              connection.relationshipEmoji,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isActive ? primary : widget.theme.textSecondary,
-              ),
-            ),
-            if (connection.isPaired) ...[
-              const SizedBox(width: 6),
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF22C55E),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddGroupChip() {
+  Widget _addBtn(ColorScheme cs) {
     return GestureDetector(
       onTap: _showAddGroupDialog,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
-          color: widget.theme.surfaceMuted,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: widget.theme.divider),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_rounded, size: 18, color: widget.theme.textMuted),
-            const SizedBox(width: 4),
-            Text(
-              LocaleService.current.newGroup,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: widget.theme.textMuted,
-              ),
-            ),
-          ],
+            shape: BoxShape.circle, color: cs.surfaceContainerHigh),
+        child: Icon(Icons.add_rounded, size: 21, color: cs.onSurfaceVariant),
+      ),
+    );
+  }
+
+  // Узкий сосед-круг (44): аватар/буква пары или точка «ждём». Тап → в центр.
+  Widget _peekSlot(Connection? c, ColorScheme cs, VoidCallback onTap) {
+    if (c == null) return const SizedBox(width: 44, height: 52);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 420),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: _carouselTransition,
+        child: KeyedSubtree(
+          key: ValueKey('peek-${c.id}'),
+          child: _peekCircle(c, cs),
         ),
       ),
+    );
+  }
+
+  Widget _peekCircle(Connection c, ColorScheme cs) {
+    final initial = (c.isPaired ? c.partnerName : '?').firstGraphemeUpper('?');
+    final photo =
+        (c.isPaired && c.partners.isNotEmpty) ? c.partners.first.avatar : '';
+    return Container(
+      width: 44,
+      height: 44,
+      decoration:
+          BoxDecoration(shape: BoxShape.circle, color: cs.surfaceContainerHigh),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: !c.isPaired
+          ? Container(
+              width: 9,
+              height: 9,
+              decoration:
+                  BoxDecoration(color: cs.primary, shape: BoxShape.circle))
+          : (photo.isNotEmpty
+              ? StorageImage(
+                  imageUrl: photo,
+                  fit: BoxFit.cover,
+                  errorWidget: (a, b, e) => _letterBox(initial, cs))
+              : _letterBox(initial, cs)),
+    );
+  }
+
+  // Центральная активная пилюля: имя целиком; влезает — по центру, длинное —
+  // бегущей строкой (телесуфлёр). Точка статуса слева.
+  Widget _centerPill(Connection? c, ColorScheme cs, bool isSolo) {
+    if (c == null) return const SizedBox(width: double.infinity, height: 52);
+    final name = c.isPaired
+        ? (c.partnerCount > 1
+              ? '${c.partners.first.name} +${c.partnerCount - 1}'
+              : c.partnerName)
+        : LocaleService.current.waiting;
+    final highlighted = !isSolo;
+    final bg = highlighted ? cs.secondaryContainer : cs.surfaceContainerHigh;
+    final fg = highlighted ? cs.onSecondaryContainer : cs.onSurfaceVariant;
+    final nameStyle = TextStyle(
+        fontFamily: 'Onest',
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: fg);
+    final dot = Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+            color: c.isPaired ? const Color(0xFF16A34A) : cs.primary,
+            shape: BoxShape.circle));
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: Container(
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(26)),
+        clipBehavior: Clip.antiAlias,
+        child: LayoutBuilder(
+          builder: (context, box) {
+            const hPad = 14.0, dotGap = 8.0;
+            final avail = box.maxWidth - hPad * 2 - 8 - dotGap;
+            final tp = TextPainter(
+              text: TextSpan(text: name, style: nameStyle),
+              maxLines: 1,
+              textDirection: TextDirection.ltr,
+            )..layout();
+            final fits = tp.width <= avail;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: hPad),
+              child: fits
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        dot,
+                        const SizedBox(width: dotGap),
+                        Flexible(
+                            child: Text(name,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: nameStyle)),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        dot,
+                        const SizedBox(width: dotGap),
+                        Expanded(child: MarqueeText(name, style: nameStyle)),
+                      ],
+                    ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _letterBox(String initial, ColorScheme cs) {
+    return Center(
+      child: Text(initial,
+          style: TextStyle(
+              fontFamily: 'Unbounded',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              color: cs.primary)),
     );
   }
 
@@ -357,312 +475,525 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   //  CONNECTED — partner linked
   // ═══════════════════════════════════════════════════
   Widget _buildConnectedContent() {
-    final partners = pair.partners;
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        8,
-        20,
-        MediaQuery.of(context).padding.bottom + 100,
-      ),
-      child: Column(
-        children: [
-          // ── Hero Connected Card ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: widget.theme.heroGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: widget.theme.accentGlow(
-                primary,
-                opacity: 0.25,
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ),
+    return Theme(
+      data: ProfileTheme.themeFor(widget.theme),
+      child: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+                20, 10, 20, MediaQuery.of(context).padding.bottom + 100),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Avatars stack
-                SizedBox(
-                  height: 56,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Partner avatars spread out
-                      for (int i = 0; i < partners.length && i < 3; i++)
-                        Positioned(
-                          left: (partners.length == 1)
-                              ? null
-                              : (i * 32.0) +
-                                    (90 - partners.length * 16).toDouble(),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: partners[i].avatar.isNotEmpty
-                                  ? StorageImage(
-                                      imageUrl: partners[i].avatar,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (context, url, error) =>
-                                          _avatarFallback(partners[i].name, 48),
-                                    )
-                                  : _avatarFallback(partners[i].name, 48),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                _connectedHero(cs),
                 const SizedBox(height: 14),
-                // Status
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: widget.theme.isDark
-                        ? widget.theme.cardSurface
-                        : Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4ADE80),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        LocaleService.current.connected,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withOpacity(0.9),
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                _chatTile(cs),
+                const SizedBox(height: 14),
+                _connectedActions(cs),
+                const SizedBox(height: 14),
+                _disconnectButton(cs),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Hero «Подключён» — бенто «Ступени»: «печенька» без подложки + счётчик дней
+  // слева; имя-герой + онлайн/тип справа; снизу полоса годовщины. Колонны ровны
+  // по высоте (214), аватар — сама фигура, без плитки за ней.
+  Widget _connectedHero(ColorScheme cs) {
+    final partner = pair.partners.isNotEmpty ? pair.partners.first : null;
+    final title = partner != null
+        ? pair.displayNameOf(partner)
+        : LocaleService.current.waiting;
+    final online =
+        partner != null && (_partnerOnlineStatus[partner.uid] ?? false);
+    // «Дней вместе» — из того же источника, что виджет и колесо на главной:
+    // системный таймер отношений (его дату юзер и правит). Connection.startDate
+    // (pair.daysInLove) — устаревшее второе поле, расходилось с ним.
+    final relTimer =
+        widget.timerService?.systemTimer ?? widget.timerService?.defaultTimer;
+    final days =
+        relTimer != null ? relTimer.daysElapsed.abs() : pair.daysInLove;
+
+    // Годовщина: ближайшее наступление (месяц/день) от сегодня.
+    int? annivDays;
+    final av = pair.anniversaryDate;
+    if (av != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      var next = DateTime(now.year, av.month, av.day);
+      if (next.isBefore(today)) next = DateTime(now.year + 1, av.month, av.day);
+      annivDays = next.difference(today).inDays;
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 214,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 116,
+                child: Column(
                   children: [
-                    Text(
-                      partners.length == 1
-                          ? pair.displayNameOf(partners.first)
-                          : LocaleService.current.groupOf(
-                              partners.length + 1),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                    _heroAvatar(92, partner?.uid ?? '',
+                        partner?.avatar ?? '', partner?.name ?? '?', cs),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: _statTile(cs, '$days',
+                          LocaleService.current.daysTogetherStat,
+                          bg: cs.tertiaryContainer, fg: cs.onTertiaryContainer),
                     ),
-                    if (partners.length == 1)
-                      _badgeIcon(partners.first.uid),
                   ],
                 ),
-                const SizedBox(height: 8),
-                // Relationship type chip
-                GestureDetector(
-                  onTap: _showRelationshipTypeDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.theme.isDark ? widget.theme.cardSurface : Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          pair.relationshipEmoji,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          pair.relationshipLabel,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.edit_rounded,
-                          size: 10,
-                          color: Colors.white.withOpacity(0.6),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Members Card ──
-          _themedCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  LocaleService.current.membersCount(partners.length + 1),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: widget.theme.textMuted,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ...partners.map(
-                  (m) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        _memberAvatar(m.avatar, m.name, 38),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    pair.displayNameOf(m).isNotEmpty
-                                        ? pair.displayNameOf(m)
-                                        : LocaleService.current.member,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: widget.theme.textPrimary,
-                                    ),
-                                  ),
-                                  _badgeIcon(m.uid),
-                                ],
-                              ),
-                              if (NicknameService.instance
-                                  .get(m.uid)
-                                  .isNotEmpty)
-                                Text(
-                                  m.name,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: widget.theme.textMuted,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _showRenameDialog(m),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(
-                              Icons.edit_rounded,
-                              size: 16,
-                              color: widget.theme.textMuted,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        _buildPresenceBadge(m.uid),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Chat ──
-          _buildChatButton(),
-          const SizedBox(height: 12),
-
-          // ── Action Row ──
-          Row(
-            children: [
-              if (pair.canInviteMore)
-                Expanded(
-                  child: _actionTile(
-                    icon: Icons.person_add_rounded,
-                    label: LocaleService.current.inviteMore,
-                    onTap: _showInviteMoreSheet,
-                  ),
-                ),
-              if (pair.canInviteMore) const SizedBox(width: 12),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: _actionTile(
-                  icon: Icons.qr_code_2_rounded,
-                  label: LocaleService.current.showQr,
-                  onTap: _showQRDialog,
+                child: Column(
+                  children: [
+                    Expanded(child: _nameTile(cs, title, partner?.uid)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 46,
+                      child: _chipTile(
+                        cs,
+                        leading: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                                color: online
+                                    ? const Color(0xFF16A34A)
+                                    : cs.onSurfaceVariant,
+                                shape: BoxShape.circle)),
+                        text: online
+                            ? LocaleService.current.online
+                            : LocaleService.current.offline,
+                        bg: cs.surfaceContainerHigh,
+                        fg: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 46,
+                      child: _chipTile(
+                        cs,
+                        leading: Icon(
+                            relIconForType(pair.relationshipType,
+                                customEmoji: pair.relationshipEmoji),
+                            size: 16,
+                            color: cs.onPrimaryContainer),
+                        text: pair.relationshipLabel,
+                        bg: cs.primaryContainer,
+                        fg: cs.onPrimaryContainer,
+                        onTap: () => showRelationshipTypeSheet(context, pair: pair, theme: widget.theme, onChanged: () { if (mounted) setState(() {}); }),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+        ),
+        if (annivDays != null) ...[
+          const SizedBox(height: 12),
+          _anniversaryStrip(cs, annivDays),
+        ],
+      ],
+    );
+  }
 
-          // ── Join another group ──
-          _buildJoinAnotherGroupCard(),
-          const SizedBox(height: 16),
+  // «Печенька» с фото партнёра, без подложки — сама фигура.
+  // Смена данных ВНУТРИ неподвижного блока: проявление + лёгкий зум (как код).
+  Widget _swap(Object k, Widget child) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (c, a) => FadeTransition(
+          opacity: a,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1.0).animate(a),
+            child: c,
+          ),
+        ),
+        child: KeyedSubtree(key: ValueKey(k), child: child),
+      );
 
-          // ── Disconnect ──
-          GestureDetector(
-            onTap: _showUnpairDialog,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.red.shade100),
-              ),
-              child: Center(
-                child: Text(
-                  LocaleService.current.disconnect,
+  // Аватар в уникальной форме партнёра (по uid); при смене формы — морф.
+  int _shapeIndexFor(String uid) =>
+      _shapeIdx[uid] ?? defaultShapeIndexForUid(uid);
+
+  Future<void> _loadShapes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = <String, int>{};
+    for (final k in prefs.getKeys()) {
+      if (k.startsWith('avatar_shape_')) {
+        final v = prefs.getInt(k);
+        if (v != null) map[k.substring('avatar_shape_'.length)] = v;
+      }
+    }
+    if (mounted && map.isNotEmpty) setState(() => _shapeIdx = map);
+  }
+
+  // Тап по аватарке → следующая форма (морф). Выбор сохраняется локально.
+  void _cycleShape(String uid) {
+    if (uid.isEmpty) return;
+    final next = (_shapeIndexFor(uid) + 1) % kAvatarShapes.length;
+    setState(() => _shapeIdx = {..._shapeIdx, uid: next});
+    SharedPreferences.getInstance()
+        .then((p) => p.setInt('avatar_shape_$uid', next));
+  }
+
+  Widget _heroAvatar(
+      double size, String uid, String photo, String name, ColorScheme cs) {
+    final idx = _shapeIndexFor(uid);
+    return Center(
+      child: PressableScale(
+        onTap: uid.isEmpty ? null : () => _cycleShape(uid),
+        child: MorphAvatar(
+          size: size,
+          shapeKey: '$uid-$idx',
+          shape: kAvatarShapes[idx],
+          child: photo.isNotEmpty
+              ? StorageImage(
+                  imageUrl: photo,
+                  fit: BoxFit.cover,
+                  errorWidget: (c, u, e) => _heroInitial(name, cs))
+              : _heroInitial(name, cs),
+        ),
+      ),
+    );
+  }
+
+  Widget _statTile(ColorScheme cs, String number, String caption,
+      {required Color bg, required Color fg}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(28)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _swap(
+            'stat-$number',
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(number,
+                  maxLines: 1,
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red.shade400,
-                  ),
-                ),
+                      fontFamily: 'Unbounded',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 36,
+                      height: 0.95,
+                      letterSpacing: -1.5,
+                      color: fg)),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(caption,
+              maxLines: 2,
+              style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  height: 1.1,
+                  color: fg)),
+        ],
+      ),
+    );
+  }
+
+  Widget _nameTile(ColorScheme cs, String title, String? badgeUid) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 16, 14, 16),
+      decoration: BoxDecoration(
+          color: cs.secondaryContainer,
+          borderRadius: BorderRadius.circular(28)),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: _swap(
+              'name-$title',
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.bottomLeft,
+                child: Text(title,
+                    maxLines: 1,
+                    style: TextStyle(
+                        fontFamily: 'Unbounded',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 44,
+                        height: 1.0,
+                        letterSpacing: -1.5,
+                        color: cs.onPrimaryContainer)),
               ),
             ),
           ),
-          const SizedBox(height: 40),
+          if (badgeUid != null)
+            Positioned(top: 0, right: 0, child: _badgeIcon(badgeUid)),
         ],
+      ),
+    );
+  }
+
+  Widget _chipTile(ColorScheme cs,
+      {required Widget leading,
+      required String text,
+      required Color bg,
+      required Color fg,
+      VoidCallback? onTap}) {
+    final tile = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(22)),
+      child: _swap(
+        'chip-$text',
+        Row(
+          children: [
+            leading,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: fg)),
+            ),
+          ],
+        ),
+      ),
+    );
+    return onTap == null ? tile : PressableScale(onTap: onTap, child: tile);
+  }
+
+  Widget _anniversaryStrip(ColorScheme cs, int daysUntil) {
+    final today = daysUntil == 0;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
+      decoration: BoxDecoration(
+          color: cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(26)),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: cs.primary, borderRadius: BorderRadius.circular(16)),
+            child: Icon(Icons.event_rounded, size: 24, color: cs.onPrimary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: _swap(
+              'anniv-$daysUntil',
+              today
+                  ? Text(LocaleService.current.anniversaryTodayTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontFamily: 'Unbounded',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: cs.onSurface))
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text('$daysUntil',
+                          style: TextStyle(
+                              fontFamily: 'Unbounded',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 23,
+                              letterSpacing: -0.5,
+                              color: cs.onSurface)),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                            LocaleService.current.daysUntilAnniversary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontFamily: 'Onest',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: cs.onSurfaceVariant)),
+                      ),
+                    ],
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroInitial(String name, ColorScheme cs) {
+    return Container(
+      color: cs.primary,
+      alignment: Alignment.center,
+      child: Text(
+        name.firstGraphemeUpper('?'),
+        style: TextStyle(
+          fontFamily: 'Unbounded',
+          fontWeight: FontWeight.w700,
+          fontSize: 26,
+          color: cs.onPrimary,
+        ),
+      ),
+    );
+  }
+
+  Widget _membersCard(ColorScheme cs) {
+    final partners = pair.partners;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 10, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 2, bottom: 6),
+            child: Text(
+              LocaleService.current
+                  .membersCount(partners.length + 1)
+                  .toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+          ...partners.map(
+            (m) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  _memberAvatar(m.avatar, m.name, 40),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                pair.displayNameOf(m).isNotEmpty
+                                    ? pair.displayNameOf(m)
+                                    : LocaleService.current.member,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Onest',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                            _badgeIcon(m.uid),
+                          ],
+                        ),
+                        if (NicknameService.instance.get(m.uid).isNotEmpty)
+                          Text(
+                            m.name,
+                            style: TextStyle(
+                              fontFamily: 'Onest',
+                              fontSize: 11.5,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _showRenameDialog(m),
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(Icons.edit_rounded,
+                        size: 18, color: cs.onSurfaceVariant),
+                  ),
+                  _buildPresenceBadge(m.uid),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _connectedActions(ColorScheme cs) {
+    final canInvite = pair.canInviteMore;
+    return Row(
+      children: [
+        if (canInvite) ...[
+          Expanded(
+            child: _connectTile(
+              bg: cs.tertiaryContainer,
+              fg: cs.onTertiaryContainer,
+              icon: Icons.person_add_rounded,
+              label: LocaleService.current.inviteMore,
+              onTap: _showInviteMoreSheet,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: _connectTile(
+            bg: cs.surfaceContainerHighest,
+            fg: cs.onSurface,
+            icon: Icons.qr_code_2_rounded,
+            label: LocaleService.current.showQr,
+            onTap: _showQRDialog,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _disconnectButton(ColorScheme cs) {
+    return PressableScale(
+      onTap: _showUnpairDialog,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: cs.errorContainer,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Center(
+          child: Text(
+            LocaleService.current.disconnect,
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: cs.onErrorContainer,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -670,284 +1001,400 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   // ═══════════════════════════════════════════════════
   //  INVITE — connect partner (unpaired)
   // ═══════════════════════════════════════════════════
+  Future<void> _handleRegenerate() async {
+    if (_generating) return;
+    setState(() => _generating = true);
+    await pair.regenerateCode();
+    if (!mounted) return;
+    setState(() => _generating = false);
+    _showSnack(LocaleService.current.newCodeGenerated);
+  }
+
+  void _handleCopy() {
+    if (pair.inviteCode.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: pair.inviteCode));
+    _showSnack(LocaleService.current.codeCopied);
+    setState(() => _copied = true);
+    Future.delayed(const Duration(milliseconds: 1300), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  Future<void> _handleShare() async {
+    if (pair.inviteCode.isEmpty) return;
+    final origin = shareOriginFromContext(context);
+    await Share.share(
+      LocaleService.current.shareInviteText(pair.inviteCode, pair.inviteLink),
+      subject: LocaleService.current.loveAppInvitation,
+      sharePositionOrigin: origin,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  INVITE — M3 Expressive
+  // ═══════════════════════════════════════════════════
   Widget _buildInviteContent() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        8,
-        20,
-        MediaQuery.of(context).padding.bottom + 100,
+    return Theme(
+      data: ProfileTheme.themeFor(widget.theme),
+      child: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          final loading = _generating || pair.inviteCode.isEmpty;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+                20, 10, 20, MediaQuery.of(context).padding.bottom + 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _heroCode(cs, loading),
+                const SizedBox(height: 14),
+                _actionsRow(cs),
+                const SizedBox(height: 14),
+                _chatTile(cs),
+                const SizedBox(height: 14),
+                _connectTiles(cs),
+                const SizedBox(height: 14),
+                _enterCodeCard(cs),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _heroCode(ColorScheme cs, bool loading) {
+    final myInitial =
+        (widget.userData?.displayName ?? '').firstGraphemeUpper('Я');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 30),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(40),
       ),
       child: Column(
         children: [
-          // ── Hero Card with gradient ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: widget.theme.heroGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: widget.theme.accentGlow(
-                primary,
-                opacity: 0.25,
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Pulse icon
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (_, __) {
-                    final scale = 1.0 + _pulseController.value * 0.08;
-                    return Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: widget.theme.isDark ? widget.theme.cardSurface : Colors.white.withOpacity(0.18),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  LocaleService.current.connectYourPartner,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  LocaleService.current.shareInviteCodeDesc,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.8),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Relationship type chip
-                GestureDetector(
-                  onTap: _showRelationshipTypeDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.theme.isDark ? widget.theme.cardSurface : Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          pair.relationshipEmoji,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          pair.relationshipLabel,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.expand_more_rounded,
-                          size: 16,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Invite Code Card ──
-          _themedCard(
-            child: Column(
-              children: [
-                Text(
-                  LocaleService.current.yourInviteCode,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: widget.theme.textMuted,
-                    letterSpacing: 3,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _buildCodeCells(code: pair.inviteCode, color: primary),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _themedOutlineButton(
-                        icon: Icons.copy_rounded,
-                        label: LocaleService.current.copy,
-                        onTap: pair.inviteCode.isEmpty ? null : () {
-                          Clipboard.setData(
-                            ClipboardData(text: pair.inviteCode),
-                          );
-                          _showSnack(LocaleService.current.codeCopied);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _themedOutlineButton(
-                        icon: Icons.share_rounded,
-                        label: LocaleService.current.share,
-                        onTap: pair.inviteCode.isEmpty ? null : () async {
-                          // iPad: origin обязателен, считаем ДО await.
-                          final origin = shareOriginFromContext(context);
-                          await Share.share(
-                            LocaleService.current.shareInviteText(
-                              pair.inviteCode,
-                              pair.inviteLink,
-                            ),
-                            subject: LocaleService.current.loveAppInvitation,
-                            sharePositionOrigin: origin,
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _themedIconButton(
-                      icon: Icons.refresh_rounded,
-                      onTap: () {
-                        pair.regenerateCode();
-                        setState(() {});
-                        _showSnack(LocaleService.current.newCodeGenerated);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Quick Actions Row ──
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: _actionTile(
-                  icon: Icons.qr_code_2_rounded,
-                  label: LocaleService.current.showQr,
-                  onTap: _showQRDialog,
-                ),
+              CookieAvatar(
+                size: 64,
+                color: cs.primary,
+                onColor: cs.onPrimary,
+                initial: myInitial,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _actionTile(
-                  icon: Icons.qr_code_scanner_rounded,
-                  label: LocaleService.current.scanQr,
-                  onTap: _openQRScanner,
+              Transform.translate(
+                offset: const Offset(-14, 0),
+                child: DashedRing(
+                  size: 64,
+                  color: cs.onPrimaryContainer.withValues(alpha: 0.42),
+                  child: Icon(Icons.add_rounded,
+                      size: 26,
+                      color: cs.onPrimaryContainer.withValues(alpha: 0.55)),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // ── Enter partner's code ──
-          _themedCard(
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() => _showCodeInput = !_showCodeInput),
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.keyboard_rounded,
-                          color: primary,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          LocaleService.current.haveACode,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: widget.theme.textPrimary,
-                          ),
-                        ),
-                      ),
-                      AnimatedRotation(
-                        turns: _showCodeInput ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          Icons.expand_more_rounded,
-                          color: widget.theme.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_showCodeInput) ...[
-                  const SizedBox(height: 16),
-                  _buildCodeInput(),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _submitCode,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        LocaleService.current.connectPartnerBtn,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+          Text(
+            LocaleService.current.yourInviteCode.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2.4,
+              color: cs.onPrimaryContainer.withValues(alpha: 0.66),
+            ),
+          ),
+          const SizedBox(height: 14),
+          AnimatedInviteCode(
+            code: pair.inviteCode,
+            loading: loading,
+            color: cs.onPrimaryContainer,
+            fontSize: 52,
+          ),
+          const SizedBox(height: 18),
+          GestureDetector(
+            onTap: () => showRelationshipTypeSheet(context, pair: pair, theme: widget.theme, onChanged: () { if (mounted) setState(() {}); }),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              decoration: BoxDecoration(
+                color: cs.onPrimaryContainer.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(pair.relationshipEmoji,
+                      style: const TextStyle(fontSize: 15)),
+                  const SizedBox(width: 7),
+                  Text(
+                    pair.relationshipLabel,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onPrimaryContainer,
                     ),
                   ),
+                  const SizedBox(width: 3),
+                  Icon(Icons.expand_more_rounded,
+                      size: 18,
+                      color: cs.onPrimaryContainer.withValues(alpha: 0.6)),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionsRow(ColorScheme cs) {
+    final hasCode = pair.inviteCode.isNotEmpty;
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: hasCode ? _handleCopy : null,
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+              child: Icon(
+                _copied ? Icons.check_rounded : Icons.copy_rounded,
+                key: ValueKey(_copied),
+                size: 20,
+              ),
+            ),
+            label: Text(LocaleService.current.copy),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _circleButton(
+          cs: cs,
+          onTap: hasCode ? _handleShare : null,
+          child: Icon(Icons.ios_share_rounded,
+              size: 22, color: cs.onSecondaryContainer),
+        ),
+        const SizedBox(width: 10),
+        _circleButton(
+          cs: cs,
+          onTap: _generating ? null : _handleRegenerate,
+          child: _generating
+              ? ExpressiveLoadingIndicator(
+                  color: cs.primary,
+                  constraints:
+                      const BoxConstraints.tightFor(width: 28, height: 28),
+                )
+              : Icon(Icons.refresh_rounded,
+                  size: 22, color: cs.onSecondaryContainer),
+        ),
+      ],
+    );
+  }
+
+  Widget _circleButton({
+    required ColorScheme cs,
+    required Widget child,
+    required VoidCallback? onTap,
+  }) {
+    return Material(
+      color: cs.secondaryContainer,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(width: 56, height: 56, child: Center(child: child)),
+      ),
+    );
+  }
+
+  Widget _chatTile(ColorScheme cs) {
+    return PressableScale(
+      onTap: _openChat,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.secondaryContainer,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: cs.primary,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child:
+                  Icon(Icons.chat_bubble_rounded, color: cs.onPrimary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                LocaleService.current.chatTitle,
+                style: TextStyle(
+                  fontFamily: 'Unbounded',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                  color: cs.onSecondaryContainer,
+                ),
+              ),
+            ),
+            StreamBuilder<bool>(
+              stream:
+                  ChatService.instance.watchHasUnread(widget.pairData.pairId),
+              builder: (context, snap) {
+                if (snap.data != true) return const SizedBox.shrink();
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  width: 10,
+                  height: 10,
+                  decoration:
+                      BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                );
+              },
+            ),
+            Icon(Icons.arrow_forward_rounded,
+                size: 22,
+                color: cs.onSecondaryContainer.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _connectTiles(ColorScheme cs) {
+    return Row(
+      children: [
+        Expanded(
+          child: _connectTile(
+            bg: cs.tertiaryContainer,
+            fg: cs.onTertiaryContainer,
+            icon: Icons.qr_code_2_rounded,
+            label: LocaleService.current.showQr,
+            onTap: _showQRDialog,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _connectTile(
+            bg: cs.surfaceContainerHighest,
+            fg: cs.onSurface,
+            icon: Icons.qr_code_scanner_rounded,
+            label: LocaleService.current.scanQr,
+            onTap: _openQRScanner,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _connectTile({
+    required Color bg,
+    required Color fg,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return PressableScale(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: fg.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: fg, size: 27),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _enterCodeCard(ColorScheme cs) {
+    final open = _showCodeInput;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(open ? 28 : 999),
+      ),
+      padding: EdgeInsets.all(open ? 18 : 12),
+      child: Column(
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _showCodeInput = !_showCodeInput),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: cs.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(Icons.keyboard_rounded,
+                      color: cs.onTertiaryContainer, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    LocaleService.current.haveACode,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15.5,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 240),
+                  child: Icon(Icons.expand_more_rounded,
+                      color: cs.onSurfaceVariant, size: 26),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 40),
+          if (open) ...[
+            const SizedBox(height: 16),
+            _buildCodeInput(),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submitCode,
+                child: Text(LocaleService.current.connectPartnerBtn),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1545,65 +1992,6 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
     );
   }
 
-  Widget _themedOutlineButton({
-    required IconData icon,
-    required String label,
-    VoidCallback? onTap,
-  }) {
-    final enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 42,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: primary.withValues(alpha: enabled ? 0.15 : 0.06),
-          ),
-          color: primary.withValues(alpha: enabled ? 0.04 : 0.02),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: primary.withValues(alpha: enabled ? 1.0 : 0.3),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: primary.withValues(alpha: enabled ? 1.0 : 0.3),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _themedIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: primary.withOpacity(0.15)),
-          color: primary.withOpacity(0.04),
-        ),
-        child: Icon(icon, size: 16, color: primary),
-      ),
-    );
-  }
-
   void _openChat() {
     Navigator.push(
       context,
@@ -1849,54 +2237,65 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
     final qrData = isRickroll
         ? 'https://youtu.be/dQw4w9WgXcQ?si=owAivsztmdCvvm6v'
         // QR кодирует прямой deep link (loveapp://invite/CODE): скан камерой
-        // открывает приложение сразу, без зависимости от веб-хоста Firebase.
-        // Внутренний сканнер тоже парсит его (ищет '/invite/'), поэтому оба пути
-        // работают. Текст кода показан ниже для ручного ввода.
+        // открывает приложение сразу. Внутренний сканнер тоже парсит '/invite/'.
         : pair.inviteDeepLink;
-
-    showDialog(
+    final cs = ProfileTheme.themeFor(widget.theme).colorScheme;
+    final s = LocaleService.current;
+    showModalBottomSheet(
       context: context,
-      builder: (_) => Dialog(
-        backgroundColor: widget.theme.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: cs.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        top: false,
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                LocaleService.current.scanToConnect,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: widget.theme.textPrimary,
+              sheetHandle(cs),
+              sheetHeader(cs, s.scanToConnect),
+              // QR: круглые модули и глаза в цвете темы; светлая подложка +
+              // отступ (quiet zone) и коррекция M — чтобы стилизация не мешала
+              // скану.
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: QrImageView(
+                    data: qrData,
+                    version: QrVersions.auto,
+                    size: 232,
+                    backgroundColor: Colors.white,
+                    errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    padding: EdgeInsets.zero,
+                    eyeStyle: QrEyeStyle(
+                      eyeShape: QrEyeShape.circle,
+                      color: cs.primary,
+                    ),
+                    dataModuleStyle: QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.circle,
+                      color: cs.primary,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              Container(
-                width: 240,
-                height: 240,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: widget.theme.divider, width: 2),
-                ),
-                child: QrImageView(
-                  data: qrData,
-                  version: QrVersions.auto,
-                  backgroundColor: Colors.white,
-                  errorCorrectionLevel: QrErrorCorrectLevel.L,
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               Text(
                 pair.inviteCode,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontFamily: 'Unbounded',
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: primary,
+                  color: cs.primary,
                   letterSpacing: 6,
                 ),
               ),
@@ -1905,28 +2304,27 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 44,
+                      height: 54,
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          // iPad «Scan to Connect» — origin ДО await, иначе
-                          // share-лист не открывается (реджект 2.1(a)).
+                          // iPad: origin ДО await, иначе share-лист не откроется.
                           final origin = shareOriginFromContext(context);
                           await Share.share(
-                            LocaleService.current.joinMeLinkText(
-                              pair.inviteLink,
-                            ),
-                            subject: LocaleService.current.loveAppInvitation,
+                            s.joinMeLinkText(pair.inviteLink),
+                            subject: s.loveAppInvitation,
                             sharePositionOrigin: origin,
                           );
                         },
-                        icon: const Icon(Icons.share_rounded),
-                        label: Text(LocaleService.current.share),
+                        icon: const Icon(Icons.share_rounded, size: 20),
+                        label: Text(s.share),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: primary,
-                          side: BorderSide(color: primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          foregroundColor: cs.primary,
+                          side: BorderSide(color: cs.outlineVariant),
+                          shape: const StadiumBorder(),
+                          textStyle: const TextStyle(
+                              fontFamily: 'Onest',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15),
                         ),
                       ),
                     ),
@@ -1934,20 +2332,19 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                      height: 54,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
+                          shape: const StadiumBorder(),
+                          textStyle: const TextStyle(
+                              fontFamily: 'Onest',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15),
                         ),
-                        child: Text(
-                          LocaleService.current.done,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                        child: Text(s.done),
                       ),
                     ),
                   ),
@@ -1977,300 +2374,7 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
     }
   }
 
-  void _showRelationshipTypeDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final customTypes = pair.customRelationshipTypes;
-          return Dialog(
-            backgroundColor: widget.theme.cardSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * 0.75,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        LocaleService.current.relationshipStatus,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: widget.theme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        LocaleService.current.chooseHowToConnect,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: widget.theme.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _relationshipOption(
-                        type: RelationshipType.couple,
-                        icon: '❤️',
-                        title: LocaleService.current.inLoveStatus,
-                        subtitle: LocaleService.current.perfectForCouples,
-                      ),
-                      const SizedBox(height: 12),
-                      _relationshipOption(
-                        type: RelationshipType.married,
-                        icon: '💍',
-                        title: LocaleService.current.married,
-                        subtitle: LocaleService.current.forMarriedPartners,
-                      ),
-                      const SizedBox(height: 12),
-                      _relationshipOption(
-                        type: RelationshipType.friends,
-                        icon: '🤝',
-                        title: LocaleService.current.friends,
-                        subtitle: LocaleService.current.connectWithBestFriend,
-                      ),
-                      const SizedBox(height: 12),
-                      _relationshipOption(
-                        type: RelationshipType.buddies,
-                        icon: '👯',
-                        title: LocaleService.current.bestBuddies,
-                        subtitle:
-                            LocaleService.current.forInseparableCompanions,
-                      ),
-                      // Custom relationship types
-                      ...customTypes.map((entry) {
-                        final isSelected =
-                            pair.relationshipType == RelationshipType.custom &&
-                            pair.relationshipLabel == entry['label'];
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: GestureDetector(
-                            onTap: () {
-                              pair.setRelationshipType(
-                                RelationshipType.custom,
-                                label: entry['label'] ?? '',
-                                emoji: entry['emoji'] ?? '✨',
-                              );
-                              Navigator.of(ctx).pop();
-                              setState(() {});
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? primary.withOpacity(0.08)
-                                    : widget.theme.surfaceMuted,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? primary
-                                      : widget.theme.divider,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    entry['emoji'] ?? '✨',
-                                    style: const TextStyle(fontSize: 28),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Text(
-                                      entry['label'] ??
-                                          LocaleService.current.custom,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: isSelected
-                                            ? primary
-                                            : widget.theme.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: primary,
-                                      size: 24,
-                                    ),
-                                  const SizedBox(width: 4),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      await pair.deleteCustomRelationshipType(
-                                        entry['id'] ?? '',
-                                      );
-                                      // await мог размонтировать диалог/экран.
-                                      if (ctx.mounted) setDialogState(() {});
-                                      if (mounted) setState(() {});
-                                    },
-                                    child: Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: Colors.red.shade400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          _showAddCustomRelTypeDialog();
-                        },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(LocaleService.current.addCustomStatus),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 20,
-                          ),
-                          side: BorderSide(
-                            color: widget.theme.divider,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _relationshipOption({
-    required RelationshipType type,
-    required String icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final isSelected = pair.relationshipType == type;
-    return GestureDetector(
-      onTap: () {
-        pair.setRelationshipType(type);
-        Navigator.of(context).pop();
-        setState(() {});
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? primary.withOpacity(0.08) : widget.theme.surfaceMuted,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? primary : widget.theme.divider,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? primary : widget.theme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: widget.theme.textMuted),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: primary, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddCustomRelTypeDialog() {
-    final labelCtrl = TextEditingController();
-    final emojiCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(LocaleService.current.addCustomStatus),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: emojiCtrl,
-              decoration: InputDecoration(
-                labelText: LocaleService.current.emoji,
-                hintText: '💕',
-              ),
-              maxLength: 2,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: labelCtrl,
-              decoration: InputDecoration(
-                labelText: LocaleService.current.label,
-                hintText: LocaleService.current.egSoulmates,
-              ),
-              maxLength: 30,
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(LocaleService.current.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final label = labelCtrl.text.trim();
-              final emoji = emojiCtrl.text.trim();
-              if (label.isNotEmpty) {
-                await pair.addCustomRelationshipType(
-                  label,
-                  emoji.isNotEmpty ? emoji : '✨',
-                );
-                if (mounted) {
-                  Navigator.pop(ctx);
-                  setState(() {});
-                  _showRelationshipTypeDialog();
-                }
-              }
-            },
-            child: Text(LocaleService.current.add),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showAddGroupDialog() {
-    // Collect unique custom relationship types from all connections
     final allCustomTypes = <String, Map<String, String>>{};
     for (final conn in pair.manager.connections) {
       for (final ct in conn.customRelationshipTypes) {
@@ -2280,152 +2384,86 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
         }
       }
     }
-
-    showDialog(
+    final cs = ProfileTheme.themeFor(widget.theme).colorScheme;
+    final s = LocaleService.current;
+    showModalBottomSheet(
       context: context,
-      builder: (_) => Dialog(
-        backgroundColor: widget.theme.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  LocaleService.current.addNewConnection,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: widget.theme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  LocaleService.current.chooseTypeForConnection,
-                  style: TextStyle(fontSize: 13, color: widget.theme.textMuted),
-                ),
-                const SizedBox(height: 24),
-                _addGroupOption(
-                  type: RelationshipType.couple,
-                  icon: '\u2764\uFE0F',
-                  title: LocaleService.current.inLoveStatus,
-                  subtitle: LocaleService.current.perfectForCouples,
-                ),
-                const SizedBox(height: 12),
-                _addGroupOption(
-                  type: RelationshipType.married,
-                  icon: '\u{1F48D}',
-                  title: LocaleService.current.married,
-                  subtitle: LocaleService.current.forMarriedPartners,
-                ),
-                const SizedBox(height: 12),
-                _addGroupOption(
-                  type: RelationshipType.friends,
-                  icon: '\u{1F91D}',
-                  title: LocaleService.current.friends,
-                  subtitle: LocaleService.current.connectWithBestFriend,
-                ),
-                const SizedBox(height: 12),
-                _addGroupOption(
-                  type: RelationshipType.buddies,
-                  icon: '\u{1F46F}',
-                  title: LocaleService.current.bestBuddies,
-                  subtitle: LocaleService.current.forInseparableCompanions,
-                ),
-                // Show user-created custom relationship types
-                ...allCustomTypes.values.map((ct) {
-                  final label = ct['label'] ?? LocaleService.current.custom;
-                  final emoji = ct['emoji'] ?? '✨';
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: _addGroupOption(
-                      type: RelationshipType.custom,
-                      icon: emoji,
-                      title: label,
-                      subtitle: LocaleService.current.yourCustomType,
-                      customLabel: label,
-                      customEmoji: emoji,
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: cs.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
       ),
-    );
-  }
-
-  Widget _addGroupOption({
-    required RelationshipType type,
-    required String icon,
-    required String title,
-    required String subtitle,
-    String customLabel = '',
-    String customEmoji = '',
-  }) {
-    return GestureDetector(
-      onTap: () async {
-        // Гвард от двойного тапа + закрываем диалог СРАЗУ, ещё до сетевой
-        // генерации инвайт-кода: раньше pop стоял после await, диалог висел
-        // всё время сетевого вызова и каждый повторный тап создавал дубль.
-        if (_creatingConnection) return;
-        _creatingConnection = true;
-        Navigator.of(context).pop();
-        _resetCodeInput();
-        try {
-          await pair.manager.addNewConnection(
-            type: type,
-            customLabel: customLabel,
-            customEmoji: customEmoji,
-          );
-          if (!mounted) return;
-          setState(() {});
-          _showSnack(LocaleService.current.newConnectionAdded);
-        } finally {
-          _creatingConnection = false;
+      builder: (sheetCtx) {
+        Future<void> create(RelationshipType type,
+            {String customLabel = '', String customEmoji = ''}) async {
+          if (_creatingConnection) return;
+          _creatingConnection = true;
+          Navigator.of(sheetCtx).pop();
+          _resetCodeInput();
+          try {
+            await pair.manager.addNewConnection(
+                type: type, customLabel: customLabel, customEmoji: customEmoji);
+            if (!mounted) return;
+            setState(() {});
+            _showSnack(s.newConnectionAdded);
+          } finally {
+            _creatingConnection = false;
+          }
         }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: widget.theme.surfaceMuted,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: widget.theme.divider),
-        ),
-        child: Row(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 14),
-            Expanded(
+
+        return SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetCtx).size.height * 0.85),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: widget.theme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: widget.theme.textMuted),
-                  ),
+                  sheetHandle(cs),
+                  sheetHeader(
+                      cs, s.addNewConnection, s.chooseTypeForConnection),
+                  typeSheetOption(
+                      cs: cs,
+                      icon: Icons.favorite_rounded,
+                      title: s.inLoveStatus,
+                      subtitle: s.perfectForCouples,
+                      onTap: () => create(RelationshipType.couple)),
+                  typeSheetOption(
+                      cs: cs,
+                      icon: Icons.diamond_rounded,
+                      title: s.married,
+                      subtitle: s.forMarriedPartners,
+                      onTap: () => create(RelationshipType.married)),
+                  typeSheetOption(
+                      cs: cs,
+                      icon: Icons.handshake_rounded,
+                      title: s.friends,
+                      subtitle: s.connectWithBestFriend,
+                      onTap: () => create(RelationshipType.friends)),
+                  typeSheetOption(
+                      cs: cs,
+                      icon: Icons.groups_rounded,
+                      title: s.bestBuddies,
+                      subtitle: s.forInseparableCompanions,
+                      onTap: () => create(RelationshipType.buddies)),
+                  ...allCustomTypes.values.map((ct) => typeSheetOption(
+                      cs: cs,
+                      icon: relIconForEmoji(ct['emoji'] ?? ''),
+                      title: ct['label'] ?? s.custom,
+                      subtitle: s.yourCustomType,
+                      onTap: () => create(RelationshipType.custom,
+                          customLabel: ct['label'] ?? '',
+                          customEmoji: ct['emoji'] ?? ''))),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: widget.theme.textMuted,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -2504,38 +2542,112 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
   }
 
   void _confirmDeleteConnection(String connectionId) {
-    showDialog(
+    final cs = ProfileTheme.themeFor(widget.theme).colorScheme;
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(LocaleService.current.deleteConnection),
-        content: Text(LocaleService.current.deleteConnectionDesc),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(LocaleService.current.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              // Закрываем диалог СРАЗУ, до сетевого removeConnection (unpair +
-              // генерация инвайт-кода ~секунды). Иначе диалог «висит», а повторный
-              // тап по кнопке запускал второй removeConnection и второй pop —
-              // pop'ал нижний экран → чёрный экран/вылет. После pop кнопки нет,
-              // двойной тап невозможен.
-              Navigator.of(context).pop();
-              await pair.manager.removeConnection(connectionId);
-              if (!mounted) return;
-              _resetCodeInput();
-              setState(() {});
-              _showSnack(LocaleService.current.connectionRemoved);
-            },
-            child: Text(
-              LocaleService.current.delete,
-              style: TextStyle(color: Colors.red.shade400),
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: cs.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 26),
+                    decoration: BoxDecoration(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                        color: cs.errorContainer, shape: BoxShape.circle),
+                    child: Icon(Icons.link_off_rounded,
+                        size: 38, color: cs.onErrorContainer),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  LocaleService.current.deleteConnection,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontFamily: 'Unbounded',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 23,
+                      height: 1.15,
+                      color: cs.onSurface),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  LocaleService.current.deleteConnectionDesc,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 15,
+                      height: 1.42,
+                      color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 56,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.error,
+                      foregroundColor: cs.onError,
+                      shape: const StadiumBorder(),
+                      textStyle: const TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700),
+                    ),
+                    // Закрываем ДО сетевого removeConnection: после pop кнопки
+                    // нет — двойной тап и лишний pop нижнего экрана невозможны.
+                    onPressed: () async {
+                      Navigator.of(sheetCtx).pop();
+                      await pair.manager.removeConnection(connectionId);
+                      if (!mounted) return;
+                      _resetCodeInput();
+                      setState(() {});
+                      _showSnack(LocaleService.current.connectionRemoved);
+                    },
+                    child: Text(LocaleService.current.delete),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 56,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: cs.onSurfaceVariant,
+                      shape: const StadiumBorder(),
+                      textStyle: const TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: () => Navigator.of(sheetCtx).pop(),
+                    child: Text(LocaleService.current.cancel),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

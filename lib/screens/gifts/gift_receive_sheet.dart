@@ -7,6 +7,7 @@ import '../../models/gift.dart';
 import '../../services/gifts_service.dart';
 import '../../services/locale_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/profile_theme.dart';
 
 /// Получение подарка: у каждого свой способ «сработать».
 ///
@@ -147,6 +148,7 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
   Widget build(BuildContext context) {
     final t = widget.theme;
     final s = LocaleService.current;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     final hint = LocaleService.instance.isRussian
         ? actionHintRu(widget.gift.action)
         : actionHintEn(widget.gift.action);
@@ -156,11 +158,13 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
         left: 20,
         right: 20,
         top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            28,
       ),
       decoration: BoxDecoration(
-        color: t.cardSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: cs.surfaceContainerLow,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -169,20 +173,26 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: t.divider,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: 18),
           Text(
             s.giftFromPartner(widget.senderName),
-            style: TextStyle(fontSize: 14, color: t.textSecondary),
+            style: TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
+                fontSize: 14,
+                color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             widget.gift.title,
             style: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.w800, color: t.textPrimary),
+                fontFamily: ProfileTheme.displayFont,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface),
           ),
           const SizedBox(height: 20),
           SizedBox(height: 220, child: _stage()),
@@ -223,12 +233,12 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
                 maxLength: 200,
                 minLines: 1,
                 maxLines: 3,
-                style: TextStyle(color: t.textPrimary),
+                style: TextStyle(color: cs.onSurface),
                 decoration: InputDecoration(
                   hintText: s.giftWishHint,
-                  hintStyle: TextStyle(color: t.textMuted),
+                  hintStyle: TextStyle(color: cs.onSurfaceVariant),
                   filled: true,
-                  fillColor: t.surfaceMuted,
+                  fillColor: cs.surfaceContainerHigh,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -238,6 +248,11 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
               const SizedBox(height: 4),
               FilledButton(
                 onPressed: _busy ? null : _accept,
+                style: FilledButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: const StadiumBorder()),
                 child: Text(s.giftWishSend),
               ),
             ],
@@ -249,12 +264,17 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
                     child: TextButton(
                       onPressed: _busy ? null : _decline,
                       child: Text(s.giftDecline,
-                          style: TextStyle(color: t.textSecondary)),
+                          style: TextStyle(color: cs.onSurfaceVariant)),
                     ),
                   ),
                   Expanded(
                     child: FilledButton(
                       onPressed: _busy ? null : _accept,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
+                          minimumSize: const Size.fromHeight(50),
+                          shape: const StadiumBorder()),
                       child: Text(s.giftAccept),
                     ),
                   ),
@@ -265,6 +285,11 @@ class _GiftReceiveSheetState extends State<GiftReceiveSheet>
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: _busy ? null : _flip,
+                style: FilledButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: const StadiumBorder()),
                 child: Text(s.giftFlipCoin),
               ),
             ],
@@ -780,12 +805,15 @@ class _NoteCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.surfaceMuted,
-        borderRadius: BorderRadius.circular(16),
+        color: ProfileTheme.themeFor(theme).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 15, height: 1.45, color: theme.textPrimary),
+        style: TextStyle(
+            fontSize: 15,
+            height: 1.45,
+            color: ProfileTheme.themeFor(theme).colorScheme.onSurface),
       ),
     );
   }
