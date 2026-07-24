@@ -1,0 +1,70 @@
+name: iOS unsigned IPA → GitHub release
+
+# Собирает НЕсигнованный IPA (для сайдлоада через AltStore/Sideloadly, которые
+# пересобирают подпись под Apple ID пользователя) и прикрепляет его к уже
+# существующему релизу. НЕ трогает Play / RuStore / TestFlight.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза, к которому прицепить IPA'
+        required: true
+        default: 'v1.18.0+125'
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          set -euo pipefail
+          NEWEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1 || true)
+          [ -z "$NEWEST" ] && NEWEST=/Applications/Xcode.app
+          sudo xcode-select -s "$NEWEST"
+          xcodebuild -version
+
+      - name: Set up Flutter 3.38.5
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.5
+          channel: stable
+          cache: true
+
+      - name: Read version from pubspec
+        id: ver
+        run: |
+          LINE=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "name=${LINE%%+*}" >> "$GITHUB_OUTPUT"
+          echo "code=${LINE##*+}" >> "$GITHUB_OUTPUT"
+
+      - name: Flutter packages
+        run: |
+          flutter config --no-enable-swift-package-manager
+          flutter pub get
+
+      - name: Pod install
+        run: find . -name "Podfile" -execdir pod install \;
+
+      - name: Build unsigned iOS
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          cd build/ios/iphoneos
+          rm -rf Payload && mkdir -p Payload
+          cp -R Runner.app Payload/
+          IPA="$GITHUB_WORKSPACE/togetherly-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}-unsigned.ipa"
+          zip -qr9 "$IPA" Payload
+          ls -lh "$IPA"
+
+      - name: Attach IPA to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: togetherly-*-unsigned.ipa
