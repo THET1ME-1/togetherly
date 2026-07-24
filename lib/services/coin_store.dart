@@ -101,6 +101,12 @@ const String kStore = String.fromEnvironment('STORE', defaultValue: 'play');
 /// инвайт) — исчезает только витрина покупки.
 const bool kCoinsPurchasable = kStore != 'github';
 
+/// Показывать ли донат→монеты (DonationAlerts с подсказкой указать email). Только
+/// в sideload/веб-сборках: GitHub-Android, RuStore, iOS-IPA (все собираются с
+/// `STORE=github`/`rustore`). На Google Play и App Store (`STORE=play`) —
+/// нельзя (продажа валюты за внешний платёж = нарушение биллинга/3.1.1).
+const bool kDonationsEnabled = kStore == 'github' || kStore == 'rustore';
+
 /// Создаёт реализацию магазина под текущую сборку. Google Play / App Store —
 /// [IapService], RuStore — [RuStoreIapService], гитхаб-версия — заглушка без
 /// покупок.

@@ -405,8 +405,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openDonationAlerts() async {
-    await _openExternalUri(_donationAlertsUri);
+    final email = widget.userData.email.trim();
+    // В sideload/веб-сборках донат = монеты: сперва M3-лист с email-подсказкой,
+    // чтобы воркер смог опознать плательщика. На Play/App Store — просто открыть.
+    if (kDonationsEnabled && email.isNotEmpty) {
+      await _showDonationAlertsSheet(email);
+    } else {
+      await _openExternalUri(_donationAlertsUri);
+    }
   }
+
+  /// M3-лист снизу: email аккаунта + подсказка вставить его в сообщение к донату.
+  Future<void> _showDonationAlertsSheet(String email) async {
+    final cs = _cs;
+    final ru = LocaleService.instance.isRussian;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: cs.surfaceContainerLow,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                ru ? 'Донат → монеты' : 'Donation → coins',
+                style: TextStyle(
+                    fontFamily: ProfileTheme.displayFont,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 22,
+                    letterSpacing: -0.4,
+                    color: cs.onSurface),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                ru
+                    ? 'Чтобы монеты пришли автоматически, укажи в сообщении к донату свой email:'
+                    : 'To get coins automatically, put your email in the donation message:',
+                style: TextStyle(
+                    fontFamily: ProfileTheme.bodyFont,
+                    fontSize: 14.5,
+                    height: 1.35,
+                    color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              Material(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: email));
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text(ru ? 'Email скопирован' : 'Email copied')));
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontFamily: ProfileTheme.bodyFont,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: cs.onSurface)),
+                        ),
+                        const SizedBox(width: 10),
+                        Icon(Icons.copy_rounded, size: 20, color: cs.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _daStep(cs, '1',
+                  ru ? 'Скопируй email кнопкой выше' : 'Copy the email above'),
+              _daStep(
+                  cs,
+                  '2',
+                  ru
+                      ? 'Вставь его в сообщение к донату'
+                      : 'Paste it into the donation message'),
+              _daStep(
+                  cs,
+                  '3',
+                  ru
+                      ? 'От 50 ₽ — монеты придут сами за пару минут'
+                      : 'From 50 ₽ — coins arrive on their own in a couple of minutes'),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _openExternalUri(_donationAlertsUri);
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 19),
+                  label: Text(
+                      ru ? 'Открыть DonationAlerts' : 'Open DonationAlerts',
+                      style: const TextStyle(
+                          fontFamily: ProfileTheme.displayFont,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _daStep(ColorScheme cs, String n, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration:
+                  BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle),
+              child: Text(n,
+                  style: TextStyle(
+                      fontFamily: ProfileTheme.bodyFont,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: cs.onPrimaryContainer)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(text,
+                    style: TextStyle(
+                        fontFamily: ProfileTheme.bodyFont,
+                        fontSize: 14,
+                        height: 1.3,
+                        color: cs.onSurface)),
+              ),
+            ),
+          ],
+        ),
+      );
 
   Future<void> _openLava() async {
     await _openExternalUri(_lavaUri);

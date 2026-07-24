@@ -99,7 +99,7 @@ jobs:
       - name: Build release APK
         # --split-per-abi: отдельный APK на архитектуру (~45 МБ) вместо
         # одного «толстого» universal (~109 МБ).
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --dart-define=STORE=github
 
       - name: Stage artifacts
         run: |
