@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/theme_scope.dart';
+import '../theme/profile_theme.dart';
 
 /// Общие виджеты экранов входа/регистрации (единый стиль «карточка + поля с
 /// плавающей подписью + ряд соц-иконок»). [accent] берётся из вызывающего
@@ -45,8 +46,9 @@ class _AuthFieldState extends State<AuthField> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.accent;
     final t = context.appTheme;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
+    // M3: поле-таблетка, filled тональным, без рамки (только тонкий фокус-ринг).
     return TextField(
       controller: widget.controller,
       keyboardType: widget.keyboardType,
@@ -55,35 +57,39 @@ class _AuthFieldState extends State<AuthField> {
       onChanged: widget.onChanged,
       textInputAction: widget.textInputAction,
       onSubmitted: widget.onSubmitted,
-      cursorColor: accent,
+      cursorColor: cs.primary,
       style: TextStyle(
+        fontFamily: 'Onest',
         fontSize: 15,
         fontWeight: FontWeight.w500,
-        color: t.textPrimary,
+        color: cs.onSurface,
       ),
       decoration: InputDecoration(
         labelText: widget.label,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         labelStyle: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: t.textSecondary,
-        ),
-        floatingLabelStyle: TextStyle(
+          fontFamily: 'Onest',
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: accent,
+          color: cs.onSurfaceVariant,
+        ),
+        floatingLabelStyle: TextStyle(
+          fontFamily: 'Onest',
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: cs.primary,
         ),
         hintText: widget.hint,
         hintStyle: TextStyle(
-          color: t.textMuted,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
         filled: true,
-        fillColor: t.cardSurface,
+        fillColor: cs.surfaceContainerHighest,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
         suffixIcon: widget.isPassword
             ? GestureDetector(
                 onTap: () => setState(() => _obscure = !_obscure),
@@ -91,22 +97,22 @@ class _AuthFieldState extends State<AuthField> {
                   _obscure
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  color: t.textMuted,
+                  color: cs.onSurfaceVariant,
                   size: 20,
                 ),
               )
             : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: t.divider),
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(999)),
+          borderSide: BorderSide.none,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: t.divider),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(999)),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: accent, width: 1.6),
+          borderRadius: const BorderRadius.all(Radius.circular(999)),
+          borderSide: BorderSide(color: cs.primary, width: 1.6),
         ),
       ),
     );
@@ -195,10 +201,11 @@ class AuthSocialIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.appTheme;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
+    // Плоский круг без рамки: та же тональная поверхность, что у полей-таблеток.
     return Material(
-      color: t.cardSurface,
-      shape:
-          CircleBorder(side: BorderSide(color: t.divider, width: 1.4)),
+      color: cs.surfaceContainerHighest,
+      shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
+import 'package:video_compress/video_compress.dart';
 
 import 'pocketbase_service.dart';
 
@@ -11,6 +12,9 @@ class WatchVideo {
   final String id;
   final String title;
   final String url;
+
+  /// Обложка ролика (кадр из видео). Пусто → плитка покажет play на фоне.
+  final String thumbUrl;
   final int seconds;
 
   /// true — файл лежит в защищённом хранилище воспоминаний: приложение его
@@ -22,6 +26,7 @@ class WatchVideo {
     required this.title,
     required this.url,
     required this.seconds,
+    this.thumbUrl = '',
     this.appOnly = false,
   });
 }
@@ -47,10 +52,17 @@ class WatchVideosService {
     return '${PocketBaseService.baseUrl}/api/files/$_col/${r.id}/$file';
   }
 
+  static String _thumbUrl(RecordModel r) {
+    final file = (r.data['thumb'] ?? '').toString();
+    if (file.isEmpty) return '';
+    return '${PocketBaseService.baseUrl}/api/files/$_col/${r.id}/$file';
+  }
+
   static WatchVideo _fromRecord(RecordModel r) => WatchVideo(
         id: r.id,
         title: (r.data['title'] ?? '').toString(),
         url: _fileUrl(r),
+        thumbUrl: _thumbUrl(r),
         seconds: ((r.data['seconds'] ?? 0) as num).round(),
       );
 
@@ -97,6 +109,7 @@ class WatchVideosService {
           id: r.id,
           title: (raw['title'] ?? raw['text'] ?? '').toString(),
           url: url,
+          thumbUrl: (raw['imageUrl'] ?? raw['thumbnailUrl'] ?? '').toString(),
           seconds: 0,
           appOnly: url.startsWith('pb://'),
         ));
@@ -120,6 +133,31 @@ class WatchVideosService {
 
     try {
       final bytes = await file.readAsBytes();
+
+      final files = <http.MultipartFile>[
+        http.MultipartFile.fromBytes('file', bytes, filename: title),
+      ];
+
+      // Обложка для карусели — первый информативный кадр. Таймаут обязателен:
+      // getByteThumbnail на части кодеков виснет. При неудаче грузим без
+      // превью (плитка покажет play на тональном фоне) — загрузку не рушим.
+      try {
+        final thumbBytes = await VideoCompress.getByteThumbnail(
+          file.path,
+          quality: 80,
+          position: -1,
+        ).timeout(const Duration(seconds: 30), onTimeout: () => null);
+        if (thumbBytes != null && thumbBytes.isNotEmpty) {
+          files.add(http.MultipartFile.fromBytes(
+            'thumb',
+            thumbBytes,
+            filename: 'thumb.jpg',
+          ));
+        }
+      } catch (_) {
+        // Превью не обязательно — продолжаем без него.
+      }
+
       final rec = await _pb
           .collection(_col)
           .create(
@@ -128,9 +166,7 @@ class WatchVideosService {
               'title': title,
               'added_by': PocketBaseService().userId ?? '',
             },
-            files: [
-              http.MultipartFile.fromBytes('file', bytes, filename: title),
-            ],
+            files: files,
           )
           // Сто мегабайт по мобильной сети идут долго: минутного таймаута,
           // как у фотографий, тут не хватает.

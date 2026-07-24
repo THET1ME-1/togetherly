@@ -1753,6 +1753,19 @@
      "protected": false
     },
     {
+     "name": "thumb",
+     "type": "file",
+     "required": false,
+     "maxSelect": 1,
+     "maxSize": 5242880,
+     "mimeTypes": [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+     ],
+     "protected": false
+    },
+    {
      "name": "seconds",
      "type": "number",
      "required": false

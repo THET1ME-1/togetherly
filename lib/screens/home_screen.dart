@@ -397,6 +397,9 @@ class _HomeScreenState extends State<HomeScreen> {
         DaysTogetherNotificationService.instance.onStartDateChanged(start),
       );
     }
+    // Достижения по сроку отношений считают от той же даты, что счётчик дней —
+    // иначе показывали бы «7 дней» паре с годами отношений.
+    AchievementService.instance.setCoupleStart(start);
   }
 
   Future<void> _handlePairChanged() async {
@@ -710,6 +713,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     // Достижения пары: следим за счётчиками группы; на разблокировку — оверлей.
     unawaited(AchievementService.instance.start(groupId));
+    // Сразу отдаём настоящую дату начала (та же, что у счётчика дней), чтобы
+    // первый расчёт срока не показал «7 дней» вместо реальных лет вместе.
+    AchievementService.instance.setCoupleStart(
+      _timerService.defaultTimer?.startDate ??
+          _timerService.systemTimer?.startDate ??
+          _pairData.startDate,
+    );
     _achievementSub ??= AchievementService.instance.unlocks.listen((a) {
       if (mounted) AchievementUnlockOverlay.show(context, a);
     });
@@ -1320,16 +1330,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
           AnimatedSlideIn(
             delay: const Duration(milliseconds: 500),
-            child: MemoryLanePreview(
-              isPaired: _pairData.isPaired,
-              memories: _recentMemories,
-              pairData: _pairData,
-              theme: _t,
-              userLat: _userLat,
-              userLng: _userLng,
-              userData: widget.userData,
-              onNavTab: (i) => setState(() => _selectedNavIndex = i),
-            ),
+            // В паре — встроенная НАСТОЯЩАЯ Лента (те же карточки _memoryTile,
+            // первые 3). Без пары — лёгкая заглушка «подключись».
+            child: _pairData.isPaired
+                ? MemoryLaneScreen(
+                    pairData: _pairData,
+                    theme: _t,
+                    userData: widget.userData,
+                    embedded: true,
+                    previewLimit: 3,
+                    onNavTab: (i) => setState(() => _selectedNavIndex = i),
+                  )
+                : MemoryLanePreview(
+                    isPaired: false,
+                    memories: const [],
+                    pairData: _pairData,
+                    theme: _t,
+                    userData: widget.userData,
+                  ),
           ),
           const SizedBox(height: 40),
         ],
@@ -1965,54 +1983,22 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Карточка-вход «Подарки». Показывается только когда раздел включён на
   /// сервере (`app_config.gifts_enabled`) — флаг гасит его без релиза.
   Widget _giftsEntry() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => GiftShopScreen(
-              theme: _t,
-              groupId: _pairData.pairId,
-              coins: widget.userData.coins,
-            ),
-            settings: const RouteSettings(name: '/gifts'),
+    final cs = ProfileTheme.themeFor(_t).colorScheme;
+    return _m3EntryCard(
+      cs: cs,
+      boxColor: cs.primaryContainer,
+      onBoxColor: cs.onPrimaryContainer,
+      icon: Icons.card_giftcard_rounded,
+      title: LocaleService.current.giftShopTitle,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GiftShopScreen(
+            theme: _t,
+            groupId: _pairData.pairId,
+            coins: widget.userData.coins,
           ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: _t.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _t.divider, width: 0.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _t.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: Image.asset(GiftCatalog.all.first.asset,
-                    width: 26, height: 26),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  LocaleService.current.giftShopTitle,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _t.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right, color: _t.textMuted, size: 20),
-            ],
-          ),
+          settings: const RouteSettings(name: '/gifts'),
         ),
       ),
     );
@@ -2021,69 +2007,99 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Компактная карточка-вход «Достижения пары» на главном. Счётчик «N из M»
   /// живёт на снимке [AchievementService.stats] и обновляется в реальном времени.
   Widget _achievementsEntry() {
+    final cs = ProfileTheme.themeFor(_t).colorScheme;
+    return _m3EntryCard(
+      cs: cs,
+      boxColor: cs.tertiaryContainer,
+      onBoxColor: cs.onTertiaryContainer,
+      icon: Icons.emoji_events_rounded,
+      title: LocaleService.current.achievementsTitle,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AchievementsScreen(theme: _t),
+          settings: const RouteSettings(name: '/achievements'),
+        ),
+      ),
+      subtitle: ValueListenableBuilder<AchievementStats>(
+        valueListenable: AchievementService.instance.stats,
+        builder: (_, stats, __) {
+          final n =
+              PairAchievement.all.where((a) => a.isUnlockedBy(stats)).length;
+          return Text(
+            LocaleService.current
+                .achievementsUnlockedOf(n, PairAchievement.all.length),
+            style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Единый M3-компонент строки-входа (Достижения, Подарки): тональный
+  /// контейнер без бордера, тональный бокс-иконка (роль задаёт [boxColor]),
+  /// заголовок Unbounded, опциональная подпись и шеврон. Подтянут к языку
+  /// эталонного блока «Тебе подарок» ([_incomingGiftEntry]).
+  Widget _m3EntryCard({
+    required ColorScheme cs,
+    required Color boxColor,
+    required Color onBoxColor,
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Widget? subtitle,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AchievementsScreen(theme: _t),
-            settings: const RouteSettings(name: '/achievements'),
-          ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: _t.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _t.divider, width: 0.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _t.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: boxColor,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: onBoxColor, size: 24),
                 ),
-                alignment: Alignment.center,
-                child: const Text('🏆', style: TextStyle(fontSize: 22)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      LocaleService.current.achievementsTitle,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: _t.textPrimary,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: ProfileTheme.displayFont,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    ValueListenableBuilder<AchievementStats>(
-                      valueListenable: AchievementService.instance.stats,
-                      builder: (_, stats, __) {
-                        final n = PairAchievement.all
-                            .where((a) => a.isUnlockedBy(stats))
-                            .length;
-                        return Text(
-                          LocaleService.current.achievementsUnlockedOf(
-                              n, PairAchievement.all.length),
-                          style:
-                              TextStyle(fontSize: 12.5, color: _t.textMuted),
-                        );
-                      },
-                    ),
-                  ],
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        subtitle,
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right_rounded,
-                  color: _t.textMuted, size: 22),
-            ],
+                Icon(Icons.chevron_right_rounded,
+                    color: cs.onSurfaceVariant, size: 22),
+              ],
+            ),
           ),
         ),
       ),
@@ -3066,6 +3082,7 @@ class _MascotButtonState extends State<_MascotButton>
     final mascot = widget.mascot;
     final streak = widget.streak;
     final t = widget.theme;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     final hasStreak = streak > 0;
 
     return GestureDetector(
@@ -3079,24 +3096,10 @@ class _MascotButtonState extends State<_MascotButton>
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: t.cardSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: hasStreak
-                  ? t.primary.withValues(alpha: 0.22)
-                  : t.cardBorder,
-              width: hasStreak ? 1.5 : 1.0,
-            ),
-            boxShadow: hasStreak
-                ? t.accentGlow(
-                    t.primary,
-                    opacity: 0.1,
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  )
-                : [],
+            color: cs.secondaryContainer,
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
             children: [
@@ -3109,9 +3112,9 @@ class _MascotButtonState extends State<_MascotButton>
                         service: widget.service,
                       )
                     : Icon(
-                        Icons.sentiment_satisfied_alt,
+                        Icons.sentiment_satisfied_alt_rounded,
                         size: 36,
-                        color: t.primary.withAlpha(120),
+                        color: cs.onSecondaryContainer.withValues(alpha: 0.55),
                       ),
               ),
               const SizedBox(width: 12),
@@ -3124,10 +3127,11 @@ class _MascotButtonState extends State<_MascotButton>
                       mascot != null
                           ? mascot.localizedName
                           : LocaleService.current.groupMascot,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        fontFamily: ProfileTheme.displayFont,
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        letterSpacing: 0.3,
+                        fontSize: 14,
+                        color: cs.onSecondaryContainer,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -3144,7 +3148,8 @@ class _MascotButtonState extends State<_MascotButton>
                             : LocaleService.current.selectMascot,
                         style: TextStyle(
                           fontSize: 12,
-                          color: t.textMuted,
+                          color:
+                              cs.onSecondaryContainer.withValues(alpha: 0.7),
                         ),
                       ),
                   ],
@@ -3161,31 +3166,28 @@ class _MascotButtonState extends State<_MascotButton>
                           padding: const EdgeInsets.only(left: 4, right: 2),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 12,
+                              vertical: 7,
                             ),
                             decoration: BoxDecoration(
-                              color: t.primary.withAlpha(20),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: t.primary.withAlpha(60),
-                              ),
+                              color: cs.primary,
+                              borderRadius: BorderRadius.circular(999),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.visibility_outlined,
-                                  size: 14,
-                                  color: t.primary,
+                                  Icons.visibility_rounded,
+                                  size: 15,
+                                  color: cs.onPrimary,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 5),
                                 Text(
                                   LocaleService.current.showLabel,
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: t.primary,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.5,
+                                    color: cs.onPrimary,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -3193,16 +3195,16 @@ class _MascotButtonState extends State<_MascotButton>
                           ),
                         )
                       : Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 14,
-                          color: t.textMuted,
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: cs.onSecondaryContainer.withValues(alpha: 0.55),
                         ),
                 )
               else
                 Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: t.textMuted,
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: cs.onSecondaryContainer.withValues(alpha: 0.55),
                 ),
             ],
           ),
@@ -3238,9 +3240,8 @@ class _StreakBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3255,7 +3256,8 @@ class _StreakBadge extends StatelessWidget {
                   .value;
               return Transform.scale(
                 scale: scale,
-                child: const Text('🔥', style: TextStyle(fontSize: 11)),
+                child: Icon(Icons.local_fire_department_rounded,
+                    size: 14, color: color),
               );
             },
           ),

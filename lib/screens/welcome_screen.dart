@@ -60,14 +60,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: slide.bg,
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
+        // M3: плоский фон, без градиента (мягкий тон слайда).
+        color: slide.bg[1],
         child: SafeArea(
           child: Column(
             children: [
@@ -272,38 +266,24 @@ class _PrimaryBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // M3: широкая таблетка сплошного цвета, без градиента и свечения.
+    return SizedBox(
       width: double.infinity,
       height: 58,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradient,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: gradient.last,
+          foregroundColor: Colors.white,
+          shape: const StadiumBorder(),
+          elevation: 0,
         ),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: glow.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(32),
-          onTap: onTap,
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.rubik(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Onest',
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

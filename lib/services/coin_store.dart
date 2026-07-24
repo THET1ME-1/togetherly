@@ -95,7 +95,36 @@ abstract class CoinStore extends ChangeNotifier {
 /// По умолчанию (Google Play / App Store) — `play`.
 const String kStore = String.fromEnvironment('STORE', defaultValue: 'play');
 
-/// Создаёт реализацию магазина под текущую сборку. Google Play / App Store
-/// используют один код ([IapService]); RuStore — отдельный ([RuStoreIapService]).
-CoinStore createCoinStore() =>
-    kStore == 'rustore' ? RuStoreIapService() : IapService();
+/// Можно ли ПОКУПАТЬ монеты в этой сборке. В гитхаб-версии (sideload,
+/// `--dart-define=STORE=github`) покупок нет: платёжный провайдер (Lava Top)
+/// отклонил товары монет. Сами монеты остаются (ежедневный бонус, реклама,
+/// инвайт) — исчезает только витрина покупки.
+const bool kCoinsPurchasable = kStore != 'github';
+
+/// Создаёт реализацию магазина под текущую сборку. Google Play / App Store —
+/// [IapService], RuStore — [RuStoreIapService], гитхаб-версия — заглушка без
+/// покупок.
+CoinStore createCoinStore() => switch (kStore) {
+      'rustore' => RuStoreIapService(),
+      'github' => _DisabledCoinStore(),
+      _ => IapService(),
+    };
+
+/// Магазин-заглушка для сборок без покупок (гитхаб): всё выключено, `buy`
+/// сразу возвращает ошибку. UI покупки в такой сборке всё равно скрыт
+/// ([kCoinsPurchasable]).
+class _DisabledCoinStore extends CoinStore {
+  @override
+  bool get isAvailable => false;
+  @override
+  bool get isLoading => false;
+  @override
+  String? priceLabel(String productId) => null;
+  @override
+  Future<void> init({required GrantCoinsCallback onGrantCoins}) async {}
+  @override
+  Future<IapResult> buy(String productId) async =>
+      const IapResult(IapStatus.error, error: 'disabled');
+  @override
+  Future<void> restorePurchases() async {}
+}

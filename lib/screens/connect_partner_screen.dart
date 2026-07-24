@@ -980,19 +980,25 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: cs.errorContainer,
+          color: cs.error,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Center(
-          child: Text(
-            LocaleService.current.disconnect,
-            style: TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: cs.onErrorContainer,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.link_off_rounded, color: cs.onError, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              LocaleService.current.disconnect,
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: cs.onError,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1616,9 +1622,14 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
                         );
                       },
                       icon: const Icon(Icons.share_rounded, size: 16),
-                      label: Text(
-                        LocaleService.current.share,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          LocaleService.current.share,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primary,
@@ -2209,7 +2220,12 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
       _showSnack('\u{1F389} ${_getConnectedSuccessMessage()}');
     } else {
       setState(() => _codeError = true);
-      _showSnack(LocaleService.current.codeNotFound);
+      // Показываем реальную причину (истёкшая сессия, свой код, группа полна),
+      // а не всегда «код не найден» — иначе диагностировать нечего.
+      final msg = pair.lastAcceptMessage;
+      _showSnack((msg != null && msg.isNotEmpty)
+          ? msg
+          : LocaleService.current.codeNotFound);
     }
   }
 
@@ -2316,7 +2332,10 @@ class _ConnectPartnerScreenState extends State<ConnectPartnerScreen>
                           );
                         },
                         icon: const Icon(Icons.share_rounded, size: 20),
-                        label: Text(s.share),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(s.share, maxLines: 1, softWrap: false),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: cs.primary,
                           side: BorderSide(color: cs.outlineVariant),

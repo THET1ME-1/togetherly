@@ -13,6 +13,7 @@ import '../../services/watch_videos_service.dart';
 import 'together_launcher.dart';
 import 'watch_player_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/storage_image.dart';
 
 /// Вход в совместный просмотр.
 ///
@@ -161,49 +162,50 @@ class _WatchHomeScreenState extends State<WatchHomeScreen> {
         ),
         const SizedBox(height: 20),
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
             s.watchOurVideos,
-            style: text.labelMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              letterSpacing: 1.1,
+            style: text.titleMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
+        // M3 multi-browse карусель: контейнер каждого кадра сужается маской,
+        // а содержимое остаётся в полном размере (parallax). Первый слот —
+        // плитка загрузки, дальше свои ролики.
         SizedBox(
-          height: 132,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _videos.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (_, i) {
-              if (i == _videos.length) {
-                return _UploadCard(busy: _uploading, onTap: _uploadVideo);
+          height: 200,
+          child: CarouselView.weighted(
+            flexWeights: const [3, 2, 1],
+            itemSnapping: true,
+            shrinkExtent: 48,
+            backgroundColor: cs.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(26),
+            ),
+            onTap: (i) {
+              if (i == 0) {
+                if (!_uploading) _uploadVideo();
+              } else {
+                _openNative(_videos[i - 1]);
               }
-              final v = _videos[i];
-              return _RecentCard(
-                entry: WatchEntry(
-                  id: v.id,
-                  url: v.url,
-                  kind: 'memory',
-                  title: v.title,
-                  thumb: '',
-                  seconds: v.seconds,
-                ),
-                onTap: () => _openNative(v),
-              );
             },
+            children: [
+              _UploadTile(busy: _uploading),
+              for (final v in _videos) _VideoTile(video: v),
+            ],
           ),
         ),
         if (_recent.isNotEmpty) ...[
           const SizedBox(height: 20),
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
               s.watchRecent,
-              style: text.labelMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                letterSpacing: 1.1,
+              style: text.titleMedium?.copyWith(
+                color: cs.onSurface,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -591,12 +593,108 @@ class _RecentCard extends StatelessWidget {
   }
 }
 
-/// Кнопка «загрузить своё видео» в конце ленты.
-class _UploadCard extends StatelessWidget {
-  final bool busy;
-  final VoidCallback onTap;
+/// Плитка своего ролика внутри M3-карусели. Заполняет весь слот, который
+/// карусель клипует и сужает маской; play и подписи лежат поверх кадра.
+class _VideoTile extends StatelessWidget {
+  final WatchVideo video;
 
-  const _UploadCard({required this.busy, required this.onTap});
+  const _VideoTile({required this.video});
+
+  String _duration(int s) {
+    if (s <= 0) return '';
+    final m = s ~/ 60;
+    final ss = (s % 60).toString().padLeft(2, '0');
+    return '$m:$ss';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final dur = _duration(video.seconds);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Обложка ролика; нет или не загрузилась — тональный кадр под play.
+        if (video.thumbUrl.isNotEmpty)
+          StorageImage(
+            imageUrl: video.thumbUrl,
+            fit: BoxFit.cover,
+            errorWidget: (_, _, _) =>
+                ColoredBox(color: cs.surfaceContainerHighest),
+          )
+        else
+          ColoredBox(color: cs.surfaceContainerHighest),
+        // Затемнение снизу, чтобы белая подпись читалась на любом кадре.
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.center,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x00000000), Color(0xB3120C1A)],
+            ),
+          ),
+        ),
+        Center(
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: const BoxDecoration(
+              color: Color(0x3DFFFFFF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 14,
+          right: 14,
+          bottom: 12,
+          child: Text(
+            video.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: text.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (dur.isNotEmpty)
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0x6B000000),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                dur,
+                style: text.labelSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Плитка «добавить своё видео» — первый слот карусели. Filled tonal, без
+/// рамок: тональный контейнер задаёт форму, а не обводка.
+class _UploadTile extends StatelessWidget {
+  final bool busy;
+
+  const _UploadTile({required this.busy});
 
   @override
   Widget build(BuildContext context) {
@@ -604,44 +702,53 @@ class _UploadCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    return SizedBox(
-      width: 150,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: busy ? null : onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 86,
-                width: 150,
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cs.outlineVariant),
-                ),
-                child: busy
-                    ? const Center(
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        ),
-                      )
-                    : Icon(Icons.add_rounded, color: cs.onSurfaceVariant, size: 30),
+    return ColoredBox(
+      color: cs.secondaryContainer,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: cs.onSecondaryContainer.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 7),
-              Text(
+              child: busy
+                  ? Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            cs.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.add_rounded,
+                      color: cs.onSecondaryContainer,
+                      size: 30,
+                    ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
                 busy ? s.watchVideoUploading : s.watchVideoAdd,
+                textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: text.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                style: text.labelLarge?.copyWith(
+                  color: cs.onSecondaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

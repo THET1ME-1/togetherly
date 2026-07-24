@@ -24,6 +24,11 @@ class ConnectionsManager extends ChangeNotifier {
   StreamSubscription? _groupsSub;
   // Prevents concurrent _startListeningForNewPairs callbacks from racing
   bool _processingPairUpdate = false;
+
+  /// Последнее сообщение сервера/сессии при приёме кода — экран показывает его
+  /// вместо generic «код не найден», чтобы реальная причина (истёкшая сессия,
+  /// свой код, группа полна) была видна.
+  String? lastAcceptMessage;
   // Last known pairing fingerprint — skip callback if the set of groups is same.
   // null = ещё не обрабатывали (первый emit пройдёт даже при пустом списке).
   String? _lastPairKey;
@@ -116,6 +121,7 @@ class ConnectionsManager extends ChangeNotifier {
     debugPrint(
       'acceptCodeAndCreateGroup: result=${result['success']}, msg=${result['message']}',
     );
+    lastAcceptMessage = result['message'] as String?;
     if (result['success'] != true) return false;
 
     final pairId = result['pairId'] as String? ?? '';
@@ -195,8 +201,10 @@ class ConnectionsManager extends ChangeNotifier {
       groupId: pairId,
       oldCode: oldInviteCode.isNotEmpty ? oldInviteCode : null,
     );
-    target.inviteCode =
-        newCode.isNotEmpty ? newCode : Connection.generateLocalCode();
+    // Пусто при провале сервера — НЕ раздаём локальный код, которого нет в
+    // invite_codes (иначе третий участник получил бы «код не найден»). UI даст
+    // перевыпустить; серверный create само-лечит протухший токен.
+    target.inviteCode = newCode;
 
     _activeConnectionIndex = _connections.indexOf(target);
     target.startListening();

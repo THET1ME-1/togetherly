@@ -10,6 +10,7 @@ import '../../../services/pocketbase_service.dart';
 import '../../../services/live_location_service.dart';
 import '../../../services/locale_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../theme/profile_theme.dart';
 import '../../../widgets/storage_image.dart';
 import '../../live_map_screen.dart';
 import '../../../utils/safe_text.dart';
@@ -211,19 +212,12 @@ class _LiveMapCardState extends State<LiveMapCard> {
   Widget build(BuildContext context) {
     if (!_prefsLoaded) return const SizedBox.shrink();
     final t = widget.theme;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     return Container(
       margin: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
-        color: t.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: t.cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -243,30 +237,33 @@ class _LiveMapCardState extends State<LiveMapCard> {
   }
 
   Widget _header(AppTheme t) {
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     return InkWell(
       onTap: _toggleCollapsed,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(28),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         child: Row(
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: t.primary.withValues(alpha: 0.12),
+                color: cs.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.location_on_rounded, color: t.primary, size: 19),
+              child: Icon(Icons.location_on_rounded,
+                  color: cs.onPrimaryContainer, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 LocaleService.current.liveMapTitle,
-                style: GoogleFonts.rubik(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontFamily: ProfileTheme.displayFont,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: t.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
             ),
@@ -276,14 +273,14 @@ class _LiveMapCardState extends State<LiveMapCard> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(Icons.open_in_full_rounded,
-                      color: t.primary, size: 20),
+                      color: cs.primary, size: 20),
                 ),
               ),
             AnimatedRotation(
               turns: _collapsed ? 0.5 : 0,
               duration: const Duration(milliseconds: 250),
               child: Icon(Icons.keyboard_arrow_up_rounded,
-                  color: t.textMuted, size: 24),
+                  color: cs.onSurfaceVariant, size: 24),
             ),
           ],
         ),
@@ -448,6 +445,7 @@ class _LiveMapCardState extends State<LiveMapCard> {
   }
 
   Widget _enableOverlay(AppTheme t) {
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     return Positioned.fill(
       child: Container(
         color: Colors.black.withValues(alpha: 0.32),
@@ -461,27 +459,30 @@ class _LiveMapCardState extends State<LiveMapCard> {
             Text(
               LocaleService.current.liveMapEnableHint,
               textAlign: TextAlign.center,
-              style: GoogleFonts.rubik(
+              style: const TextStyle(
+                fontFamily: ProfileTheme.bodyFont,
                 fontSize: 13,
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
+            const SizedBox(height: 14),
+            FilledButton(
               onPressed: _enableSharing,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: t.primary,
-                elevation: 0,
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
               child: Text(
                 LocaleService.current.liveMapEnableCta,
-                style: GoogleFonts.rubik(
-                  fontSize: 13,
+                style: const TextStyle(
+                  fontFamily: ProfileTheme.bodyFont,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -493,35 +494,31 @@ class _LiveMapCardState extends State<LiveMapCard> {
   }
 
   Widget _stopChip(AppTheme t) {
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: _disableSharing,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(999),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: t.cardSurface,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 8,
-              ),
-            ],
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.location_off_rounded,
-                  size: 14, color: t.textSecondary),
+                  size: 14, color: cs.onSurfaceVariant),
               const SizedBox(width: 5),
               Text(
                 LocaleService.current.liveMapStopCta,
-                style: GoogleFonts.rubik(
+                style: TextStyle(
+                  fontFamily: ProfileTheme.bodyFont,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: t.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
             ],

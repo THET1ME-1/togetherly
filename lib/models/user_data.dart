@@ -13,7 +13,7 @@ import '../theme/app_palettes.dart';
 import '../utils/safe_text.dart';
 import 'profile_icon.dart';
 
-enum Gender { male, female }
+enum Gender { male, female, unspecified }
 
 class UserData extends ChangeNotifier {
   String _displayName = '';
@@ -21,6 +21,8 @@ class UserData extends ChangeNotifier {
   String _avatarUrl = '';
   String _bannerUrl = '';
   Gender? _gender;
+  /// Произвольный пол для «Свой пол» (когда [_gender] == unspecified).
+  String? _customGender;
   bool _isRegistered = false;
   bool _hasSeenWelcome = false;
   String _uid = '';
@@ -67,6 +69,38 @@ class UserData extends ChangeNotifier {
   String get avatarUrl => _avatarUrl;
   String get bannerUrl => _bannerUrl;
   Gender? get gender => _gender;
+  String? get customGender => _customGender;
+
+  /// Строка хранения пола: male/female/unspecified или произвольный текст
+  /// («Свой пол»). Иллюстрации пары, ждущие male/female, для остального
+  /// падают в дефолт — никаких падений.
+  String genderToStorage() {
+    switch (_gender) {
+      case Gender.male:
+        return 'male';
+      case Gender.female:
+        return 'female';
+      case Gender.unspecified:
+        final c = _customGender?.trim();
+        return (c != null && c.isNotEmpty) ? c : 'unspecified';
+      case null:
+        return '';
+    }
+  }
+
+  void _applyGenderString(String? g) {
+    if (g == null || g.isEmpty) return;
+    if (g == 'male') {
+      _gender = Gender.male;
+      _customGender = null;
+    } else if (g == 'female') {
+      _gender = Gender.female;
+      _customGender = null;
+    } else {
+      _gender = Gender.unspecified;
+      _customGender = (g == 'unspecified') ? null : g;
+    }
+  }
   bool get isRegistered => _isRegistered;
   bool get hasSeenWelcome => _hasSeenWelcome;
   String get uid => _uid;
@@ -551,9 +585,7 @@ class UserData extends ChangeNotifier {
       _avatarUrl = prefs.getString('avatarUrl') ?? '';
       _bannerUrl = prefs.getString('bannerUrl') ?? '';
       _uid = prefs.getString('uid') ?? '';
-      final genderStr = prefs.getString('gender');
-      if (genderStr == 'male') _gender = Gender.male;
-      if (genderStr == 'female') _gender = Gender.female;
+      _applyGenderString(prefs.getString('gender'));
       _themeId = prefs.getInt('themeId') ?? -1;
       final hadThemeMode = prefs.containsKey('themeMode');
       _themeMode = AppThemeMode.values[
@@ -635,9 +667,7 @@ class UserData extends ChangeNotifier {
         if (firestoreAvatar.isNotEmpty) _avatarUrl = firestoreAvatar;
         final serverBanner = data['bannerUrl'] as String? ?? '';
         if (serverBanner.isNotEmpty) _bannerUrl = serverBanner;
-        final g = data['gender'] as String?;
-        if (g == 'male') _gender = Gender.male;
-        if (g == 'female') _gender = Gender.female;
+        _applyGenderString(data['gender'] as String?);
         _badge = data['badge'] as String?;
 
         final cloudCoins = data['coins'];
@@ -713,14 +743,7 @@ class UserData extends ChangeNotifier {
       await prefs.setString('avatarUrl', _avatarUrl);
       await prefs.setString('bannerUrl', _bannerUrl);
       await prefs.setString('uid', _uid);
-      await prefs.setString(
-        'gender',
-        _gender == Gender.male
-            ? 'male'
-            : _gender == Gender.female
-            ? 'female'
-            : '',
-      );
+      await prefs.setString('gender', genderToStorage());
       await prefs.setInt('themeId', _themeId);
       await prefs.setBool('blobAnimationEnabled', _blobAnimationEnabled);
       if (_birthDate != null) {
@@ -761,6 +784,7 @@ class UserData extends ChangeNotifier {
     required String displayName,
     required String email,
     required Gender gender,
+    String? customGender,
     String avatarUrl = '',
     bool isReturningUser = false, // For login - don't clear data
   }) async {
@@ -787,6 +811,7 @@ class UserData extends ChangeNotifier {
     _displayName = displayName;
     _email = email;
     _gender = gender;
+    _customGender = customGender;
     _avatarUrl = avatarUrl;
     _isRegistered = true;
     _uid = PocketBaseService().userId ?? '';
@@ -826,7 +851,7 @@ class UserData extends ChangeNotifier {
     try {
       await PbDataService().updateUserProfile(uid, {
         'displayName': displayName,
-        'gender': gender == Gender.male ? 'male' : 'female',
+        'gender': genderToStorage(),
         'avatarUrl': avatarUrl,
         // Сброс пары для нового юзера (email/пароль — поля auth, не трогаем тут).
         if (isNewUser) 'pairId': '',
@@ -861,14 +886,17 @@ class UserData extends ChangeNotifier {
     if (email != null) _email = email;
     if (avatarUrl != null) _avatarUrl = avatarUrl;
     if (bannerUrl != null) _bannerUrl = bannerUrl;
-    if (gender != null) _gender = gender;
+    if (gender != null) {
+      _gender = gender;
+      _customGender = null;
+    }
     await _saveLocal();
 
     final uid = PocketBaseService().userId ?? '';
     if (PocketBaseService().isLoggedIn && uid.isNotEmpty) {
       final update = <String, dynamic>{
         'displayName': _displayName,
-        'gender': _gender == Gender.male ? 'male' : 'female',
+        'gender': genderToStorage(),
         'avatarUrl': _avatarUrl,
       };
       if (bannerUrl != null) update['bannerUrl'] = _bannerUrl;

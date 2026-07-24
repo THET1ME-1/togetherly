@@ -4,15 +4,15 @@
 // ============================================================
 
 const String ruWhatsNew =
-    'В чате теперь есть разметка, а вход и достижения починили 💛\n'
+    'Совместный просмотр стал мощнее, а приложение — красивее 💜\n'
     '\n'
-    '— Сделали поддержку Markdown в сообщениях: **жирный**, *курсив*, ~~зачёркнутый~~, `моно`, [текст](ссылка).\n'
-    '— Починили достижения: теперь сообщения и рисунки засчитываются.\n'
-    '— Починили невнятные ошибки при входе — теперь пишет понятную причину.';
+    '— Смотрите вместе из YouTube, VK Видео, Rutube, Vimeo, Яндекс.Диска, Dropbox, прямых ссылок и файлов — пауза и перемотка у обоих.\n'
+    '— Большой редизайн: главный экран, виджеты, вход и календарь настроений.\n'
+    '— 34 подарка, страница профиля партнёра и достижения за весь срок отношений.';
 
 const String enWhatsNew =
-    'Chat now has text formatting, and we fixed sign-in and achievements 💛\n'
+    'Watch together got more powerful, and the app got prettier 💜\n'
     '\n'
-    '— Markdown in messages: **bold**, *italic*, ~~strikethrough~~, `mono`, [text](link).\n'
-    '— Fixed achievements: messages and drawings now count.\n'
-    '— Fixed vague sign-in errors — now it shows a clear reason.';
+    '— Watch together from YouTube, VK Video, Rutube, Vimeo, Yandex.Disk, Dropbox, direct links and files — pause and seek for both.\n'
+    '— Big redesign: home, widgets, sign-in and the mood calendar.\n'
+    '— 34 gifts, a partner profile page, and achievements counted for your whole time together.';

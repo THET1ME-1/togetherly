@@ -3855,9 +3855,9 @@ class _RuStrings extends AppStrings {
   @override
   String get watchPartnerInBrowser => 'Партнёр смотрит в браузере?';
   @override
-  String get watchRecent => 'НЕДАВНЕЕ';
+  String get watchRecent => 'Недавнее';
   @override
-  String get watchOurVideos => 'НАШИ ВИДЕО';
+  String get watchOurVideos => 'Наши видео';
   @override
   String get watchVideoAdd => 'Загрузить до 100 МБ';
   @override
@@ -6589,9 +6589,9 @@ class _EnStrings extends AppStrings {
   @override
   String get watchPartnerInBrowser => 'Partner watching in a browser?';
   @override
-  String get watchRecent => 'RECENT';
+  String get watchRecent => 'Recent';
   @override
-  String get watchOurVideos => 'OUR VIDEOS';
+  String get watchOurVideos => 'Our videos';
   @override
   String get watchVideoAdd => 'Upload up to 100 MB';
   @override

@@ -177,6 +177,10 @@ class PairData extends ChangeNotifier {
     return result;
   }
 
+  /// Реальная причина последнего неуспешного приёма кода (истёкшая сессия, свой
+  /// код, группа полна) — для честного сообщения вместо generic «код не найден».
+  String? get lastAcceptMessage => _manager.lastAcceptMessage;
+
   /// Свой ли код? Проверяет по ВСЕМ connections.
   bool isSelfCode(String code) {
     return _manager.isSelfCodeAny(code);

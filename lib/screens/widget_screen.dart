@@ -36,6 +36,7 @@ import '../services/mascot_service.dart';
 import '../services/timer_service.dart';
 import '../services/widget_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/profile_theme.dart';
 import '../widgets/common/ad_banner.dart';
 import '../widgets/common/m3_loading.dart';
 import '../widgets/petal_timer_dial.dart';
@@ -78,6 +79,7 @@ class WidgetScreen extends StatefulWidget {
 class _WidgetScreenState extends State<WidgetScreen>
     with WidgetsBindingObserver {
   AppTheme get _t => widget.theme;
+  ColorScheme get _cs => ProfileTheme.themeFor(_t).colorScheme;
   WidgetService get _ws => widget.widgetService;
   MoodService get _moodService => widget.moodService;
   TimerService get _timerService => widget.timerService;
@@ -1220,7 +1222,8 @@ class _WidgetScreenState extends State<WidgetScreen>
                 child: SingleChildScrollView(
                   controller: _galleryScrollController,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, 120 + MediaQuery.of(context).padding.bottom),
                   child: Column(
                     children: [
                       // ── Открытки ──
@@ -1249,56 +1252,47 @@ class _WidgetScreenState extends State<WidgetScreen>
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: _t.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: _cs.secondaryContainer,
+              borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(Icons.widgets_rounded, color: _t.primary, size: 24),
+            child: Icon(Icons.widgets_rounded,
+                color: _cs.onSecondaryContainer, size: 24),
           ),
           const SizedBox(width: 12),
           Text(
             _s.widgetsTitle,
-            style: GoogleFonts.rubik(
-              fontSize: 24,
+            style: TextStyle(
+              fontFamily: 'Unbounded',
+              fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: _t.textPrimary,
+              letterSpacing: -1,
+              color: _cs.onSurface,
             ),
           ),
           const Spacer(),
-          // Кнопка «Очистить мой виджет»
+          // Сбросить мой виджет
           if (_ws.myData != null && !_ws.myData!.isEmpty)
             GestureDetector(
               onTap: _confirmClearAll,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.clear_all_rounded,
-                      size: 16,
-                      color: Colors.red.shade400,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.restart_alt_rounded, size: 18, color: _cs.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _s.resetBtn,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: _cs.primary,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _s.resetBtn,
-                      style: GoogleFonts.rubik(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade400,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1526,25 +1520,50 @@ class _WidgetScreenState extends State<WidgetScreen>
   Widget _buildWidgetGallery() {
     final isPaired = _pair.isPaired;
 
+    // Простые виджеты — компактными плитками по два в ряд (бенто).
+    final halfTiles = <Widget>[
+      if (isPaired)
+        _buildHalfItem(
+          title: LocaleService.current.widgetStreakTitle,
+          qualifiedName: 'com.togetherly.love.StreakWidgetProvider',
+          widgetType: 'streak',
+          preview: _streakCompact(),
+        ),
+      _buildHalfItem(
+        title: LocaleService.current.timerWidgetTitle,
+        qualifiedName: 'com.togetherly.love.TimerWidgetProvider',
+        widgetType: 'timer',
+        preview: _timerCompact(),
+        onPreviewTap: _openTimerSelectorSheet,
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          padding: const EdgeInsets.only(left: 2, top: 6, bottom: 14),
           child: Row(
             children: [
-              Icon(
-                Icons.dashboard_customize_rounded,
-                size: 16,
-                color: _t.textMuted,
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _cs.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.dashboard_customize_rounded,
+                    size: 18, color: _cs.onSecondaryContainer),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 11),
               Text(
                 LocaleService.current.homeScreenWidgets,
-                style: GoogleFonts.rubik(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: _t.textSecondary,
+                style: TextStyle(
+                  fontFamily: 'Unbounded',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  color: _cs.onSurface,
                 ),
               ),
             ],
@@ -1590,35 +1609,13 @@ class _WidgetScreenState extends State<WidgetScreen>
                 setState(() => _daysCounterExpanded = !_daysCounterExpanded),
           ),
           const SizedBox(height: 16),
-
-          // ── 2б. Огонёк пары (серия дней подряд) ──
-          _buildGalleryItem(
-            title: LocaleService.current.widgetStreakTitle,
-            subtitle: LocaleService.current.widgetStreakSubtitle,
-            svgString: _flameSvg,
-            qualifiedName: 'com.togetherly.love.StreakWidgetProvider',
-            preview: _buildStreakPreview(),
-            widgetType: 'streak',
-          ),
-          const SizedBox(height: 16),
         ],
 
-        // ── 3. Таймер ──
-        _buildGalleryItem(
-          title: LocaleService.current.timerWidgetTitle,
-          subtitle: LocaleService.current.timerWidgetSubtitle,
-          svgString: _timerSvg,
-          qualifiedName: 'com.togetherly.love.TimerWidgetProvider',
-          preview: _buildTimerPreview(),
-          widgetType: 'timer',
-          expandedContent: _buildTimerSelector(),
-          isExpanded: _timerWidgetExpanded,
-          onToggleExpand: () =>
-              setState(() => _timerWidgetExpanded = !_timerWidgetExpanded),
-        ),
-        const SizedBox(height: 16),
+        // ── Бенто: Огонёк + Таймер по два в ряд ──
+        _halfGrid(halfTiles),
+        if (halfTiles.isNotEmpty) const SizedBox(height: 16),
 
-        // ── 3б. Лепестковый таймер ──
+        // ── Лепестковый таймер (настоящее превью + выбор) ──
         _buildGalleryItem(
           title: LocaleService.current.widgetPetalTimerTitle,
           subtitle: LocaleService.current.widgetPetalTimerSubtitle,
@@ -1633,6 +1630,30 @@ class _WidgetScreenState extends State<WidgetScreen>
           ),
         ),
         const SizedBox(height: 16),
+
+        if (isPaired) ...[
+          // ── Настроение (настоящее превью) ──
+          _buildGalleryItem(
+            title: LocaleService.current.mood,
+            subtitle: LocaleService.current.moodWidgetSubtitle,
+            svgString: _moodSvg,
+            qualifiedName: 'com.togetherly.love.MoodWidgetProvider',
+            preview: _buildMoodPreview(),
+            widgetType: 'mood',
+          ),
+          const SizedBox(height: 16),
+          // ── Статистика отношений (настоящее превью) ──
+          _buildGalleryItem(
+            title: LocaleService.current.relationshipStats,
+            subtitle: LocaleService.current.relationshipStatsSubtitle,
+            svgString: _statsSvg,
+            qualifiedName:
+                'com.togetherly.love.RelationshipStatsWidgetProvider',
+            preview: _buildRelationshipStatsPreview(),
+            widgetType: 'relationship_stats',
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // ── 4. Фото-виджет (личный) ──
         if (isPaired || _pair.isSolo) ...[
@@ -1667,19 +1688,8 @@ class _WidgetScreenState extends State<WidgetScreen>
           ],
         ],
 
-        // ── 5. Настроение ──
+        // ── Настроение на экране блокировки + Фото-сетка ──
         if (isPaired) ...[
-          _buildGalleryItem(
-            title: LocaleService.current.mood,
-            subtitle: LocaleService.current.moodWidgetSubtitle,
-            svgString: _moodSvg,
-            qualifiedName: 'com.togetherly.love.MoodWidgetProvider',
-            preview: _buildMoodPreview(),
-            widgetType: 'mood',
-          ),
-          const SizedBox(height: 16),
-
-          // ── 5б. Настроение на экране блокировки ──
           _buildLockScreenMoodCard(),
           const SizedBox(height: 16),
 
@@ -1700,22 +1710,194 @@ class _WidgetScreenState extends State<WidgetScreen>
 
           // ── Баннер 2 ──
           _buildAdBanner('ad_banner_2'),
-          const SizedBox(height: 16),
-
-          // ── 6. Статистика отношений ──
-          _buildGalleryItem(
-            title: LocaleService.current.relationshipStats,
-            subtitle: LocaleService.current.relationshipStatsSubtitle,
-            svgString: _statsSvg,
-            qualifiedName:
-                'com.togetherly.love.RelationshipStatsWidgetProvider',
-            preview: _buildRelationshipStatsPreview(),
-            widgetType: 'relationship_stats',
-          ),
         ],
       ],
     );
   }
+
+  // ── Бенто: сетка простых виджетов по два в ряд ──
+  Widget _halfGrid(List<Widget> tiles) {
+    if (tiles.isEmpty) return const SizedBox.shrink();
+    final rows = <Widget>[];
+    for (var i = 0; i < tiles.length; i += 2) {
+      if (i + 1 < tiles.length) {
+        rows.add(IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: tiles[i]),
+              const SizedBox(width: 12),
+              Expanded(child: tiles[i + 1]),
+            ],
+          ),
+        ));
+      } else {
+        rows.add(tiles[i]); // нечётный последний — во всю ширину
+      }
+      if (i + 2 < tiles.length) rows.add(const SizedBox(height: 12));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
+    );
+  }
+
+  /// Компактная плитка простого виджета: квадратное превью + имя + круглая
+  /// кнопка «добавить на рабочий стол».
+  Widget _buildHalfItem({
+    required String title,
+    required String qualifiedName,
+    required String widgetType,
+    required Widget preview,
+    VoidCallback? onPreviewTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: onPreviewTap,
+            behavior: HitTestBehavior.opaque,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: SizedBox(height: 128, child: preview),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              height: 1.15,
+              color: _cs.onSurface,
+            ),
+          ),
+          if (_canPinWidgets) ...[
+            const SizedBox(height: 9),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: FilledButton.icon(
+                onPressed: () =>
+                    _pinWidget(qualifiedName, widgetType: widgetType),
+                icon: const Icon(Icons.add_to_home_screen_rounded, size: 17),
+                label: const Text(
+                  'Добавить',
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _cs.primary,
+                  foregroundColor: _cs.onPrimary,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _openTimerSelectorSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _cs.surface,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          4,
+          16,
+          MediaQuery.of(ctx).viewInsets.bottom +
+              MediaQuery.of(ctx).padding.bottom +
+              24,
+        ),
+        child: SingleChildScrollView(child: _buildTimerSelector()),
+      ),
+    );
+  }
+
+  Widget _halfTileBg(List<Color> colors, Widget child) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+        ),
+        child: Center(child: child),
+      );
+
+  Widget _streakCompact() => _halfTileBg(
+        const [Color(0xFFFFB23E), Color(0xFFFF6A3D)],
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.local_fire_department_rounded,
+                color: Colors.white, size: 40),
+            Text(
+              '${_mascotService.activeStreak}',
+              style: const TextStyle(
+                fontFamily: 'Unbounded',
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.05,
+              ),
+            ),
+            Text(
+              LocaleService.current.daysInARow,
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 10,
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _timerCompact() => _halfTileBg(
+        const [Color(0xFF7A5AD0), Color(0xFF9D6FF0)],
+        const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.favorite_rounded, color: Colors.white, size: 34),
+            SizedBox(height: 6),
+            Text(
+              'вместе',
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildAdBanner(String slot) {
     const realId = 'ca-app-pub-1956369312643059/2560361524';
@@ -1739,8 +1921,6 @@ class _WidgetScreenState extends State<WidgetScreen>
     bool isExpanded = false,
     VoidCallback? onToggleExpand,
   }) {
-    final iconColor = _t.primary;
-
     return _buildGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1752,18 +1932,19 @@ class _WidgetScreenState extends State<WidgetScreen>
             child: Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.12),
+                    color: _cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: SvgPicture.string(
                       svgString,
-                      width: 20,
-                      height: 20,
-                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                      width: 22,
+                      height: 22,
+                      colorFilter: ColorFilter.mode(
+                          _cs.onPrimaryContainer, BlendMode.srcIn),
                     ),
                   ),
                 ),
@@ -1774,17 +1955,20 @@ class _WidgetScreenState extends State<WidgetScreen>
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.rubik(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontFamily: 'Unbounded',
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: _t.textPrimary,
+                          color: _cs.onSurface,
                         ),
                       ),
+                      const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: GoogleFonts.rubik(
-                          fontSize: 11,
-                          color: _t.textMuted,
+                        style: TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 12.5,
+                          color: _cs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -1796,7 +1980,7 @@ class _WidgetScreenState extends State<WidgetScreen>
                     duration: const Duration(milliseconds: 250),
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: _t.textMuted,
+                      color: _cs.onSurfaceVariant,
                       size: 24,
                     ),
                   ),
@@ -1810,24 +1994,24 @@ class _WidgetScreenState extends State<WidgetScreen>
             SizedBox(
               width: double.infinity,
               height: 44,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () =>
                     _pinWidget(qualifiedName, widgetType: widgetType),
                 icon: const Icon(Icons.add_to_home_screen_rounded, size: 18),
                 label: Text(
                   LocaleService.current.addToHomeScreen,
-                  style: GoogleFonts.rubik(
-                    fontSize: 13,
+                  style: const TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _t.primary,
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _cs.primary,
+                  foregroundColor: _cs.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  elevation: 0,
                 ),
               ),
             ),
@@ -1841,7 +2025,7 @@ class _WidgetScreenState extends State<WidgetScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-                      Divider(color: _t.divider, height: 1),
+                      Divider(color: _cs.outlineVariant, height: 1),
                       const SizedBox(height: 16),
                       expandedContent,
                     ],
@@ -4653,31 +4837,21 @@ class _WidgetScreenState extends State<WidgetScreen>
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_t.primary.withOpacity(0.85), _t.primary],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: _t.primary.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          color: _cs.primaryContainer,
+          borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
+                color: _cs.onPrimaryContainer.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(17),
               ),
-              child: const Center(
-                child: Text('💌', style: TextStyle(fontSize: 24)),
+              child: Center(
+                child: Icon(Icons.mail_rounded,
+                    color: _cs.onPrimaryContainer, size: 26),
               ),
             ),
             const SizedBox(width: 14),
@@ -4687,19 +4861,20 @@ class _WidgetScreenState extends State<WidgetScreen>
                 children: [
                   Text(
                     LocaleService.current.createPostcardTitle,
-                    style: GoogleFonts.rubik(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                    style: TextStyle(
+                      fontFamily: 'Unbounded',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: _cs.onPrimaryContainer,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     LocaleService.current.createPostcardSubtitle,
-                    style: GoogleFonts.rubik(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withOpacity(0.8),
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 12.5,
+                      color: _cs.onPrimaryContainer.withValues(alpha: 0.82),
                     ),
                   ),
                 ],
@@ -4707,15 +4882,16 @@ class _WidgetScreenState extends State<WidgetScreen>
             ),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: _cs.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: Colors.white,
-                size: 14,
+                color: _cs.onPrimary,
+                size: 15,
               ),
             ),
           ],
@@ -4725,20 +4901,14 @@ class _WidgetScreenState extends State<WidgetScreen>
   }
 
   Widget _buildGlassCard({required Widget child}) {
+    // M3 Expressive как на Подключении: тональный контейнер, крупный радиус,
+    // плоско (без рамки и тени) — глубина передаётся тоном.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _t.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _t.cardBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: _cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
       ),
       child: child,
     );

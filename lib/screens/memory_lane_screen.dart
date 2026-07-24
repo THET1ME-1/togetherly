@@ -115,6 +115,12 @@ class MemoryLaneScreen extends StatefulWidget {
   /// в Ленте не показывается (например, при входе из чата/лепестка).
   final void Function(int index)? onNavTab;
 
+  /// Встроенный режим для главного экрана: без Scaffold/аппбара/навбара —
+  /// заголовок «Лента воспоминаний» + «Все» и первые [previewLimit] настоящих
+  /// карточек (тот же `_memoryTile`, что и на полном экране, с живым телом).
+  final bool embedded;
+  final int previewLimit;
+
   const MemoryLaneScreen({
     super.key,
     required this.pairData,
@@ -124,6 +130,8 @@ class MemoryLaneScreen extends StatefulWidget {
     this.openCreateOnStart = false,
     this.initialMemoryId,
     this.onNavTab,
+    this.embedded = false,
+    this.previewLimit = 3,
   });
 
   @override
@@ -503,8 +511,145 @@ class _MemoryLaneScreenState extends State<MemoryLaneScreen> {
   // ══════════════════════════════════════════════
   //  BUILD
   // ══════════════════════════════════════════════
+  // ── Встроенный режим (превью на главном): настоящие карточки, лимит N ──
+
+  List<Memory> _previewMemories(int n) {
+    final all = <Memory>[..._pinnedMemories, ..._nonPinnedSortedAll]
+        .where((m) => !m.isSecret || _secretUnlocked)
+        .toList();
+    return all.length > n ? all.sublist(0, n) : all;
+  }
+
+  void _openFullLane() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MemoryLaneScreen(
+          pairData: widget.pairData,
+          theme: widget.theme,
+          userData: widget.userData,
+          onNavTab: widget.onNavTab == null
+              ? null
+              : (i) {
+                  if (context.mounted) Navigator.of(context).pop();
+                  widget.onNavTab?.call(i);
+                },
+        ),
+        settings: const RouteSettings(name: '/memory_lane'),
+      ),
+    );
+  }
+
+  Widget _buildEmbedded() {
+    final s = LocaleService.current;
+    final t = widget.theme;
+    final header = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            s.relationshipMemoryLane,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: t.textPrimary,
+            ),
+          ),
+          GestureDetector(
+            onTap: _openFullLane,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    s.viewAll,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: primary,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: primary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Widget content;
+    if (_loading) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: M3PageLoading(color: t.primaryLight)),
+      );
+    } else {
+      final items = _previewMemories(widget.previewLimit);
+      if (items.isEmpty) {
+        content = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            height: 140,
+            decoration: BoxDecoration(
+              color: t.cardSurface,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.photo_album_outlined,
+                      size: 32, color: Colors.grey.shade300),
+                  const SizedBox(height: 8),
+                  Text(
+                    s.noMemoriesYet,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: t.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    s.addFirstMemory,
+                    style: TextStyle(fontSize: 12, color: t.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      } else {
+        content = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [for (final m in items) _memoryTile(m)],
+          ),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        const SizedBox(height: 16),
+        content,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildEmbedded();
     final bottomPad = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       backgroundColor: widget.theme.bgGradient[0],

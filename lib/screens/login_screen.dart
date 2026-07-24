@@ -9,6 +9,8 @@ import '../services/pb_auth_service.dart';
 import '../services/locale_service.dart';
 import '../widgets/auth_widgets.dart';
 import '../theme/theme_scope.dart';
+import '../theme/profile_theme.dart';
+import 'package:material3_expressive_loading_indicator/material3_expressive_loading_indicator.dart';
 
 import 'home_screen.dart';
 import 'setup_screen.dart';
@@ -314,20 +316,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final s = LocaleService.current;
     final t = context.appTheme;
+    final cs = ProfileTheme.themeFor(t).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Container(
-        // Фон НЕ трогаем — это наш фирменный градиент.
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFFE4EC), Color(0xFFFFF1F4), Color(0xFFFCE9FF)],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
+        // M3: плоский фон, без градиента.
+        color: cs.surface,
         child: SafeArea(
           bottom: false,
           child: Column(
@@ -346,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: t.cardSurface,
+                    color: cs.surface,
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(34)),
                   ),
@@ -359,11 +355,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         Center(
                           child: Text(
                             s.welcomeBack,
-                            style: GoogleFonts.rubik(
-                              fontSize: 28,
+                            style: TextStyle(
+                              fontFamily: 'Unbounded',
+                              fontSize: 30,
                               fontWeight: FontWeight.w800,
-                              color: t.textPrimary,
-                              letterSpacing: -0.5,
+                              color: cs.onSurface,
+                              letterSpacing: -1,
                             ),
                           ),
                         ),
@@ -517,49 +514,35 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _primaryButton({required String label, required VoidCallback? onTap}) {
-    return Container(
+    // M3: широкая таблетка сплошного цвета (StadiumBorder), без градиента и
+    // свечения; загрузка — морфинг-индикатор ExpressiveLoadingIndicator.
+    final cs = ProfileTheme.themeFor(context.appTheme).colorScheme;
+    return SizedBox(
       width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: onTap == null
-              ? _btnGradient.map((c) => c.withValues(alpha: 0.6)).toList()
-              : _btnGradient,
+      height: 58,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          disabledBackgroundColor: cs.primary.withValues(alpha: 0.5),
+          shape: const StadiumBorder(),
+          elevation: 0,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: _accent.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Center(
-            child: _isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white),
-                  )
-                : Text(
-                    label,
-                    style: GoogleFonts.rubik(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-          ),
-        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 26,
+                height: 26,
+                child: ExpressiveLoadingIndicator(color: cs.onPrimary),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }

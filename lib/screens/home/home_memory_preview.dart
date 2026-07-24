@@ -121,7 +121,6 @@ class MemoryLanePreview extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.cardSurface,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: theme.divider, width: 0.5),
               ),
               child: Center(
                 child: Column(
@@ -200,7 +199,6 @@ class MemoryLanePreview extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.cardSurface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: theme.divider, width: 0.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -296,10 +294,11 @@ class _PreviewCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
+          // Плоский стиль пинов, точь-в-точь как _baseTile в Ленте:
+          // cardSurface, радиус 20, без тени/свечения/бордера.
           decoration: BoxDecoration(
             color: theme.cardSurface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.divider),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -308,6 +307,8 @@ class _PreviewCard extends StatelessWidget {
               _header(),
               const SizedBox(height: 12),
               _body(),
+              const SizedBox(height: 12),
+              _footer(),
               const SizedBox(height: 12),
             ],
           ),
@@ -430,6 +431,33 @@ class _PreviewCard extends StatelessWidget {
       case MemoryType.movie:
         return (_ru ? 'Фильм' : 'Movie', Icons.movie_rounded);
     }
+  }
+
+  // ── Футер: комментарии + закладка (read-only копия _cardFooter Ленты) ──
+  Widget _footer() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Icon(Icons.chat_bubble_outline_rounded,
+              size: 19, color: theme.textMuted),
+          if (memory.commentsCount > 0) ...[
+            const SizedBox(width: 5),
+            Text(
+              '${memory.commentsCount}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.textSecondary,
+              ),
+            ),
+          ],
+          const Spacer(),
+          Icon(Icons.bookmark_border_rounded,
+              size: 21, color: theme.textMuted),
+        ],
+      ),
+    );
   }
 
   // ── Body per type ──

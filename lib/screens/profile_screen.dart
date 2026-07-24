@@ -38,6 +38,7 @@ import '../widgets/common/m3_loading.dart';
 import 'welcome_screen.dart';
 import 'gifts/gift_profile_body.dart';
 import 'gifts/partner_profile_screen.dart';
+import 'gifts/self_profile_screen.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/seed_swatch.dart';
 import '../utils/share_origin.dart';
@@ -1221,6 +1222,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// Свой профиль-«Открытка»: полка полученных подарков и «Я скучаю» по дням —
+  /// симметрично профилю партнёра (тап по аватару в «Друзьях»).
+  void _openSelfProfile(BuildContext context) {
+    final start = widget.pairData.startDate;
+    final days = start == null ? null : DateTime.now().difference(start).inDays;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SelfProfileScreen(
+          theme: _t,
+          groupId: widget.pairData.pairId,
+          selfUid: widget.userData.uid,
+          selfName: widget.userData.displayName,
+          selfAvatarUrl: widget.userData.avatarUrl,
+          bannerUrl: widget.userData.bannerUrl,
+          daysTogether: days,
+        ),
+        settings: const RouteSettings(name: '/self_gifts'),
+      ),
+    );
+  }
+
   /// Друзья/партнёры в ряд — как в Kadr: аватар (или буква на цветном круге) +
   /// имя. Много групп и партнёров — все здесь.
   Widget _buildFriendsGroup(BuildContext context) {
@@ -1285,6 +1308,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         subtitle: _s.anniversaryDate,
         onTap: () => _openCardSheet(context, _buildRelationshipCard(context)),
       ),
+      if (widget.giftsEnabled) ...[
+        _m3Divider(),
+        _m3Tile(
+          icon: Icons.card_giftcard_rounded,
+          label: _s.selfGiftsTitle,
+          onTap: () => _openSelfProfile(context),
+        ),
+      ],
     ]);
   }
 
@@ -4048,25 +4079,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => _showLogoutDialog(context),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.logout_rounded,
-                  color: Colors.red.shade400,
-                  size: 20,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showLogoutDialog(context),
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: _cs.error,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  _s.logout,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red.shade400,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout_rounded, color: _cs.onError, size: 20),
+                    const SizedBox(width: 10),
+                    Text(
+                      _s.logout,
+                      style: TextStyle(
+                        fontFamily: ProfileTheme.bodyFont,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _cs.onError,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -4482,14 +4523,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         coinAmount: 50,
                         onTap: null,
                       ),
-                      // ── Купить монеты (IAP) ───────────────────────────
-                      // Показываем ВСЕГДА, не прячем за _iap.isAvailable.
-                      // Покупки обязаны быть findable: App Review открывает
-                      // магазин на свежей установке, и если продукты ещё не
-                      // догрузились, скрытая секция читается как «покупок в
-                      // приложении нет» → отклонение по Guideline 2.1(b).
-                      // Пока цены не подъехали — в subtitle стоит «…».
-                      ...[
+                      // ── Купить монеты (IAP) — скрыто на iOS ───────────
+                      // На iOS встроенные покупки убраны: App Review не мог
+                      // найти/подтвердить продукты (Guideline 2.1(b)). Монеты
+                      // на iOS остаются бесплатными (ежедневный бонус, реклама,
+                      // инвайт) + донат-кнопки. На Android/RuStore паки на месте.
+                      if (!Platform.isIOS && kCoinsPurchasable) ...[
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),

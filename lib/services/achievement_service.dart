@@ -41,6 +41,17 @@ class AchievementService {
   final Set<String> _seen = <String>{};
   bool _initialized = false; // первый снимок группы = «тихий» бэкфилл
 
+  /// Настоящая дата начала отношений — дата системного таймера «Дней вместе»,
+  /// которую пара реально ведёт (юзер её редактирует). Инжектит home_screen из
+  /// TimerService (сервис не синглтон). `group.start_date` — лишь дата КОННЕКТА,
+  /// поэтому по ней срок врал («вместе 7 дней» при годах вместе). Срок считаем от
+  /// БОЛЕЕ РАННЕЙ из двух дат — отношения не короче ни коннекта, ни годовщины.
+  DateTime? _coupleStart;
+
+  /// Последний снимок группы — чтобы пересчитать достижения, когда придёт дата
+  /// таймера уже после первого апдейта группы.
+  RecordModel? _lastGroup;
+
   String get _seenKey => 'ach_seen_${_groupId ?? ''}';
 
   /// Запускает слежение за достижениями пары [groupId]. Идемпотентно.
@@ -70,8 +81,22 @@ class AchievementService {
     _seen.clear();
   }
 
+  /// Настоящая дата начала отношений от home_screen (дата системного таймера
+  /// «Дней вместе»). Пересчитывает достижения по последнему снимку группы —
+  /// тихо (без шквала тостов), потому что достижения по сроку заработаны давно.
+  void setCoupleStart(DateTime? d) {
+    if (_coupleStart == d) return;
+    _coupleStart = d;
+    final g = _lastGroup;
+    if (g != null) {
+      _initialized = false; // тихий бэкфилл: засчитать без праздничных тостов
+      _onGroup(g);
+    }
+  }
+
   void _onGroup(RecordModel? rec) {
     if (rec == null) return;
+    _lastGroup = rec;
     final snapshot = _statsFrom(rec.data);
     stats.value = snapshot;
 
@@ -98,7 +123,7 @@ class AchievementService {
   AchievementStats _statsFrom(Map<String, dynamic> d) {
     int i(String k) => (d[k] as num?)?.toInt() ?? 0;
     return AchievementStats(
-      daysTogether: _daysSince(d['start_date']),
+      daysTogether: _daysTogether(d['start_date']),
       memories: i('memories_count'),
       messages: i('messages_count'),
       drawings: i('drawings_count'),
@@ -106,17 +131,28 @@ class AchievementService {
     );
   }
 
-  /// Дней с даты старта пары. Принимает ISO-строку или epoch-ms.
-  int _daysSince(dynamic raw) {
+  /// Дней вместе от НАСТОЯЩЕЙ даты начала отношений: более ранней из даты
+  /// системного таймера «Дней вместе» ([_coupleStart]) и `group.start_date`
+  /// (дата коннекта). Так срок совпадает со счётчиком дней, который видит юзер,
+  /// а не показывает «7 дней» свежесозданной паре с годами отношений.
+  int _daysTogether(dynamic rawGroupStart) {
+    final gStart = _parseStart(rawGroupStart);
     DateTime? start;
-    if (raw is String && raw.isNotEmpty) {
-      start = DateTime.tryParse(raw);
-    } else if (raw is num) {
-      start = DateTime.fromMillisecondsSinceEpoch(raw.toInt());
+    if (_coupleStart != null && gStart != null) {
+      start = _coupleStart!.isBefore(gStart) ? _coupleStart : gStart;
+    } else {
+      start = _coupleStart ?? gStart;
     }
     if (start == null) return 0;
     final days = DateTime.now().difference(start).inDays;
     return days < 0 ? 0 : days;
+  }
+
+  /// Дата из ISO-строки или epoch-ms.
+  DateTime? _parseStart(dynamic raw) {
+    if (raw is String && raw.isNotEmpty) return DateTime.tryParse(raw);
+    if (raw is num) return DateTime.fromMillisecondsSinceEpoch(raw.toInt());
+    return null;
   }
 
   Future<Set<String>> _loadSeen() async {

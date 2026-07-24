@@ -9,6 +9,8 @@ import 'package:pocketbase/pocketbase.dart';
 import '../utils/safe_pick.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../models/user_data.dart';
+import '../theme/profile_theme.dart';
+import 'package:material3_expressive_loading_indicator/material3_expressive_loading_indicator.dart';
 import '../services/pb_auth_service.dart';
 import '../services/pb_data_service.dart';
 import '../services/pb_media_service.dart';
@@ -34,6 +36,8 @@ class _SetupScreenState extends State<SetupScreen>
   // Step: 0 = gender, 1 = registration
   int _step = 0;
   Gender? _selectedGender;
+  bool _customSelected = false;
+  final _customGenderController = TextEditingController();
   bool _isLoading = false;
 
   final _nameController = TextEditingController();
@@ -94,6 +98,7 @@ class _SetupScreenState extends State<SetupScreen>
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _customGenderController.dispose();
     _fadeController.dispose();
     _termsRecognizer.dispose();
     _privacyRecognizer.dispose();
@@ -285,7 +290,7 @@ class _SetupScreenState extends State<SetupScreen>
       if (userId.isNotEmpty) {
         await PbDataService().updateUserProfile(userId, {
           'displayName': name,
-          'gender': _selectedGender == Gender.male ? 'male' : 'female',
+          'gender': _genderStorageString(),
           if (finalAvatarUrl.isNotEmpty) 'avatarUrl': finalAvatarUrl,
         });
       }
@@ -295,6 +300,7 @@ class _SetupScreenState extends State<SetupScreen>
         displayName: name,
         email: email,
         gender: _selectedGender!,
+        customGender: _customGenderValue(),
         avatarUrl: finalAvatarUrl,
       );
 
@@ -574,33 +580,24 @@ class _SetupScreenState extends State<SetupScreen>
           ),
           const SizedBox(height: 48),
           // Gender cards
-          Row(
-            children: [
-              Expanded(child: _genderCard(Gender.male)),
-              const SizedBox(width: 16),
-              Expanded(child: _genderCard(Gender.female)),
-            ],
-          ),
+          _genderGrid(),
           const Spacer(flex: 2),
           // Continue button
           AnimatedOpacity(
-            opacity: _selectedGender != null ? 1.0 : 0.4,
+            opacity: _genderValid ? 1.0 : 0.4,
             duration: const Duration(milliseconds: 200),
             child: SizedBox(
               width: double.infinity,
               height: 58,
               child: ElevatedButton(
-                onPressed: _selectedGender != null ? () => _goToStep(1) : null,
+                onPressed: _genderValid ? () => _goToStep(1) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor:
                       theme.isDark ? theme.divider : Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  elevation: 12,
-                  shadowColor: _accent.withOpacity(0.4),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -625,92 +622,136 @@ class _SetupScreenState extends State<SetupScreen>
     );
   }
 
-  Widget _genderCard(Gender gender) {
-    final theme = context.appTheme;
-    final isSelected = _selectedGender == gender;
-    final isMale = gender == Gender.male;
-    final color = isMale ? const Color(0xFF7898BF) : const Color(0xFFFF7E8B);
-    final bgColor = isMale ? const Color(0xFFEAF2FA) : const Color(0xFFFEEAF1);
-    final icon = isMale ? Icons.male_rounded : Icons.female_rounded;
-    final label = isMale
-        ? LocaleService.current.boy
-        : LocaleService.current.girl;
+  bool get _genderValid =>
+      _selectedGender != null &&
+      (!_customSelected || _customGenderController.text.trim().isNotEmpty);
 
-    return GestureDetector(
-      onTap: () => setState(() => _selectedGender = gender),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? bgColor
-              : (theme.isDark
-                  ? theme.cardSurface
-                  : Colors.white.withOpacity(0.7)),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected
-                ? color.withOpacity(0.4)
-                : (theme.isDark ? theme.cardBorder : Colors.grey.shade200),
-            width: isSelected ? 2.5 : 1,
-          ),
-          boxShadow: isSelected
-              ? theme.accentGlow(
-                  color,
-                  opacity: 0.15,
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                )
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 12,
+  String? _customGenderValue() {
+    if (!_customSelected) return null;
+    final v = _customGenderController.text.trim();
+    return v.isEmpty ? null : v;
+  }
+
+  String _genderStorageString() {
+    switch (_selectedGender) {
+      case Gender.male:
+        return 'male';
+      case Gender.female:
+        return 'female';
+      case Gender.unspecified:
+      case null:
+        return _customGenderValue() ?? 'unspecified';
+    }
+  }
+
+  /// Сетка выбора пола (M3, плоско): Мужчина / Женщина / Не хочу указывать /
+  /// Свой пол (со своим полем ввода).
+  Widget _genderGrid() {
+    final cs = ProfileTheme.themeFor(context.appTheme).colorScheme;
+    final ru = LocaleService.instance.isRussian;
+
+    Widget tile({
+      required IconData icon,
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+            decoration: BoxDecoration(
+              color: selected ? cs.primaryContainer : cs.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: Column(
+              children: [
+                Icon(icon,
+                    size: 30,
+                    color:
+                        selected ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                    color: selected ? cs.onPrimaryContainer : cs.onSurface,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Column(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? color.withOpacity(0.15)
-                    : (theme.isDark
-                        ? theme.surfaceMuted
-                        : Colors.grey.shade100),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 36,
-                color: isSelected ? color : theme.textMuted,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isSelected ? color : theme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: 24,
-              height: 3,
-              decoration: BoxDecoration(
-                color: isSelected ? color : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
-      ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(children: [
+          tile(
+            icon: Icons.male_rounded,
+            label: LocaleService.current.boy,
+            selected: _selectedGender == Gender.male,
+            onTap: () => setState(() {
+              _selectedGender = Gender.male;
+              _customSelected = false;
+            }),
+          ),
+          const SizedBox(width: 12),
+          tile(
+            icon: Icons.female_rounded,
+            label: LocaleService.current.girl,
+            selected: _selectedGender == Gender.female,
+            onTap: () => setState(() {
+              _selectedGender = Gender.female;
+              _customSelected = false;
+            }),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          tile(
+            icon: Icons.do_not_disturb_on_rounded,
+            label: ru ? 'Не хочу указывать' : 'Prefer not to say',
+            selected:
+                _selectedGender == Gender.unspecified && !_customSelected,
+            onTap: () => setState(() {
+              _selectedGender = Gender.unspecified;
+              _customSelected = false;
+            }),
+          ),
+          const SizedBox(width: 12),
+          tile(
+            icon: Icons.edit_rounded,
+            label: ru ? 'Свой пол' : 'Custom',
+            selected: _customSelected,
+            onTap: () => setState(() {
+              _selectedGender = Gender.unspecified;
+              _customSelected = true;
+            }),
+          ),
+        ]),
+        if (_customSelected) ...[
+          const SizedBox(height: 12),
+          AuthField(
+            controller: _customGenderController,
+            label: ru ? 'Свой пол' : 'Custom gender',
+            hint: ru ? 'Укажите свой пол' : 'Enter your gender',
+            accent: _accent,
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ],
     );
   }
 
@@ -877,7 +918,6 @@ class _SetupScreenState extends State<SetupScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _accentLight,
-              border: Border.all(color: _accent.withOpacity(0.2), width: 3),
             ),
             child: _selectedAvatarFile != null
                 ? ClipOval(
@@ -992,33 +1032,30 @@ class _SetupScreenState extends State<SetupScreen>
   }
 
   Widget _signUpButton(AppStrings s) {
+    // M3: таблетка сплошного цвета без свечения; загрузка — морфинг-индикатор.
+    final cs = ProfileTheme.themeFor(context.appTheme).colorScheme;
     return SizedBox(
       width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
+      height: 58,
+      child: FilledButton(
         onPressed: (_isLoading || !_agreeToTerms) ? null : _completeSetup,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _accent,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: _accent.withOpacity(0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 8,
-          shadowColor: _accent.withOpacity(0.4),
+        style: FilledButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          disabledBackgroundColor: cs.primary.withValues(alpha: 0.4),
+          shape: const StadiumBorder(),
+          elevation: 0,
         ),
         child: _isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
+            ? SizedBox(
+                width: 26,
+                height: 26,
+                child: ExpressiveLoadingIndicator(color: cs.onPrimary),
               )
             : Text(
                 s.createAccountBtn,
                 style: const TextStyle(
+                  fontFamily: 'Onest',
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                 ),

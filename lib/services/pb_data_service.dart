@@ -760,9 +760,29 @@ class PbDataService {
     String code, {
     required String myUid,
   }) async {
-    if (myUid.isEmpty) return {'success': false, 'message': 'Не авторизован'};
     code = code.toUpperCase().trim();
     if (code.isEmpty) return {'success': false, 'message': 'Введите код'};
+    // Полумёртвая/протухшая сессия: authStore.record не восстановился или токен
+    // устал → myUid пуст, и запрос молча НЕ уходит на сервер (в логах PB ноль
+    // /api/invite/accept — код «всегда не найден», хотя маршрут жив). Освежаем
+    // сессию и достаём uid заново; если и после этого пусто — честно говорим, что
+    // сессия истекла, а не вводим в заблуждение «код не найден».
+    if (myUid.isEmpty) {
+      try {
+        await _pb
+            .collection('users')
+            .authRefresh()
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {}
+      myUid = PocketBaseService().userId ?? '';
+    }
+    if (myUid.isEmpty) {
+      return {
+        'success': false,
+        'message': 'Сессия истекла — войдите заново',
+        'authExpired': true,
+      };
+    }
     try {
       final resp = await _pb.send(
         '/api/invite/accept',
