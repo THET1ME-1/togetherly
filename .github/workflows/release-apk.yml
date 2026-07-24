@@ -160,24 +160,6 @@ jobs:
             dist/togetherly-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}-armeabi-v7a.apk
             dist/version.json
 
-      - name: Bridge — publish to OLD releases repo (миграция автообновления)
-        # РАЗОВЫЙ МОСТ. Уже установленные приложения проверяют апдейты в старом
-        # togetherly_app_releases. Публикуем тот же релиз и туда — пользователи
-        # получат обновление, которое переводит их автообновление на новый
-        # THET1ME-1/togetherly. Когда основная масса обновится — шаг можно удалить.
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: THET1ME-1/togetherly_app_releases
-          token: ${{ secrets.RELEASES_REPO_TOKEN }}
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: ${{ steps.ver.outputs.name }} (build ${{ steps.ver.outputs.code }})
-          body_path: dist/notes.md
-          make_latest: true
-          files: |
-            dist/togetherly-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}-arm64-v8a.apk
-            dist/togetherly-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}-armeabi-v7a.apk
-            dist/version.json
-
   # ── Гейт: публикуем в Play только если задан секрет сервис-аккаунта ──────────
   # Без PLAY_SERVICE_ACCOUNT_JSON job publish-play пропускается (не краснеет),
   # пока ты не настроишь сервис-аккаунт и не добавишь секрет.
