@@ -1,0 +1,15 @@
+[Unit]
+Description=Togetherly DonationAlerts -> coins worker
+After=network-online.target pocketbase.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/togetherly-donations.env
+ExecStart=/usr/bin/python3 /opt/donation_worker/worker.py
+Restart=always
+RestartSec=10
+User=root
+
+[Install]
+WantedBy=multi-user.target
